@@ -1,0 +1,1476 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>订单详情 - AI拍照管理系统</title>
+    <link href="/static/css/bootstrap.min.css" rel="stylesheet">
+    <script>
+        // 立即执行的调试代码
+        (function() {
+            console.log('=== 页面头部脚本执行 ===');
+            console.log('当前URL:', window.location ? window.location.href : 'N/A');
+        })();
+    </script>
+</head>
+<body>
+    <script>
+        console.log('=== body开始，检查DOM ===');
+        // 延迟检查，因为此时DOM可能还没加载
+        setTimeout(function() {
+            const form = document.getElementById('updateOrderForm');
+            const btn = document.getElementById('saveOrderBtn');
+            console.log('延迟检查 - 表单:', form ? '找到' : '未找到');
+            console.log('延迟检查 - 按钮:', btn ? '找到' : '未找到');
+        }, 1000);
+    </script>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="/">AI拍照管理系统</a>
+            <div class="collapse navbar-collapse">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <span class="nav-link">管理员: {{ current_user.username }}</span>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('auth.logout') }}">退出登录</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-md-12">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h3>订单详情</h3>
+                    <a href="{{ url_for('admin_orders.admin_orders') }}" class="btn btn-secondary">返回订单列表</a>
+                </div>
+                
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5>订单信息</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <p><strong>订单号:</strong> {{ order.order_number }}</p>
+                                <p><strong>客户姓名:</strong> {{ order.customer_name }}</p>
+                                <p><strong>客户电话:</strong> {{ order.customer_phone }}</p>
+                                <p><strong>艺术风格:</strong> {{ order.style_name or '未选择' }}</p>
+                                <p><strong>产品类型:</strong> {{ order.product_name or '未选择' }}</p>
+                                <p><strong>产品ID:</strong> {{ order.size|product_id }}</p>
+                                <p><strong>尺寸:</strong> {{ order.size|size_name if order.size else '未选择' }}</p>
+                                
+                                <!-- 网页下单客户产品选择按钮 -->
+                                {% if not order.product_name or not order.size %}
+                                <div class="mt-3 p-3 bg-light rounded">
+                                    <h6 class="text-primary">网页下单客户产品配置</h6>
+                                    <p class="text-muted small mb-2">该订单为网页下单，需要手动选择产品和尺寸</p>
+                                    
+                                    <!-- 产品名称选择（产品类型） -->
+                                    <div class="mb-3">
+                                        <label class="form-label small fw-bold">产品名称:</label>
+                                        <div class="d-flex gap-2 flex-wrap">
+                                            <button type="button" class="btn btn-outline-primary btn-sm" id="btn-oil-frame" onclick="filterProducts('oil')">
+                                                油画框
+                                            </button>
+                                            <button type="button" class="btn btn-outline-secondary btn-sm" id="btn-table-frame" onclick="filterProducts('table')">
+                                                桌摆框
+                                            </button>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- 产品尺寸选择（具体产品名称） -->
+                                    <div class="mb-3">
+                                        <label class="form-label small fw-bold">产品尺寸:</label>
+                                        <div class="d-flex gap-2 flex-wrap" id="product-sizes">
+                                            <!-- 默认显示提示信息 -->
+                                            <div class="text-muted small">
+                                                请先选择产品类型
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                <p><strong>门店:</strong> 
+                                    {% if order.franchisee_id and order.franchisee_account %}
+                                        {{ order.franchisee_account.company_name }}
+                                    {% elif order.merchant %}
+                                        {{ order.merchant.username }}
+                                    {% else %}
+                                        无
+                                    {% endif %}
+                                </p>
+                                {% if order.franchisee_id and order.franchisee_account %}
+                                <p class="text-muted small">门店信息：{{ order.franchisee_account.company_name }}</p>
+                                {% elif order.merchant %}
+                                <p><strong>分佣比例:</strong> {{ (order.merchant.commission_rate * 100)|round(0) }}%</p>
+                                <p><strong>分佣金额:</strong> 
+                                    {% if order.status in ['hd_ready', 'shipped'] %}
+                                        ¥{{ '%.2f'|format(order.commission or 0) }}
+                                    {% else %}
+                                        ¥0.00
+                                    {% endif %}
+                                </p>
+                                {% else %}
+                                <p class="text-muted">该订单未关联门店</p>
+                                {% endif %}
+                                <p><strong>订单价格:</strong> ¥{{ '%.2f'|format(order.price or 0) }}</p>
+                                {% if order.external_platform or order.external_order_number %}
+                                <p><strong>自拍机名称:</strong> {{ order.external_platform or '—' }}</p>
+                                <p><strong>自拍机序列号:</strong> {{ order.external_order_number or '—' }}</p>
+                                {% endif %}
+                                <p><strong>状态:</strong> 
+                                    {% if order.status == 'unpaid' %}
+                                    <span class="badge bg-secondary">未支付</span>
+                                    {% elif order.status == 'paid' %}
+                                    <span class="badge bg-info">已支付</span>
+                                    {% elif order.status == 'shooting' %}
+                                    <span class="badge bg-primary">正在拍摄</span>
+                                    {% elif order.status == 'retouching' %}
+                                    <span class="badge bg-primary">美颜处理中</span>
+                                    {% elif order.status == 'ai_processing' %}
+                                    <span class="badge bg-primary">AI任务处理中</span>
+                                    {% elif order.status == 'pending_selection' %}
+                                    <span class="badge bg-warning">待选片</span>
+                                    {% elif order.status == 'selection_completed' %}
+                                    <span class="badge bg-info">已选片</span>
+                                    {% elif order.status == 'printing' %}
+                                    <span class="badge bg-primary">打印中</span>
+                                    {% elif order.status == 'pending_shipment' %}
+                                    <span class="badge bg-warning">待发货</span>
+                                    {% elif order.status == 'shipped' %}
+                                    <span class="badge bg-success">已发货</span>
+                                    {% elif order.status == 'pending' %}
+                                    <span class="badge bg-warning">待制作</span>
+                                    {% elif order.status == 'completed' %}
+                                    <span class="badge bg-success">已完成</span>
+                                    {% elif order.status == 'hd_ready' %}
+                                    <span class="badge bg-warning">高清放大</span>
+                                    {% elif order.status == 'processing' %}
+                                    <span class="badge bg-primary">处理中</span>
+                                    {% elif order.status == 'manufacturing' %}
+                                    <span class="badge bg-primary">制作中</span>
+                                    {% elif order.status == 'delivered' %}
+                                    <span class="badge bg-info">已送达</span>
+                                    {% elif order.status == 'cancelled' %}
+                                    <span class="badge bg-danger">已取消</span>
+                                    {% elif order.status == 'refunded' %}
+                                    <span class="badge bg-danger">已退款</span>
+                                    {% else %}
+                                    <span class="badge bg-secondary">{{ order.status or '未知' }}</span>
+                                    {% endif %}
+                                </p>
+                                <p><strong>下单时间:</strong> {{ order.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</p>
+                                {% if order.shooting_completed_at %}
+                                <p><strong>拍摄完成时间:</strong> {{ order.shooting_completed_at.strftime('%Y-%m-%d %H:%M:%S') }}</p>
+                                {% else %}
+                                <p><strong>拍摄完成时间:</strong> <span class="text-muted">-</span></p>
+                                {% endif %}
+                                {% if order.retouch_completed_at %}
+                                <p><strong>精修美颜完成时间:</strong> {{ order.retouch_completed_at.strftime('%Y-%m-%d %H:%M:%S') }}</p>
+                                {% else %}
+                                <p><strong>精修美颜完成时间:</strong> <span class="text-muted">-</span></p>
+                                {% endif %}
+                                {% if order.completed_at %}
+                                <p><strong>制作完成时间:</strong> {{ order.completed_at.strftime('%Y-%m-%d %H:%M:%S') }}</p>
+                                {% else %}
+                                <p><strong>制作完成时间:</strong> <span class="text-muted">-</span></p>
+                                {% endif %}
+                                {% if order.customer_note %}
+                                <p><strong>客户备注:</strong> {{ order.customer_note }}</p>
+                                {% endif %}
+                                
+                                <!-- 冲印系统发送状态 -->
+                                {% if order.printer_send_status %}
+                                <div class="mt-3">
+                                    <p><strong>冲印系统发送状态:</strong></p>
+                                    {% if order.printer_send_status == 'not_sent' %}
+                                        <span class="badge bg-secondary">未发送</span>
+                                        {% if order.status in ['hd_ready', 'processing'] and order.hd_image %}
+                                        <button type="button" class="btn btn-sm btn-primary ms-2" onclick="sendToPrinter({{ order.id }})">
+                                            <i class="fas fa-paper-plane"></i> 发送到厂家
+                                        </button>
+                                        {% endif %}
+                                    {% elif order.printer_send_status == 'sending' %}
+                                        <span class="badge bg-warning">发送中...</span>
+                                    {% elif order.printer_send_status == 'sent_success' %}
+                                        <span class="badge bg-success">发送成功</span>
+                                        {% if order.printer_send_time %}
+                                        <small class="text-muted d-block">发送时间: {{ order.printer_send_time.strftime('%Y-%m-%d %H:%M:%S') }}</small>
+                                        {% endif %}
+                                    {% elif order.printer_send_status == 'sent_failed' %}
+                                        <span class="badge bg-danger">发送失败</span>
+                                        {% if order.printer_send_time %}
+                                        <small class="text-muted d-block">发送时间: {{ order.printer_send_time.strftime('%Y-%m-%d %H:%M:%S') }}</small>
+                                        {% endif %}
+                                        {% if order.printer_error_message %}
+                                        <div class="alert alert-danger mt-2 mb-0">
+                                            <small><strong>错误信息:</strong> {{ order.printer_error_message }}</small>
+                                        </div>
+                                        {% endif %}
+                                        <button type="button" class="btn btn-sm btn-warning mt-2" onclick="sendToPrinter({{ order.id }})">
+                                            <i class="fas fa-redo"></i> 重新发送
+                                        </button>
+                                    {% endif %}
+                                    
+                                    {% if order.printer_response_data %}
+                                    <div class="mt-2">
+                                        <button class="btn btn-sm btn-outline-info" type="button" data-bs-toggle="collapse" data-bs-target="#printerResponse">
+                                            查看冲印系统响应
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-secondary ms-2" onclick="viewSendData({{ order.id }})">
+                                            查看发送数据包
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-warning ms-2" onclick="checkImageSize({{ order.id }})">
+                                            检查图片尺寸
+                                        </button>
+                                        <div class="collapse mt-2" id="printerResponse">
+                                            <div class="card card-body">
+                                                <pre class="mb-0"><small>{{ order.printer_response_data }}</small></pre>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 原图 -->
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <h5 class="mb-0">客户上传原图</h5>
+                    </div>
+                    <div class="card-body">
+                        {% if images %}
+                            <div class="d-flex flex-wrap gap-2">
+                                {% for img in images %}
+                                    <div class="position-relative" style="width: 120px;">
+                                        {% if img.path.startswith('http://') or img.path.startswith('https://') %}
+                                            {# 云端URL，直接使用 #}
+                                            <img src="{{ img.path }}" 
+                                                 class="img-thumbnail w-100" 
+                                                 style="height: 120px; object-fit: cover;"
+                                                 alt="原图 {{ loop.index }}">
+                                        {% else %}
+                                            {# 本地路径，使用url_for #}
+                                            <img src="{{ url_for('media.media_original', filename=img.path) }}" 
+                                                 class="img-thumbnail w-100" 
+                                                 style="height: 120px; object-fit: cover;"
+                                                 alt="原图 {{ loop.index }}">
+                                        {% endif %}
+                                        {% if img.is_main %}
+                                            <span class="badge bg-success position-absolute top-0 start-0 m-1" style="font-size: 10px;">主图</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary position-absolute top-0 start-0 m-1" style="font-size: 10px;">参考图</span>
+                                        {% endif %}
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            {% if order.original_image %}
+                                <div class="d-flex flex-wrap gap-2">
+                                    <div class="position-relative" style="width: 120px;">
+                                        {% if order.original_image.startswith('http://') or order.original_image.startswith('https://') %}
+                                            {# 云端URL，直接使用 #}
+                                            <img src="{{ order.original_image }}" 
+                                                 class="img-thumbnail w-100" 
+                                                 style="height: 120px; object-fit: cover;"
+                                                 alt="原图">
+                                        {% else %}
+                                            {# 本地路径，使用url_for #}
+                                            <img src="{{ url_for('media.media_original', filename=order.original_image) }}" 
+                                                 class="img-thumbnail w-100" 
+                                                 style="height: 120px; object-fit: cover;"
+                                                 alt="原图">
+                                        {% endif %}
+                                        <span class="badge bg-success position-absolute top-0 start-0 m-1" style="font-size: 10px;">主图</span>
+                                    </div>
+                                </div>
+                            {% endif %}
+                        {% endif %}
+                        <div class="mt-2">
+                            <a href="{{ url_for('media.download_original', filename=order.original_image) }}" 
+                               class="btn btn-sm btn-primary me-2">下载封面原图</a>
+                            <a href="{{ url_for('media.download_original_batch', order_id=order.id) }}" 
+                               class="btn btn-sm btn-outline-primary">打包下载全部原图</a>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 精修图 -->
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <h5 class="mb-0">精修图</h5>
+                        <small class="text-muted">（API美颜修图后的结果）</small>
+                    </div>
+                    <div class="card-body">
+                        {% if order.final_image %}
+                            <div class="d-flex flex-wrap gap-2">
+                                <div class="position-relative" style="width: 120px;">
+                                    <img src="{{ url_for('media.media_final', filename=order.final_image) }}" 
+                                         class="img-thumbnail w-100" 
+                                         style="height: 120px; object-fit: cover;"
+                                         alt="精修图">
+                                </div>
+                            </div>
+                            <div class="mt-2">
+                                <a href="{{ url_for('media.download_final', filename=order.final_image) }}" 
+                                   class="btn btn-sm btn-primary me-2">下载预览版（有水印）</a>
+                                <a href="{{ url_for('media.download_final_clean', filename=order.final_image) }}" 
+                                   class="btn btn-sm btn-success">下载高清版（无水印）</a>
+                            </div>
+                        {% else %}
+                            <p class="text-muted mb-0">尚未生成精修图</p>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- 效果图 -->
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <h5 class="mb-0">效果图</h5>
+                        <small class="text-muted">（AI处理/拼图/裁切后的最终结果，小程序显示此图）</small>
+                    </div>
+                    <div class="card-body">
+                        {% if effect_images and effect_images|length > 0 %}
+                            <div class="d-flex flex-wrap gap-2">
+                                {% for img in effect_images %}
+                                <div class="position-relative" style="width: 120px;">
+                                    <img src="{{ img.url }}" 
+                                         class="img-thumbnail w-100" 
+                                         alt="效果图 {{ loop.index }}"
+                                         style="height: 120px; object-fit: cover; cursor: pointer;"
+                                         onclick="viewEffectImage('{{ img.url }}', '{{ img.filename }}', {{ loop.index }})">
+                                    <div class="position-absolute top-0 end-0 m-1">
+                                        <span class="badge bg-primary" style="font-size: 10px;">{{ loop.index }}</span>
+                                    </div>
+                                    <div class="position-absolute bottom-0 start-50 translate-middle-x mb-1">
+                                        <a href="{{ url_for('media.download_hd', filename=img.filename) }}" 
+                                           class="btn btn-sm btn-success" 
+                                           style="font-size: 10px; padding: 2px 6px;"
+                                           onclick="event.stopPropagation();">下载</a>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            <p class="text-muted small mt-2 mb-0">共 {{ effect_images|length }} 张效果图（点击缩略图查看大图）</p>
+                        {% elif order.hd_image %}
+                            <div class="d-flex flex-wrap gap-2">
+                                <div class="position-relative" style="width: 120px;">
+                                    <img src="{{ url_for('media.media_hd', filename=order.hd_image) }}" 
+                                         class="img-thumbnail w-100" 
+                                         style="height: 120px; object-fit: cover;"
+                                         alt="效果图">
+                                </div>
+                            </div>
+                            <div class="mt-2">
+                                <a href="{{ url_for('media.download_hd', filename=order.hd_image) }}" 
+                                   class="btn btn-sm btn-success">下载效果图</a>
+                            </div>
+                        {% else %}
+                            <p class="text-muted mb-0">尚未生成效果图</p>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- 选片预览 -->
+                {% if order.status == 'selection_completed' %}
+                <div class="card mb-3 border-info">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0">
+                            <i class="fas fa-check-circle"></i> 选片预览
+                        </h5>
+                        <small>（用户已选中的照片）</small>
+                    </div>
+                    <div class="card-body">
+                        {% if selected_images and selected_images|length > 0 %}
+                            <div class="row g-3">
+                                {% for selected in selected_images %}
+                                <div class="col-12">
+                                    <div class="card border-primary">
+                                        <div class="card-body">
+                                            <div class="row align-items-start">
+                                                <!-- 图片预览 -->
+                                                <div class="col-md-3 text-center">
+                                                    <div class="position-relative d-inline-block">
+                                                        <img src="{{ selected.image_url }}" 
+                                                             class="img-thumbnail" 
+                                                             alt="选片 {{ loop.index }}"
+                                                             style="width: 150px; height: 150px; object-fit: cover; cursor: pointer;"
+                                                             onclick="viewSelectedImage('{{ selected.image_url }}', '{{ selected.image_path }}', {{ loop.index }})">
+                                                        <div class="position-absolute top-0 start-0 m-1">
+                                                            <span class="badge bg-info" style="font-size: 11px;">图片 {{ loop.index }}</span>
+                                                        </div>
+                                                    </div>
+                                                    <div class="mt-2">
+                                                        <small class="text-muted">点击查看大图</small>
+                                                    </div>
+                                                </div>
+                                                <!-- 关联产品列表 -->
+                                                <div class="col-md-9">
+                                                    <h6 class="mb-3">
+                                                        <i class="fas fa-shopping-bag text-primary"></i> 关联产品（{{ selected.products|length }} 个）
+                                                    </h6>
+                                                    {% if selected.products and selected.products|length > 0 %}
+                                                        <div class="row g-2">
+                                                            {% for product in selected.products %}
+                                                            <div class="col-md-6">
+                                                                <div class="card border-secondary">
+                                                                    <div class="card-body p-2">
+                                                                        <div class="d-flex justify-content-between align-items-center">
+                                                                            <div class="flex-grow-1">
+                                                                                <div class="fw-bold text-primary">{{ product.product_name }}</div>
+                                                                                <div class="small text-muted">规格: {{ product.size_name }}</div>
+                                                                                <div class="small text-muted">数量: {{ product.quantity }} 张</div>
+                                                                                <div class="small text-muted">订单号: {{ product.order_number }}</div>
+                                                                            </div>
+                                                                            <div class="text-end">
+                                                                                <div class="fw-bold text-success">¥{{ '%.2f'|format(product.total_price) }}</div>
+                                                                                <div class="small text-muted">单价: ¥{{ '%.2f'|format(product.price) }}</div>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                            {% endfor %}
+                                                        </div>
+                                                        {% set total_products_price = selected.products|sum(attribute='total_price') %}
+                                                        {% set total_products_quantity = selected.products|sum(attribute='quantity') %}
+                                                        <div class="mt-2 p-2 bg-light rounded">
+                                                            <div class="d-flex justify-content-between">
+                                                                <span class="fw-bold">该图片小计:</span>
+                                                                <span class="fw-bold text-primary">共 {{ total_products_quantity }} 张，总价 ¥{{ '%.2f'|format(total_products_price) }}</span>
+                                                            </div>
+                                                        </div>
+                                                    {% else %}
+                                                        <div class="alert alert-warning mb-0">
+                                                            <i class="fas fa-exclamation-triangle"></i> 该图片未关联任何产品
+                                                        </div>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            <div class="mt-3 p-3 bg-info bg-opacity-10 rounded">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <i class="fas fa-info-circle text-info"></i>
+                                        <span class="ms-2">共 {{ selected_images|length }} 张已选照片</span>
+                                    </div>
+                                    {% set grand_total_price = [] %}
+                                    {% set grand_total_quantity = [] %}
+                                    {% for selected in selected_images %}
+                                        {% for product in selected.products %}
+                                            {% if grand_total_price.append(product.total_price) %}{% endif %}
+                                            {% if grand_total_quantity.append(product.quantity) %}{% endif %}
+                                        {% endfor %}
+                                    {% endfor %}
+                                    {% set grand_total_price = grand_total_price|sum %}
+                                    {% set grand_total_quantity = grand_total_quantity|sum %}
+                                    <div class="fw-bold text-primary">
+                                        总计: {{ grand_total_quantity }} 张，总价 ¥{{ '%.2f'|format(grand_total_price) }}
+                                    </div>
+                                </div>
+                            </div>
+                        {% else %}
+                            <div class="alert alert-info mb-0">
+                                <i class="fas fa-info-circle"></i> 暂无选片数据
+                                <br><small class="text-muted">选片信息可能尚未同步到商城订单</small>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+                
+                <div class="card">
+                    <div class="card-header">
+                        <h5>更新订单信息</h5>
+                    </div>
+                    <div class="card-body">
+                        <form method="POST" enctype="multipart/form-data" action="{{ url_for('admin_orders.admin_order_detail', order_id=order.id) }}" id="updateOrderForm" onsubmit="return handleFormSubmit(event);">
+                            <!-- 隐藏字段用于存储产品名称 -->
+                            <input type="hidden" id="product_name" name="product_name" value="{{ order.product_name or '' }}">
+                            
+                            <div class="mb-3">
+                                <label for="final_image" class="form-label">上传精修图</label>
+                                <input class="form-control" type="file" id="final_image" name="final_image" accept="image/*">
+                                <div class="form-text">API美颜修图后的结果（可手动上传替换）</div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="hd_image" class="form-label">上传效果图 <small class="text-muted">(支持多图上传)</small></label>
+                                <input class="form-control" type="file" id="hd_image" name="hd_image[]" accept="image/*" multiple>
+                                <div class="form-text">AI处理/拼图/裁切后的最终结果（小程序显示此图，可手动上传替换，支持一次上传多张）</div>
+                            </div>
+                            
+                            <!-- 隐藏字段保持数据 -->
+                            <input type="hidden" name="size" value="{{ order.size or '' }}">
+                            
+                            <div class="mb-3">
+                                <label for="status" class="form-label">订单状态</label>
+                                <select class="form-select" id="status" name="status" required>
+                                    <option value="unpaid" {% if order.status == 'unpaid' %}selected{% endif %}>未支付</option>
+                                    <option value="paid" {% if order.status == 'paid' %}selected{% endif %}>已支付</option>
+                                    <option value="shooting" {% if order.status == 'shooting' %}selected{% endif %}>正在拍摄</option>
+                                    <option value="retouching" {% if order.status == 'retouching' %}selected{% endif %}>美颜处理中</option>
+                                    <option value="ai_processing" {% if order.status == 'ai_processing' %}selected{% endif %}>AI任务处理中</option>
+                                    <option value="pending_selection" {% if order.status == 'pending_selection' %}selected{% endif %}>待选片</option>
+                                    <option value="selection_completed" {% if order.status == 'selection_completed' %}selected{% endif %}>已选片</option>
+                                    <option value="printing" {% if order.status == 'printing' %}selected{% endif %}>打印中</option>
+                                    <option value="pending_shipment" {% if order.status == 'pending_shipment' %}selected{% endif %}>待发货</option>
+                                    <option value="shipped" {% if order.status == 'shipped' %}selected{% endif %}>已发货</option>
+                                    <option value="pending" {% if order.status == 'pending' %}selected{% endif %}>待制作</option>
+                                    <option value="completed" {% if order.status == 'completed' %}selected{% endif %}>已完成</option>
+                                    <option value="hd_ready" {% if order.status == 'hd_ready' %}selected{% endif %}>高清放大</option>
+                                    <option value="processing" {% if order.status == 'processing' %}selected{% endif %}>处理中</option>
+                                    <option value="manufacturing" {% if order.status == 'manufacturing' %}selected{% endif %}>制作中</option>
+                                    <option value="delivered" {% if order.status == 'delivered' %}selected{% endif %}>已送达</option>
+                                    <option value="cancelled" {% if order.status == 'cancelled' %}selected{% endif %}>已取消</option>
+                                    <option value="refunded" {% if order.status == 'refunded' %}selected{% endif %}>已退款</option>
+                                </select>
+                            </div>
+                            
+                            <!-- 客户收货地址 -->
+                            <div class="mb-3">
+                                <label class="form-label">客户收货地址</label>
+                                <div class="form-control-plaintext bg-light p-2">
+                                    {% if order.customer_address %}
+                                        {{ order.customer_address }}
+                                    {% elif order.shipping_info %}
+                                        {% set shipping = order.shipping_info | from_json %}
+                                        {% if shipping.receiver or shipping.fullAddress or shipping.address %}
+                                            <strong>收件人:</strong> {{ shipping.receiver or '未填写' }}<br>
+                                            {% if shipping.phone %}
+                                                <strong>电话:</strong> {{ shipping.phone }}<br>
+                                            {% endif %}
+                                            <strong>地址:</strong> 
+                                            {% if shipping.fullAddress %}
+                                                {{ shipping.fullAddress }}
+                                            {% elif shipping.province or shipping.city or shipping.district or shipping.address %}
+                                                {{ [shipping.province, shipping.city, shipping.district, shipping.address] | select('string') | join(' ') }}
+                                            {% else %}
+                                                未填写
+                                            {% endif %}
+                                            {% if shipping.remark %}
+                                                <br><strong>备注:</strong> {{ shipping.remark }}
+                                            {% endif %}
+                                        {% else %}
+                                            {{ order.shipping_info }}
+                                        {% endif %}
+                                    {% else %}
+                                        未填写地址
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <!-- 客户备注 -->
+                            {% if order.customer_note %}
+                            <div class="mb-3">
+                                <label class="form-label">客户备注</label>
+                                <div class="form-control-plaintext bg-light p-2">
+                                    {{ order.customer_note }}
+                                </div>
+                            </div>
+                            {% endif %}
+                            
+                            
+                            <button type="submit" class="btn btn-primary" id="saveOrderBtn">保存更改</button>
+                        </form>
+                    </div>
+                </div>
+                
+                <!-- 手动录入快递单号区域 - 独立表单 -->
+                <div class="card mt-3">
+                    <div class="card-header">
+                        <h5>快递物流信息管理</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="logistics-info">
+                            {% if order.logistics_info %}
+                            <!-- 新格式：JSON格式的物流信息 -->
+                            {% set logistics = order.logistics_info | from_json %}
+                            <div class="card">
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <p><strong>快递公司:</strong> {{ logistics.company or '未知' }}</p>
+                                            <p><strong>快递单号:</strong> 
+                                                {% if logistics.tracking_number %}
+                                                <a href="https://www.kuaidi100.com/chaxun?com={{ logistics.company }}&nu={{ logistics.tracking_number }}" target="_blank" class="text-decoration-none">
+                                                    {{ logistics.tracking_number }} <i class="fas fa-external-link-alt"></i>
+                                                </a>
+                                                {% else %}
+                                                无
+                                                {% endif %}
+                                            </p>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <p><strong>状态:</strong> 
+                                                {% if logistics.status == 'shipped' %}
+                                                <span class="badge bg-primary">已发货</span>
+                                                {% elif logistics.status == 'delivered' %}
+                                                <span class="badge bg-success">已送达</span>
+                                                {% else %}
+                                                <span class="badge bg-secondary">{{ logistics.status or '未知' }}</span>
+                                                {% endif %}
+                                            </p>
+                                            <p><strong>更新时间:</strong> {{ logistics.update_time or '未知' }}</p>
+                                        </div>
+                                    </div>
+                                    {% if logistics.remark %}
+                                    <p><strong>备注:</strong> {{ logistics.remark }}</p>
+                                    {% endif %}
+                                    <div class="mt-2">
+                                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="refreshLogistics({{ order.id }})">
+                                            <i class="fas fa-sync"></i> 刷新物流信息
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-outline-info ms-2" onclick="queryLogisticsStatus({{ order.id }})">
+                                            <i class="fas fa-search"></i> 查询物流状态
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-outline-warning ms-2" onclick="toggleManualLogistics()">
+                                            <i class="fas fa-edit"></i> 手动录入快递单号
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            {% else %}
+                            <!-- 无物流信息 -->
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle"></i> 暂无快递物流信息
+                                <br><small>厂家发货后会自动更新物流信息</small>
+                                <div class="mt-2">
+                                    <button type="button" class="btn btn-sm btn-outline-warning" onclick="toggleManualLogistics()">
+                                        <i class="fas fa-edit"></i> 手动录入快递单号
+                                    </button>
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- 手动录入快递单号区域 -->
+                        <div id="manual-logistics-form" class="card mt-3" style="display: none;">
+                            <div class="card-header">
+                                <h6 class="mb-0">
+                                    <i class="fas fa-edit"></i> 手动录入快递单号
+                                    <button type="button" class="btn btn-sm btn-outline-secondary float-end" onclick="toggleManualLogistics()">
+                                        <i class="fas fa-times"></i> 关闭
+                                    </button>
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <form id="manual-logistics-form-content">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="manual_logistics_company" class="form-label">快递公司</label>
+                                                <select class="form-select" id="manual_logistics_company" name="manual_logistics_company" required>
+                                                    <option value="">请选择快递公司</option>
+                                                    <option value="顺丰速运">顺丰速运</option>
+                                                    <option value="圆通速递">圆通速递</option>
+                                                    <option value="中通快递">中通快递</option>
+                                                    <option value="申通快递">申通快递</option>
+                                                    <option value="韵达速递">韵达速递</option>
+                                                    <option value="京东物流">京东物流</option>
+                                                    <option value="德邦快递">德邦快递</option>
+                                                    <option value="百世快递">百世快递</option>
+                                                    <option value="天天快递">天天快递</option>
+                                                    <option value="邮政EMS">邮政EMS</option>
+                                                    <option value="其他">其他</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="manual_tracking_number" class="form-label">快递单号</label>
+                                                <input type="text" class="form-control" id="manual_tracking_number" name="manual_tracking_number" 
+                                                       placeholder="请输入快递单号" required>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="manual_logistics_status" class="form-label">物流状态</label>
+                                                <select class="form-select" id="manual_logistics_status" name="manual_logistics_status">
+                                                    <option value="shipped">已发货</option>
+                                                    <option value="in_transit">运输中</option>
+                                                    <option value="out_for_delivery">派送中</option>
+                                                    <option value="delivered">已送达</option>
+                                                    <option value="exception">异常</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="manual_logistics_remark" class="form-label">备注</label>
+                                                <input type="text" class="form-control" id="manual_logistics_remark" name="manual_logistics_remark" 
+                                                       placeholder="可选，添加备注信息">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="d-flex justify-content-between">
+                                        <div class="form-text">
+                                            <i class="fas fa-info-circle"></i> 
+                                            手动录入的快递单号将覆盖现有的物流信息
+                                        </div>
+                                        <div>
+                                            <button type="button" class="btn btn-secondary me-2" onclick="toggleManualLogistics()">
+                                                <i class="fas fa-times"></i> 取消
+                                            </button>
+                                            <button type="button" class="btn btn-primary" onclick="submitManualLogistics({{ order.id }})">
+                                                <i class="fas fa-save"></i> 保存快递单号
+                                            </button>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card mt-3">
+                    <div class="card-body">
+                        <form method="POST" action="{{ url_for('admin_orders.admin_order_delete', order_id=order.id) }}" onsubmit="return confirm('确认删除该订单？此操作不可恢复。');">
+                            <button type="submit" class="btn btn-outline-danger">删除订单</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 效果图查看大图模态框 -->
+    <div class="modal fade" id="effectImageModal" tabindex="-1" aria-labelledby="effectImageModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="effectImageModalLabel">效果图详情</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body text-center">
+                    <img id="effectImageFull" src="" class="img-fluid" alt="效果图" style="max-height: 70vh;">
+                    <div class="mt-3">
+                        <p class="text-muted mb-2" id="effectImageInfo"></p>
+                        <a id="effectImageDownload" href="#" class="btn btn-success">下载效果图</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // 查看效果图大图
+        function viewEffectImage(imageUrl, filename, index) {
+            const modal = new bootstrap.Modal(document.getElementById('effectImageModal'));
+            document.getElementById('effectImageFull').src = imageUrl;
+            document.getElementById('effectImageInfo').textContent = `效果图 ${index} - ${filename}`;
+            document.getElementById('effectImageDownload').href = `/media/download/hd/${encodeURIComponent(filename)}`;
+            modal.show();
+        }
+        
+        // 查看选片大图
+        function viewSelectedImage(imageUrl, imagePath, index) {
+            const modal = new bootstrap.Modal(document.getElementById('effectImageModal'));
+            document.getElementById('effectImageFull').src = imageUrl;
+            document.getElementById('effectImageInfo').textContent = `选片 ${index} - ${imagePath}`;
+            const filename = imagePath.split('/').pop() || imagePath;
+            document.getElementById('effectImageDownload').href = `/media/download/hd/${encodeURIComponent(filename)}`;
+            modal.show();
+        }
+        
+        // 产品数据定义（与数据库产品价格同步）
+        const productData = {
+            oil: [
+                {code: '1', name: '梵高油画框30x30cm肌理画框', id: '33673', price: '99.0', class: 'btn-outline-success'},
+                {code: '2', name: '梵高油画框30x40cm肌理画框', id: '33674', price: '129.0', class: 'btn-outline-success'},
+                {code: '3', name: '梵高油画框40x53.3cm肌理画框', id: '33675', price: '199.0', class: 'btn-outline-info'},
+                {code: '4', name: '梵高油画框50x66.7cm肌理画框', id: '33676', price: '299.0', class: 'btn-outline-warning'},
+                {code: '5', name: '梵高油画框40x60cm肌理画框', id: '34305', price: '249.0', class: 'btn-outline-secondary'}
+            ],
+            table: [
+                {code: '6', name: '贵族蓝金色10寸20x25艺术纸+亚克力画框', id: '34492', price: '79.0', class: 'btn-outline-primary'},
+                {code: '7', name: '贵族蓝金色8寸15x20艺术纸+亚克力画框', id: '34493', price: '66.0', class: 'btn-outline-primary'},
+                {code: '8', name: '胡桃木色10寸20x25艺术纸+亚克力画框', id: '34494', price: '66.0', class: 'btn-outline-dark'},
+                {code: '9', name: '爵士深咖金10寸20x25艺术纸+亚克力画框', id: '34500', price: '69.0', class: 'btn-outline-danger'},
+                {code: '10', name: '爵士深咖金8寸15x20艺术纸+亚克力画框', id: '34501', price: '59.0', class: 'btn-outline-danger'}
+            ]
+        };
+        
+        // 过滤产品显示
+        function filterProducts(type) {
+            // 更新按钮状态
+            document.getElementById('btn-oil-frame').className = type === 'oil' ? 'btn btn-primary btn-sm' : 'btn btn-outline-primary btn-sm';
+            document.getElementById('btn-table-frame').className = type === 'table' ? 'btn btn-secondary btn-sm' : 'btn btn-outline-secondary btn-sm';
+            
+            // 设置产品名称
+            const productName = type === 'oil' ? '油画框' : '桌摆框';
+            setProduct(productName);
+            
+            // 显示对应的产品尺寸
+            const productSizesDiv = document.getElementById('product-sizes');
+            const products = productData[type];
+            
+            let html = '';
+            products.forEach(product => {
+                html += `<button type="button" class="btn ${product.class} btn-sm" onclick="setSize('${product.code}', '${product.name}')">
+                    ${product.name} (ID:${product.id}) - ¥${product.price}
+                </button>`;
+            });
+            
+            productSizesDiv.innerHTML = html;
+        }
+        
+        // 设置产品名称
+        function setProduct(productName) {
+            // 更新隐藏字段
+            const productNameField = document.getElementById('product_name');
+            if (productNameField) {
+                productNameField.value = productName;
+            }
+            
+            // 更新页面显示 - 使用更兼容的方式
+            const allParagraphs = document.querySelectorAll('p');
+            for (let p of allParagraphs) {
+                if (p.innerHTML.includes('产品类型:')) {
+                    p.innerHTML = '<strong>产品类型:</strong> ' + productName;
+                    break;
+                }
+            }
+        }
+        
+        // 设置产品尺寸
+        function setSize(sizeCode, sizeName) {
+            // 更新隐藏字段
+            const sizeHiddenField = document.querySelector('input[name="size"]');
+            if (sizeHiddenField) {
+                sizeHiddenField.value = sizeCode;
+            }
+            
+            // 更新页面显示
+            const allParagraphs = document.querySelectorAll('p');
+            for (let p of allParagraphs) {
+                if (p.innerHTML.includes('尺寸:')) {
+                    p.innerHTML = '<strong>尺寸:</strong> ' + sizeName;
+                    break;
+                }
+            }
+            
+            // 显示成功提示
+            const productSizesDiv = document.getElementById('product-sizes');
+            productSizesDiv.innerHTML = '<div class="alert alert-success alert-sm mb-0">✅ 已选择: ' + sizeName + '</div>';
+        }
+        
+        // 发送到冲印系统
+        function sendToPrinter(orderId) {
+            if (!confirm('确定要发送此订单到厂家吗？')) {
+                return;
+            }
+            
+            // 显示发送中状态
+            const sendButton = event.target.closest('button');
+            const originalText = sendButton.innerHTML;
+            sendButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 发送中...';
+            sendButton.disabled = true;
+            
+            // 发送请求
+            fetch(`/admin/order/${orderId}/send-to-printer`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('✅ 订单已成功发送到厂家！');
+                    // 刷新页面显示最新状态
+                    location.reload();
+                } else {
+                    alert('❌ 发送失败: ' + (data.message || '未知错误'));
+                    // 恢复按钮状态
+                    sendButton.innerHTML = originalText;
+                    sendButton.disabled = false;
+                }
+            })
+            .catch(error => {
+                console.error('发送失败:', error);
+                alert('❌ 发送失败: ' + error.message);
+                // 恢复按钮状态
+                sendButton.innerHTML = originalText;
+                sendButton.disabled = false;
+            });
+        }
+        
+        // 查看发送数据包
+        function viewSendData(orderId) {
+            // 发送请求获取发送数据包
+            fetch(`/admin/order/${orderId}/send-data`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // 显示数据包
+                    const modal = document.createElement('div');
+                    modal.className = 'modal fade';
+                    modal.innerHTML = `
+                        <div class="modal-dialog modal-lg">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">发送数据包详情</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <h6>订单信息:</h6>
+                                    <pre class="bg-light p-2 mb-3"><small>${JSON.stringify(data.order_info, null, 2)}</small></pre>
+                                    
+                                    <h6>图片信息:</h6>
+                                    <pre class="bg-light p-2 mb-3"><small>${JSON.stringify(data.image_info, null, 2)}</small></pre>
+                                    
+                                    <h6>完整发送数据包:</h6>
+                                    <pre class="bg-light p-2"><small>${JSON.stringify(data.send_data, null, 2)}</small></pre>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    document.body.appendChild(modal);
+                    const bsModal = new bootstrap.Modal(modal);
+                    bsModal.show();
+                    
+                    // 模态框关闭后移除元素
+                    modal.addEventListener('hidden.bs.modal', function() {
+                        document.body.removeChild(modal);
+                    });
+                } else {
+                    alert('❌ 获取数据包失败: ' + (data.message || '未知错误'));
+                }
+            })
+            .catch(error => {
+                console.error('获取数据包失败:', error);
+                alert('❌ 获取数据包失败: ' + error.message);
+            });
+        }
+        
+        // 检查图片尺寸
+        function checkImageSize(orderId) {
+            // 发送请求检查图片尺寸
+            fetch(`/admin/order/${orderId}/check-image-size`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // 显示检查结果
+                    const modal = document.createElement('div');
+                    modal.className = 'modal fade';
+                    
+                    const validationResult = data.validation_result;
+                    const isValid = validationResult.valid;
+                    const statusClass = isValid ? 'success' : 'danger';
+                    const statusIcon = isValid ? '✅' : '❌';
+                    
+                    modal.innerHTML = `
+                        <div class="modal-dialog modal-lg">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">图片尺寸检查结果</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <div class="alert alert-${statusClass}">
+                                        <strong>${statusIcon} ${validationResult.message}</strong>
+                                    </div>
+                                    
+                                    ${validationResult.required ? `
+                                    <h6>要求尺寸:</h6>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <p><strong>物理尺寸:</strong> ${validationResult.required.width_cm}cm × ${validationResult.required.height_cm}cm</p>
+                                            <p><strong>像素尺寸:</strong> ${validationResult.required.width_px}px × ${validationResult.required.height_px}px</p>
+                                            <p><strong>DPI:</strong> ${validationResult.required.dpi}</p>
+                                        </div>
+                                    </div>
+                                    ` : ''}
+                                    
+                                    ${validationResult.actual ? `
+                                    <h6>实际图片:</h6>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <p><strong>像素尺寸:</strong> ${validationResult.actual.width}px × ${validationResult.actual.height}px</p>
+                                            ${validationResult.actual.width_cm ? `<p><strong>物理尺寸:</strong> ${validationResult.actual.width_cm.toFixed(2)}cm × ${validationResult.actual.height_cm.toFixed(2)}cm</p>` : ''}
+                                        </div>
+                                    </div>
+                                    ` : ''}
+                                    
+                                    ${!isValid ? `
+                                    <div class="alert alert-warning mt-3">
+                                        <h6>建议解决方案:</h6>
+                                        <ul class="mb-0">
+                                            <li>重新上传符合尺寸要求的高清图片</li>
+                                            <li>确保图片分辨率为300 DPI</li>
+                                            <li>图片尺寸误差应在5%以内</li>
+                                        </ul>
+                                    </div>
+                                    ` : ''}
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    document.body.appendChild(modal);
+                    const bsModal = new bootstrap.Modal(modal);
+                    bsModal.show();
+                    
+                    // 模态框关闭后移除元素
+                    modal.addEventListener('hidden.bs.modal', function() {
+                        document.body.removeChild(modal);
+                    });
+                } else {
+                    alert('❌ 检查图片尺寸失败: ' + (data.message || '未知错误'));
+                }
+            })
+            .catch(error => {
+                console.error('检查图片尺寸失败:', error);
+                alert('❌ 检查图片尺寸失败: ' + error.message);
+            });
+        }
+        
+        // 刷新物流信息
+        function refreshLogistics(orderId) {
+            // 发送请求获取最新物流信息
+            fetch(`/api/order/${orderId}/logistics`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // 刷新页面显示最新物流信息
+                    location.reload();
+                } else {
+                    alert('❌ 获取物流信息失败: ' + (data.message || '未知错误'));
+                }
+            })
+            .catch(error => {
+                console.error('获取物流信息失败:', error);
+                alert('❌ 获取物流信息失败: ' + error.message);
+            });
+        }
+        
+        // 切换手动录入快递单号表单显示/隐藏
+        function toggleManualLogistics() {
+            const form = document.getElementById('manual-logistics-form');
+            if (form.style.display === 'none') {
+                form.style.display = 'block';
+                // 滚动到表单位置
+                form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            } else {
+                form.style.display = 'none';
+                // 清空表单
+                document.getElementById('manual-logistics-form-content').reset();
+            }
+        }
+        
+        // 提交手动录入的快递单号
+        function submitManualLogistics(orderId) {
+            const company = document.getElementById('manual_logistics_company').value;
+            const trackingNumber = document.getElementById('manual_tracking_number').value;
+            const status = document.getElementById('manual_logistics_status').value;
+            const remark = document.getElementById('manual_logistics_remark').value;
+            
+            // 验证必填字段
+            if (!company) {
+                alert('请选择快递公司');
+                return;
+            }
+            if (!trackingNumber) {
+                alert('请输入快递单号');
+                return;
+            }
+            
+            // 确认操作
+            if (!confirm(`确认要手动录入以下快递信息吗？\n\n快递公司：${company}\n快递单号：${trackingNumber}\n物流状态：${status}`)) {
+                return;
+            }
+            
+            // 显示提交中状态
+            const submitButton = event.target;
+            const originalText = submitButton.innerHTML;
+            submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 保存中...';
+            submitButton.disabled = true;
+            
+            // 发送请求
+            fetch(`/admin/order/${orderId}/manual-logistics`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    company: company,
+                    tracking_number: trackingNumber,
+                    status: status,
+                    remark: remark
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('✅ 快递单号录入成功！');
+                    // 刷新页面显示最新物流信息
+                    location.reload();
+                } else {
+                    alert('❌ 录入失败: ' + (data.message || '未知错误'));
+                    // 恢复按钮状态
+                    submitButton.innerHTML = originalText;
+                    submitButton.disabled = false;
+                }
+            })
+            .catch(error => {
+                console.error('录入失败:', error);
+                alert('❌ 录入失败: ' + error.message);
+                // 恢复按钮状态
+                submitButton.innerHTML = originalText;
+                submitButton.disabled = false;
+            });
+        }
+        
+        // 表单提交处理函数 - 全局函数，必须在DOMContentLoaded之前定义
+        window.handleFormSubmit = function(event) {
+            console.log('=== 🔥 handleFormSubmit 被调用 ===');
+            event.preventDefault();
+            event.stopPropagation();
+            
+            const form = event.target;
+            console.log('表单action:', form.action);
+            console.log('表单method:', form.method);
+            
+            // 检查文件输入
+            const finalImageInput = document.getElementById('final_image');
+            const hdImageInput = document.getElementById('hd_image');
+            
+            let hasFiles = false;
+            
+            if (finalImageInput && finalImageInput.files.length > 0) {
+                console.log('📷 精修图文件:', finalImageInput.files[0].name, '大小:', finalImageInput.files[0].size, 'bytes');
+                hasFiles = true;
+            } else {
+                console.log('ℹ️ 未选择精修图');
+            }
+            
+            if (hdImageInput && hdImageInput.files.length > 0) {
+                console.log('📷 效果图文件数量:', hdImageInput.files.length);
+                for (let i = 0; i < hdImageInput.files.length; i++) {
+                    console.log(`  效果图 ${i+1}:`, hdImageInput.files[i].name, '大小:', hdImageInput.files[i].size, 'bytes');
+                }
+                hasFiles = true;
+            } else {
+                console.log('ℹ️ 未选择效果图');
+            }
+            
+            // 添加文件选择事件监听
+            if (hdImageInput) {
+                hdImageInput.addEventListener('change', function(e) {
+                    console.log('=== 📁 效果图文件选择事件触发 ===');
+                    console.log('选择的文件数量:', this.files.length);
+                    for (let i = 0; i < this.files.length; i++) {
+                        console.log(`  文件 ${i+1}:`, this.files[i].name, '大小:', this.files[i].size, 'bytes');
+                    }
+                });
+            }
+            
+            if (!hasFiles) {
+                console.log('⚠️ 警告: 没有选择任何文件，但表单仍会提交');
+            }
+            
+            // 使用FormData构建表单数据
+            const formData = new FormData(form);
+            
+            // 手动处理多文件上传 - 确保所有文件都被添加
+            if (hdImageInput && hdImageInput.files.length > 0) {
+                // 先删除FormData中可能已有的hd_image[]字段
+                formData.delete('hd_image[]');
+                // 重新添加所有文件
+                for (let i = 0; i < hdImageInput.files.length; i++) {
+                    formData.append('hd_image[]', hdImageInput.files[i]);
+                    console.log(`  添加文件到FormData: ${hdImageInput.files[i].name}`);
+                }
+                console.log(`✅ 已添加 ${hdImageInput.files.length} 个效果图文件到FormData`);
+            }
+            
+            console.log('📦 FormData已创建，准备发送请求...');
+            
+            // 调试：检查FormData中的所有文件
+            console.log('FormData中的文件字段:');
+            for (let pair of formData.entries()) {
+                if (pair[1] instanceof File) {
+                    console.log(`  ${pair[0]}: ${pair[1].name} (${pair[1].size} bytes)`);
+                }
+            }
+            
+            // 显示提交中状态
+            const saveBtn = document.getElementById('saveOrderBtn');
+            if (saveBtn) {
+                const originalText = saveBtn.innerHTML;
+                saveBtn.disabled = true;
+                saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>保存中...';
+                
+                // 使用fetch提交表单
+                fetch(form.action, {
+                    method: 'POST',
+                    body: formData,
+                })
+                .then(response => {
+                    console.log('📡 服务器响应状态:', response.status, response.statusText);
+                    console.log('响应URL:', response.url);
+                    
+                    if (response.ok || response.status === 302) {
+                        console.log('✅ 提交成功，准备刷新页面');
+                        // 刷新页面
+                        window.location.reload();
+                    } else {
+                        return response.text().then(text => {
+                            console.error('❌ 服务器错误:', text);
+                            alert('提交失败: ' + response.status + ' ' + response.statusText);
+                            saveBtn.disabled = false;
+                            saveBtn.innerHTML = originalText;
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error('❌ 提交失败:', error);
+                    alert('提交失败: ' + error.message);
+                    saveBtn.disabled = false;
+                    saveBtn.innerHTML = originalText;
+                });
+            } else {
+                // 如果没有按钮，直接提交
+                fetch(form.action, {
+                    method: 'POST',
+                    body: formData,
+                })
+                .then(response => {
+                    console.log('📡 服务器响应状态:', response.status);
+                    if (response.ok || response.status === 302) {
+                        window.location.reload();
+                    }
+                })
+                .catch(error => {
+                    console.error('❌ 提交失败:', error);
+                    alert('提交失败: ' + error.message);
+                });
+            }
+            
+            return false; // 阻止默认提交
+        }
+        
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('=== 页面加载完成，初始化表单监听 ===');
+            
+            // 监听表单提交
+            const updateForm = document.getElementById('updateOrderForm');
+            const saveBtn = document.getElementById('saveOrderBtn');
+            
+            if (!updateForm) {
+                console.error('❌ 未找到表单元素 #updateOrderForm');
+                return;
+            }
+            
+            console.log('✅ 找到表单元素');
+            console.log('表单action:', updateForm.action);
+            console.log('表单method:', updateForm.method);
+            console.log('表单enctype:', updateForm.enctype);
+            
+            // 监听表单提交事件 - 阻止默认提交，使用fetch手动提交
+            updateForm.addEventListener('submit', function(e) {
+                e.preventDefault(); // 阻止默认提交
+                e.stopPropagation(); // 阻止事件冒泡
+                
+                console.log('=== 🔥 表单提交事件触发（已阻止默认行为） ===');
+                console.log('表单action:', this.action);
+                console.log('表单method:', this.method);
+                console.log('表单enctype:', this.enctype);
+                
+                // 检查文件输入
+                const finalImageInput = document.getElementById('final_image');
+                const hdImageInput = document.getElementById('hd_image');
+                
+                let hasFiles = false;
+                
+                if (finalImageInput && finalImageInput.files.length > 0) {
+                    console.log('📷 精修图文件:', finalImageInput.files[0].name, '大小:', finalImageInput.files[0].size, 'bytes');
+                    hasFiles = true;
+                } else {
+                    console.log('ℹ️ 未选择精修图');
+                }
+                
+                if (hdImageInput && hdImageInput.files.length > 0) {
+                    console.log('📷 效果图文件数量:', hdImageInput.files.length);
+                    for (let i = 0; i < hdImageInput.files.length; i++) {
+                        console.log(`  效果图 ${i+1}:`, hdImageInput.files[i].name, '大小:', hdImageInput.files[i].size, 'bytes');
+                    }
+                    hasFiles = true;
+                } else {
+                    console.log('ℹ️ 未选择效果图');
+                }
+                
+                if (!hasFiles) {
+                    console.log('⚠️ 警告: 没有选择任何文件，但表单仍会提交');
+                }
+                
+                // 使用FormData构建表单数据
+                const formData = new FormData(this);
+                console.log('📦 FormData已创建，准备发送请求...');
+                
+                // 显示提交中状态
+                if (saveBtn) {
+                    const originalText = saveBtn.innerHTML;
+                    saveBtn.disabled = true;
+                    saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>保存中...';
+                    
+                    // 使用fetch提交表单
+                    fetch(this.action, {
+                        method: 'POST',
+                        body: formData,
+                        // 不设置Content-Type，让浏览器自动设置（包含boundary）
+                    })
+                    .then(response => {
+                        console.log('📡 服务器响应状态:', response.status, response.statusText);
+                        console.log('响应URL:', response.url);
+                        
+                        if (response.ok || response.status === 302) {
+                            console.log('✅ 提交成功，准备刷新页面');
+                            // 刷新页面
+                            window.location.reload();
+                        } else {
+                            return response.text().then(text => {
+                                console.error('❌ 服务器错误:', text);
+                                alert('提交失败: ' + response.status + ' ' + response.statusText);
+                                saveBtn.disabled = false;
+                                saveBtn.innerHTML = originalText;
+                            });
+                        }
+                    })
+                    .catch(error => {
+                        console.error('❌ 提交失败:', error);
+                        alert('提交失败: ' + error.message);
+                        saveBtn.disabled = false;
+                        saveBtn.innerHTML = originalText;
+                    });
+                } else {
+                    // 如果没有按钮，直接提交
+                    fetch(this.action, {
+                        method: 'POST',
+                        body: formData,
+                    })
+                    .then(response => {
+                        console.log('📡 服务器响应状态:', response.status);
+                        if (response.ok || response.status === 302) {
+                            window.location.reload();
+                        }
+                    })
+                    .catch(error => {
+                        console.error('❌ 提交失败:', error);
+                        alert('提交失败: ' + error.message);
+                    });
+                }
+            }, true); // 使用捕获阶段
+            
+            // 监听按钮点击
+            if (saveBtn) {
+                saveBtn.addEventListener('click', function(e) {
+                    console.log('=== 🔘 保存按钮被点击 ===');
+                    console.log('按钮类型:', this.type);
+                    console.log('按钮ID:', this.id);
+                    console.log('按钮所属表单:', this.form ? this.form.id : '无');
+                    
+                    // 检查表单验证
+                    if (updateForm) {
+                        if (updateForm.checkValidity()) {
+                            console.log('✅ 表单验证通过');
+                        } else {
+                            console.log('❌ 表单验证失败');
+                            updateForm.reportValidity();
+                        }
+                    }
+                }, true); // 使用捕获阶段
+            } else {
+                console.warn('⚠️ 未找到保存按钮 #saveOrderBtn');
+            }
+            
+            console.log('✅ 表单监听器已设置完成');
+            
+            // 添加文件选择事件监听（在DOM加载后）
+            const hdImageInput = document.getElementById('hd_image');
+            if (hdImageInput) {
+                hdImageInput.addEventListener('change', function(e) {
+                    console.log('=== 📁 效果图文件选择事件触发 ===');
+                    console.log('选择的文件数量:', this.files.length);
+                    for (let i = 0; i < this.files.length; i++) {
+                        console.log(`  文件 ${i+1}:`, this.files[i].name, '大小:', this.files[i].size, 'bytes', '类型:', this.files[i].type);
+                    }
+                    console.log('✅ 文件选择完成，可以点击保存按钮上传');
+                });
+                console.log('✅ 已添加效果图文件选择事件监听器');
+            } else {
+                console.warn('⚠️ 未找到效果图输入框 #hd_image');
+            }
+        });
+        
+        // 全局测试函数 - 立即定义，不等待DOM加载
+        window.testFormSubmit = function() {
+            console.log('=== 手动测试表单提交 ===');
+            const form = document.getElementById('updateOrderForm');
+            if (form) {
+                console.log('找到表单，准备提交...');
+                console.log('表单action:', form.action);
+                console.log('表单method:', form.method);
+                
+                // 检查文件
+                const finalImageInput = document.getElementById('final_image');
+                const hdImageInput = document.getElementById('hd_image');
+                
+                if (finalImageInput && finalImageInput.files.length > 0) {
+                    console.log('精修图:', finalImageInput.files[0].name);
+                }
+                if (hdImageInput && hdImageInput.files.length > 0) {
+                    console.log('效果图数量:', hdImageInput.files.length);
+                }
+                
+                // 手动触发submit事件
+                const submitEvent = new Event('submit', { bubbles: true, cancelable: true });
+                form.dispatchEvent(submitEvent);
+            } else {
+                console.error('未找到表单 #updateOrderForm');
+            }
+        };
+        
+        // 立即执行一次，检查脚本是否加载
+        console.log('✅ 表单提交脚本已加载，testFormSubmit函数已定义');
+    </script>
+</body>
+</html>

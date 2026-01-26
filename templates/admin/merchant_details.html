@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ merchant.username }} - 商家详情</title>
+    <link href="/static/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="/">AI拍照管理系统</a>
+            <div class="collapse navbar-collapse">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <span class="nav-link">管理员: {{ current_user.username }}</span>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/logout">退出登录</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>商家详情: {{ merchant.username }}</h2>
+            <div>
+                <a href="/admin/merchants" class="btn btn-secondary">返回商家列表</a>
+                <a href="{{ url_for('edit_merchant', merchant_id=merchant.id) }}" class="btn btn-warning">编辑</a>
+                <a href="/admin/merchant/{{ merchant.id }}/download_qrcode" class="btn btn-primary">下载二维码</a>
+            </div>
+        </div>
+        
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        商家信息
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6 class="text-muted">基本信息</h6>
+                                <p><strong>用户名:</strong> {{ merchant.username }}</p>
+                                <p><strong>分佣比例:</strong> {{ (merchant.commission_rate * 100)|round(0) }}%</p>
+                                <p><strong>累计佣金:</strong> ¥{{ '%.2f'|format(total_commission or 0) }}</p>
+                                <p><strong>订单总数:</strong> {{ orders|length }}</p>
+                                
+                                <h6 class="text-muted mt-3">联系方式</h6>
+                                <p><strong>联系人:</strong> {{ merchant.contact_person or '未设置' }}</p>
+                                <p><strong>联系电话:</strong> {{ merchant.contact_phone or '未设置' }}</p>
+                                <p><strong>微信号:</strong> {{ merchant.wechat_id or '未设置' }}</p>
+                                
+                            </div>
+                            <div class="col-md-6">
+                                <h6 class="text-muted">合作信息</h6>
+                                <p><strong>合作时间:</strong> {{ merchant.cooperation_date.strftime('%Y-%m-%d') if merchant.cooperation_date else '未设置' }}</p>
+                                <p><strong>商家地址:</strong> {{ merchant.merchant_address or '未设置' }}</p>
+                                
+                                <h6 class="text-muted mt-3">银行信息</h6>
+                                <p><strong>账户名:</strong> {{ merchant.account_name or '未设置' }}</p>
+                                <p><strong>银行卡号:</strong> {{ merchant.account_number or '未设置' }}</p>
+                                <p><strong>开户行:</strong> {{ merchant.bank_name or '未设置' }}</p>
+                                
+                                <h6 class="text-muted mt-3">系统信息</h6>
+                                <p><strong>二维码ID:</strong> {{ merchant.qr_code or '未生成' }}</p>
+                                <p><strong>导入来源:</strong> 
+                                    {% if merchant.import_source == 'douyin' %}
+                                        <span class="badge bg-success">抖音导入</span>
+                                    {% else %}
+                                        <span class="badge bg-primary">手动添加</span>
+                                    {% endif %}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        商家专属二维码
+                    </div>
+                    <div class="card-body text-center">
+                        <img src="{{ url_for('merchant_qrcode_image', merchant_id=merchant.id) }}" 
+                             alt="{{ merchant.username }}的二维码" 
+                             class="img-fluid" 
+                             style="max-width: 200px;">
+                        <p class="text-muted mt-3">用户扫描此二维码下单将计入该商家</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header">
+                订单记录
+            </div>
+            <div class="card-body">
+                {% if orders %}
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>订单号</th>
+                                <th>客户信息</th>
+                                <th>尺寸</th>
+                                <th>状态</th>
+                                <th>下单时间</th>
+                                <th>佣金</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for order in orders %}
+                            <tr>
+                                <td>{{ order.order_number }}</td>
+                                <td>{{ order.customer_name }}<br>{{ order.customer_phone }}</td>
+                                <td>{{ order.size }}</td>
+                                <td>
+                                    {% if order.status == 'pending' %}
+                                    <span class="badge bg-warning">待处理</span>
+                                    {% elif order.status == 'completed' %}
+                                    <span class="badge bg-success">已完成</span>
+                                    {% elif order.status == 'shipped' %}
+                                    <span class="badge bg-info">待发货</span>
+                                    {% elif order.status == 'hd_ready' %}
+                                    <span class="badge bg-warning">高清放大</span>
+                                    {% elif order.status == 'processing' %}
+                                    <span class="badge bg-primary">处理中</span>
+                                    {% elif order.status == 'processing' %}
+                                    <span class="badge bg-success">已发货</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ order.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                                <td>¥{{ order.commission }}</td>
+                                <td>
+                                    <a href="/admin/order/{{ order.id }}" class="btn btn-sm btn-primary">查看详情</a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="alert alert-info">
+                    该商家暂无订单记录
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
+    

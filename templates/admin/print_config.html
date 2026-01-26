@@ -1,0 +1,1243 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>打印配置管理 - 管理后台</title>
+    <link href="/static/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+        
+        .main-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            margin: 20px auto;
+            padding: 30px;
+            max-width: 1400px;
+        }
+        
+        .page-title {
+            text-align: center;
+            color: #212529;
+            margin-bottom: 30px;
+            font-weight: 600;
+            font-size: 1.8rem;
+        }
+        
+        .config-section {
+            background: #ffffff;
+            border: 1px solid #dee2e6;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+        
+        .section-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #667eea;
+        }
+        
+        .config-item {
+            margin-bottom: 20px;
+        }
+        
+        .config-item label {
+            font-weight: 500;
+            color: #555;
+            margin-bottom: 5px;
+        }
+        
+        .form-text {
+            font-size: 0.85rem;
+            color: #6c757d;
+            margin-top: 5px;
+        }
+        
+        .btn-primary {
+            background: #667eea;
+            border: none;
+            border-radius: 6px;
+            padding: 10px 20px;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #5568d3;
+        }
+        
+        .btn-success {
+            background: #28a745;
+            border: none;
+            border-radius: 6px;
+            padding: 8px 16px;
+            color: white;
+        }
+        
+        .btn-danger {
+            background: #dc3545;
+            border: none;
+            border-radius: 6px;
+            padding: 8px 16px;
+            color: white;
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+            border: none;
+            border-radius: 6px;
+            padding: 8px 16px;
+            color: white;
+        }
+        
+        .size-config-table {
+            width: 100%;
+            margin-top: 20px;
+        }
+        
+        .size-config-table th {
+            background: #f8f9fa;
+            font-weight: 600;
+            padding: 12px;
+            text-align: center;
+            border: 1px solid #dee2e6;
+        }
+        
+        .size-config-table td {
+            padding: 12px;
+            text-align: center;
+            border: 1px solid #dee2e6;
+        }
+        
+        .size-config-table tr:hover {
+            background: #f8f9fa;
+        }
+        
+        .badge {
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 0.85rem;
+        }
+        
+        .badge-success {
+            background: #28a745;
+            color: white;
+        }
+        
+        .badge-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .modal-header {
+            background: #667eea;
+            color: white;
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        
+        .status-enabled {
+            background-color: #28a745;
+        }
+        
+        .status-disabled {
+            background-color: #dc3545;
+        }
+        
+        .alert {
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark" style="background: #667eea;">
+        <div class="container">
+            <a class="navbar-brand" href="/admin/dashboard">管理后台</a>
+            <div class="collapse navbar-collapse">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/logout">退出登录</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="main-container">
+        <h1 class="page-title">打印配置管理</h1>
+        
+        <!-- 打印机地址配置部分 -->
+        <div class="config-section">
+            <h3 class="section-title">
+                <i class="bi bi-printer"></i> 打印机地址配置
+            </h3>
+            
+            <div id="printerConfigAlert"></div>
+            
+            <form id="printerConfigForm">
+                <!-- 本地打印机配置（电子照片） -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <h5 class="text-primary mb-3">
+                            <i class="bi bi-printer-fill"></i> 本地打印机配置（电子照片打印）
+                        </h5>
+                        <div class="alert alert-info">
+                            <strong>部署说明：</strong><br>
+                            <ul class="mb-0">
+                                <li><strong>本地部署</strong>：填写"本地打印机路径"（如 <code>\\sm003\HP OfficeJet Pro 7730 series</code>）</li>
+                                <li><strong>远程部署（阿里云）</strong>：填写"打印代理服务地址"，需要在本地运行打印代理服务</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="config-item">
+                            <label for="local_printer_path" class="form-label">本地打印机路径（本地部署）</label>
+                            <input type="text" class="form-control" id="local_printer_path" name="local_printer_path" 
+                                   placeholder="\\\\sm003\\HP OfficeJet Pro 7730 series">
+                            <div class="form-text">
+                                Windows网络打印机路径，格式：<code>\\\\服务器名\\打印机名</code><br>
+                                例如：<code>\\\\sm003\\HP OfficeJet Pro 7730 series</code><br>
+                                <small class="text-muted">仅在本地部署时使用</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="config-item">
+                            <label for="local_printer_proxy_url" class="form-label">打印代理服务地址（远程部署）</label>
+                            <input type="text" class="form-control" id="local_printer_proxy_url" name="local_printer_proxy_url" 
+                                   placeholder="http://192.168.1.100:8888">
+                            <div class="form-text">
+                                打印代理服务的HTTP地址<br>
+                                例如：<code>http://192.168.1.100:8888</code> 或 <code>http://your-domain.com:8888</code><br>
+                                <small class="text-muted">远程部署（如阿里云）时使用，需要在本地运行 <code>print_proxy_server.py</code></small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="config-item">
+                            <label for="local_printer_proxy_api_key" class="form-label">打印代理服务API密钥（可选）</label>
+                            <input type="text" class="form-control" id="local_printer_proxy_api_key" name="local_printer_proxy_api_key" 
+                                   placeholder="your-api-key">
+                            <div class="form-text">
+                                用于安全验证的API密钥（可选）<br>
+                                <small class="text-muted">如果打印代理服务设置了API密钥，请在此填写</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <hr class="my-4">
+                
+                <!-- 远程冲印系统配置（实物产品） -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <h5 class="text-primary mb-3">
+                            <i class="bi bi-cloud-upload-fill"></i> 远程冲印系统配置（实物产品）
+                        </h5>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="config-item">
+                            <label for="api_base_url" class="form-label">API基础地址</label>
+                            <input type="text" class="form-control" id="api_base_url" name="api_base_url" 
+                                   placeholder="http://xmdmsm.xicp.cn:5995/api/ODSGate">
+                            <div class="form-text">冲印系统API基础地址</div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="config-item">
+                            <label for="api_url" class="form-label">新订单接口地址</label>
+                            <input type="text" class="form-control" id="api_url" name="api_url" 
+                                   placeholder="http://xmdmsm.xicp.cn:5995/api/ODSGate/NewOrder">
+                            <div class="form-text">创建新订单的接口地址</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="config-item">
+                            <label for="source_app_id" class="form-label">订单来源系统代号</label>
+                            <input type="text" class="form-control" id="source_app_id" name="source_app_id" 
+                                   placeholder="ZPG">
+                            <div class="form-text">您的系统在冲印系统中的标识</div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="config-item">
+                            <label for="shop_id" class="form-label">影楼编号</label>
+                            <input type="text" class="form-control" id="shop_id" name="shop_id" 
+                                   placeholder="CS">
+                            <div class="form-text">冲印系统分配给您的影楼编号</div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="config-item">
+                            <label for="shop_name" class="form-label">影楼名称</label>
+                            <input type="text" class="form-control" id="shop_name" name="shop_name" 
+                                   placeholder="测试">
+                            <div class="form-text">您的影楼或店铺名称</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="config-item">
+                            <label for="auth_token" class="form-label">认证Token</label>
+                            <input type="text" class="form-control" id="auth_token" name="auth_token" 
+                                   placeholder="认证Token（如有）">
+                            <div class="form-text">冲印系统认证Token（可选）</div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="config-item">
+                            <label for="callback_url" class="form-label">回调地址</label>
+                            <input type="text" class="form-control" id="callback_url" name="callback_url" 
+                                   placeholder="http://your-domain.com/api/printer/callback">
+                            <div class="form-text">接收快递信息回调的地址</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="config-item">
+                            <label for="file_access_base_url" class="form-label">文件访问基础URL</label>
+                            <input type="text" class="form-control" id="file_access_base_url" name="file_access_base_url" 
+                                   placeholder="http://moeart.cc">
+                            <div class="form-text">外部可访问的文件基础URL</div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="config-item">
+                            <label for="oss_bucket_domain" class="form-label">OSS存储桶域名</label>
+                            <input type="text" class="form-control" id="oss_bucket_domain" name="oss_bucket_domain" 
+                                   placeholder="https://your-bucket.oss-cn-hangzhou.aliyuncs.com">
+                            <div class="form-text">阿里云OSS存储桶域名（如使用OSS）</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="config-item">
+                            <label for="timeout" class="form-label">请求超时时间（秒）</label>
+                            <input type="number" class="form-control" id="timeout" name="timeout" 
+                                   value="30" min="1" max="300">
+                            <div class="form-text">API请求超时时间</div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="config-item">
+                            <label for="retry_times" class="form-label">重试次数</label>
+                            <input type="number" class="form-control" id="retry_times" name="retry_times" 
+                                   value="3" min="0" max="10">
+                            <div class="form-text">请求失败时的重试次数</div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="config-item">
+                            <div class="form-check mt-4">
+                                <input class="form-check-input" type="checkbox" id="use_oss" name="use_oss">
+                                <label class="form-check-label" for="use_oss">
+                                    使用阿里云OSS存储
+                                </label>
+                            </div>
+                            <div class="form-check mt-2">
+                                <input class="form-check-input" type="checkbox" id="enabled" name="enabled">
+                                <label class="form-check-label" for="enabled">
+                                    启用冲印系统集成
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="d-flex gap-2 mt-3">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-save"></i> 保存打印机配置
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="loadPrinterConfig()">
+                        <i class="bi bi-arrow-clockwise"></i> 重新加载
+                    </button>
+                    <button type="button" class="btn btn-info" onclick="openTestPrintModal()">
+                        <i class="bi bi-printer"></i> 测试打印
+                    </button>
+                </div>
+            </form>
+        </div>
+        
+        <!-- 测试打印模态框 -->
+        <div class="modal fade" id="testPrintModal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">
+                            <i class="bi bi-printer"></i> 测试打印
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="testPrintFile" class="form-label">上传打印文件</label>
+                            <input type="file" class="form-control" id="testPrintFile" 
+                                   accept="image/*,.pdf,.doc,.docx,.txt">
+                            <div class="form-text">
+                                支持格式：图片（JPG、PNG等）、PDF、Word文档、文本文件
+                            </div>
+                        </div>
+                        <div id="testPrintFilePreview" class="mb-3" style="display: none;">
+                            <p class="text-muted small mb-1">已选择文件：<span id="testPrintFileName"></span></p>
+                            <img id="testPrintImagePreview" src="" alt="预览" class="img-thumbnail" style="max-width: 100%; max-height: 200px; display: none;">
+                        </div>
+                        <div class="mb-3">
+                            <label for="testPrintCopies" class="form-label">打印份数</label>
+                            <input type="number" class="form-control" id="testPrintCopies" value="1" min="1" max="10">
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                        <button type="button" class="btn btn-primary" onclick="submitTestPrint()">
+                            <i class="bi bi-printer"></i> 开始打印
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 门店打印机配置部分 -->
+        <div class="config-section">
+            <h3 class="section-title">
+                <i class="bi bi-shop"></i> 门店打印机配置
+            </h3>
+            <div class="alert alert-info mb-3">
+                <h6>说明：</h6>
+                <ul class="mb-0">
+                    <li>为每个门店/自拍机配置独立的打印机，确保A店的订单打印到A店的打印机</li>
+                    <li>如果某个门店没有配置，将使用上面的"默认打印机配置"</li>
+                    <li>配置格式：<code>local_printer_path_{自拍机序列号}</code> 或 <code>local_printer_proxy_url_{自拍机序列号}</code></li>
+                </ul>
+            </div>
+            
+            <div id="machinePrinterConfigAlert"></div>
+            
+            <div class="table-responsive">
+                <table class="table table-hover" id="machinePrinterConfigTable">
+                    <thead class="table-light">
+                        <tr>
+                            <th>门店名称</th>
+                            <th>自拍机名称</th>
+                            <th>自拍机序列号</th>
+                            <th>本地打印机路径</th>
+                            <th>打印代理服务地址</th>
+                            <th>API密钥</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="machinePrinterConfigTableBody">
+                        <tr>
+                            <td colspan="7" class="text-center text-muted">
+                                <i class="bi bi-hourglass-split"></i> 加载中...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- 打印尺寸配置部分 -->
+        <div class="config-section">
+            <h3 class="section-title">
+                <i class="bi bi-rulers"></i> 打印尺寸配置（产品打印参数）
+            </h3>
+            
+            <div id="sizeConfigAlert"></div>
+            
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <p class="text-muted mb-0">根据不同商城产品配置不同的打印参数（尺寸、裁切等）</p>
+                <button type="button" class="btn btn-success" onclick="openSizeConfigModal()">
+                    <i class="bi bi-plus-circle"></i> 添加打印配置
+                </button>
+            </div>
+            
+            <table class="table table-bordered size-config-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>产品名称</th>
+                        <th>规格名称</th>
+                        <th>打印尺寸（厘米）</th>
+                        <th>裁切模式</th>
+                        <th>模板名称</th>
+                        <th>DPI</th>
+                        <th>状态</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody id="sizeConfigTableBody">
+                    <tr>
+                        <td colspan="9" class="text-center text-muted">加载中...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <!-- 打印尺寸配置模态框 -->
+    <div class="modal fade" id="sizeConfigModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="sizeConfigModalTitle">添加打印配置</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="sizeConfigForm">
+                        <input type="hidden" id="sizeConfigId" name="id">
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="config_product_id" class="form-label">关联产品</label>
+                                    <select class="form-select" id="config_product_id" name="product_id">
+                                        <option value="">-- 选择产品（留空表示默认配置，用于纯照片打印）--</option>
+                                        {% for product in products %}
+                                        <option value="{{ product.id }}">{{ product.name }} ({{ product.code }})</option>
+                                        {% endfor %}
+                                    </select>
+                                    <div class="form-text">选择商城产品，留空表示默认配置（用于纯照片打印）</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="config_size_id" class="form-label">关联规格（可选）</label>
+                                    <select class="form-select" id="config_size_id" name="size_id">
+                                        <option value="">-- 选择规格（可选）--</option>
+                                    </select>
+                                    <div class="form-text">选择产品规格（可选，留空表示该产品所有规格）</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="print_width_cm" class="form-label">打印宽度（厘米）*</label>
+                                    <input type="number" class="form-control" id="print_width_cm" name="print_width_cm" 
+                                           step="0.1" min="0" required>
+                                    <div class="form-text">例如：4英寸照片为10.16厘米</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="print_height_cm" class="form-label">打印高度（厘米）*</label>
+                                    <input type="number" class="form-control" id="print_height_cm" name="print_height_cm" 
+                                           step="0.1" min="0" required>
+                                    <div class="form-text">例如：6英寸照片为15.24厘米</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="crop_mode" class="form-label">裁切模式</label>
+                                    <select class="form-select" id="crop_mode" name="crop_mode">
+                                        <option value="center">居中</option>
+                                        <option value="top">顶部</option>
+                                        <option value="bottom">底部</option>
+                                        <option value="left">左侧</option>
+                                        <option value="right">右侧</option>
+                                        <option value="custom">自定义</option>
+                                    </select>
+                                    <div class="form-text">图片裁切模式</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="template_name" class="form-label">打印模板名称</label>
+                                    <input type="text" class="form-control" id="template_name" name="template_name" 
+                                           placeholder="例如：4x6证件照、A4相框等">
+                                    <div class="form-text">打印模板名称（用于标识）</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="crop_x" class="form-label">裁切X坐标</label>
+                                    <input type="number" class="form-control" id="crop_x" name="crop_x" 
+                                           step="0.1" value="0">
+                                    <div class="form-text">裁切起始X坐标（像素或百分比）</div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="crop_y" class="form-label">裁切Y坐标</label>
+                                    <input type="number" class="form-control" id="crop_y" name="crop_y" 
+                                           step="0.1" value="0">
+                                    <div class="form-text">裁切起始Y坐标（像素或百分比）</div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="dpi" class="form-label">打印分辨率（DPI）</label>
+                                    <input type="number" class="form-control" id="dpi" name="dpi" 
+                                           value="300" min="72" max="600">
+                                    <div class="form-text">打印分辨率，默认300 DPI</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="crop_width" class="form-label">裁切宽度（可选）</label>
+                                    <input type="number" class="form-control" id="crop_width" name="crop_width" 
+                                           step="0.1" min="0">
+                                    <div class="form-text">留空表示不裁切，设置后按此宽度裁切</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="crop_height" class="form-label">裁切高度（可选）</label>
+                                    <input type="number" class="form-control" id="crop_height" name="crop_height" 
+                                           step="0.1" min="0">
+                                    <div class="form-text">留空表示不裁切，设置后按此高度裁切</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="printer_product_id" class="form-label">冲印系统产品ID</label>
+                                    <input type="text" class="form-control" id="printer_product_id" name="printer_product_id" 
+                                           placeholder="冲印系统中的产品ID">
+                                    <div class="form-text">对应冲印系统的产品ID</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="printer_product_name" class="form-label">冲印系统产品名称</label>
+                                    <input type="text" class="form-control" id="printer_product_name" name="printer_product_name" 
+                                           placeholder="冲印系统中的产品名称">
+                                    <div class="form-text">对应冲印系统的产品名称</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="color_mode" class="form-label">颜色模式</label>
+                                    <select class="form-select" id="color_mode" name="color_mode">
+                                        <option value="RGB">RGB</option>
+                                        <option value="CMYK">CMYK</option>
+                                    </select>
+                                    <div class="form-text">打印颜色模式</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="sort_order" class="form-label">排序</label>
+                                    <input type="number" class="form-control" id="sort_order" name="sort_order" 
+                                           value="0">
+                                    <div class="form-text">排序值，数字越小越靠前</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="notes" class="form-label">备注说明</label>
+                            <textarea class="form-control" id="notes" name="notes" rows="2" 
+                                      placeholder="配置说明（可选）"></textarea>
+                        </div>
+                        
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" id="is_active" name="is_active" checked>
+                            <label class="form-check-label" for="is_active">
+                                启用此配置
+                            </label>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" onclick="saveSizeConfig()">保存</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // 页面加载时初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            loadPrinterConfig();
+            loadMachinePrinterConfigs();
+            loadSizeConfigs();
+            
+            // 产品选择变化时加载规格
+            document.getElementById('config_product_id').addEventListener('change', function() {
+                loadProductSizes(this.value);
+            });
+        });
+        
+        // 加载打印机配置
+        function loadPrinterConfig() {
+            fetch('/api/admin/print-config/printer')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        const config = data.data;
+                        document.getElementById('local_printer_path').value = config.local_printer_path || '';
+                        document.getElementById('local_printer_proxy_url').value = config.local_printer_proxy_url || '';
+                        document.getElementById('local_printer_proxy_api_key').value = config.local_printer_proxy_api_key || '';
+                        document.getElementById('api_base_url').value = config.api_base_url || '';
+                        document.getElementById('api_url').value = config.api_url || '';
+                        document.getElementById('source_app_id').value = config.source_app_id || '';
+                        document.getElementById('shop_id').value = config.shop_id || '';
+                        document.getElementById('shop_name').value = config.shop_name || '';
+                        document.getElementById('auth_token').value = config.auth_token || '';
+                        document.getElementById('callback_url').value = config.callback_url || '';
+                        document.getElementById('file_access_base_url').value = config.file_access_base_url || '';
+                        document.getElementById('oss_bucket_domain').value = config.oss_bucket_domain || '';
+                        document.getElementById('timeout').value = config.timeout || '30';
+                        document.getElementById('retry_times').value = config.retry_times || '3';
+                        document.getElementById('use_oss').checked = config.use_oss === 'true';
+                        document.getElementById('enabled').checked = config.enabled === 'true';
+                    } else {
+                        showAlert('printerConfigAlert', 'danger', '加载配置失败：' + data.message);
+                    }
+                })
+                .catch(error => {
+                    showAlert('printerConfigAlert', 'danger', '加载配置失败：' + error.message);
+                });
+        }
+        
+        // 打开测试打印模态框
+        function openTestPrintModal() {
+            // 重置表单
+            document.getElementById('testPrintFile').value = '';
+            document.getElementById('testPrintFilePreview').style.display = 'none';
+            document.getElementById('testPrintImagePreview').style.display = 'none';
+            document.getElementById('testPrintCopies').value = '1';
+            
+            // 显示模态框
+            const modal = new bootstrap.Modal(document.getElementById('testPrintModal'));
+            modal.show();
+            
+            // 文件选择预览
+            document.getElementById('testPrintFile').addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    document.getElementById('testPrintFileName').textContent = file.name;
+                    document.getElementById('testPrintFilePreview').style.display = 'block';
+                    
+                    // 如果是图片，显示预览
+                    if (file.type.startsWith('image/')) {
+                        const reader = new FileReader();
+                        reader.onload = function(e) {
+                            document.getElementById('testPrintImagePreview').src = e.target.result;
+                            document.getElementById('testPrintImagePreview').style.display = 'block';
+                        };
+                        reader.readAsDataURL(file);
+                    } else {
+                        document.getElementById('testPrintImagePreview').style.display = 'none';
+                    }
+                } else {
+                    document.getElementById('testPrintFilePreview').style.display = 'none';
+                }
+            });
+        }
+        
+        // 提交测试打印
+        function submitTestPrint() {
+            const fileInput = document.getElementById('testPrintFile');
+            const file = fileInput.files[0];
+            const copies = parseInt(document.getElementById('testPrintCopies').value) || 1;
+            
+            if (!file) {
+                showAlert('printerConfigAlert', 'warning', '请先选择要打印的文件');
+                return;
+            }
+            
+            const submitBtn = document.querySelector('#testPrintModal .btn-primary');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> 打印中...';
+            
+            // 创建FormData
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('copies', copies);
+            
+            console.log('准备发送打印请求:', {
+                fileName: file.name,
+                fileSize: file.size,
+                fileType: file.type,
+                copies: copies
+            });
+            
+            fetch('/api/admin/print-config/test-print', {
+                method: 'POST',
+                body: formData
+                // 注意：不要设置Content-Type，让浏览器自动设置multipart/form-data
+            })
+            .then(response => {
+                console.log('响应状态:', response.status, response.statusText);
+                if (!response.ok) {
+                    // 尝试解析错误响应
+                    return response.json().then(errData => {
+                        throw new Error(errData.message || `HTTP ${response.status}: ${response.statusText}`);
+                    }).catch(() => {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    });
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('打印响应:', data);
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalText;
+                
+                if (data.status === 'success') {
+                    showAlert('printerConfigAlert', 'success', data.message || '测试打印成功！文件已发送到打印机');
+                    // 关闭模态框
+                    bootstrap.Modal.getInstance(document.getElementById('testPrintModal')).hide();
+                } else {
+                    showAlert('printerConfigAlert', 'danger', data.message || '测试打印失败');
+                }
+            })
+            .catch(error => {
+                console.error('打印请求失败:', error);
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalText;
+                showAlert('printerConfigAlert', 'danger', '测试打印失败：' + error.message);
+            });
+        }
+        
+        // 保存打印机配置
+        document.getElementById('printerConfigForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = {
+                local_printer_path: document.getElementById('local_printer_path').value,
+                local_printer_proxy_url: document.getElementById('local_printer_proxy_url').value,
+                local_printer_proxy_api_key: document.getElementById('local_printer_proxy_api_key').value,
+                api_base_url: document.getElementById('api_base_url').value,
+                api_url: document.getElementById('api_url').value,
+                source_app_id: document.getElementById('source_app_id').value,
+                shop_id: document.getElementById('shop_id').value,
+                shop_name: document.getElementById('shop_name').value,
+                auth_token: document.getElementById('auth_token').value,
+                callback_url: document.getElementById('callback_url').value,
+                file_access_base_url: document.getElementById('file_access_base_url').value,
+                oss_bucket_domain: document.getElementById('oss_bucket_domain').value,
+                timeout: parseInt(document.getElementById('timeout').value),
+                retry_times: parseInt(document.getElementById('retry_times').value),
+                use_oss: document.getElementById('use_oss').checked,
+                enabled: document.getElementById('enabled').checked
+            };
+            
+            fetch('/api/admin/print-config/printer', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(formData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    showAlert('printerConfigAlert', 'success', '打印机配置保存成功！');
+                } else {
+                    showAlert('printerConfigAlert', 'danger', '保存失败：' + data.message);
+                }
+            })
+            .catch(error => {
+                showAlert('printerConfigAlert', 'danger', '保存失败：' + error.message);
+            });
+        });
+        
+        // 加载门店打印机配置列表
+        function loadMachinePrinterConfigs() {
+            fetch('/api/admin/print-config/machines')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        renderMachinePrinterConfigTable(data.data);
+                    } else {
+                        const tbody = document.getElementById('machinePrinterConfigTableBody');
+                        tbody.innerHTML = '<tr><td colspan="7" class="text-center text-danger">加载失败：' + data.message + '</td></tr>';
+                    }
+                })
+                .catch(error => {
+                    const tbody = document.getElementById('machinePrinterConfigTableBody');
+                    tbody.innerHTML = '<tr><td colspan="7" class="text-center text-danger">加载失败：' + error.message + '</td></tr>';
+                });
+        }
+        
+        // 渲染门店打印机配置表格
+        function renderMachinePrinterConfigTable(configs) {
+            const tbody = document.getElementById('machinePrinterConfigTableBody');
+            
+            if (configs.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">暂无门店配置，系统将使用默认打印机配置</td></tr>';
+                return;
+            }
+            
+            let html = '';
+            configs.forEach(config => {
+                const printerPath = (config.local_printer_path || '').replace(/"/g, '&quot;').replace(/\\/g, '\\\\');
+                const proxyUrl = (config.local_printer_proxy_url || '').replace(/"/g, '&quot;');
+                const apiKey = (config.local_printer_proxy_api_key || '').replace(/"/g, '&quot;');
+                const machineId = config.machine_id.replace(/"/g, '&quot;');
+                
+                html += `
+                    <tr>
+                        <td>${config.store_name || '-'}</td>
+                        <td>${config.machine_name || '-'}</td>
+                        <td><code>${config.machine_id}</code></td>
+                        <td>
+                            <input type="text" class="form-control form-control-sm" 
+                                   id="printer_path_${machineId}" 
+                                   value="${printerPath}" 
+                                   placeholder="\\\\sm003\\HP OfficeJet Pro 7730 series">
+                        </td>
+                        <td>
+                            <input type="text" class="form-control form-control-sm" 
+                                   id="proxy_url_${machineId}" 
+                                   value="${proxyUrl}" 
+                                   placeholder="http://192.168.2.54:18888">
+                        </td>
+                        <td>
+                            <input type="text" class="form-control form-control-sm" 
+                                   id="api_key_${machineId}" 
+                                   value="${apiKey}" 
+                                   placeholder="API密钥（可选）">
+                        </td>
+                        <td>
+                            <button class="btn btn-sm btn-primary" 
+                                    onclick="saveMachinePrinterConfig('${machineId}')">
+                                <i class="bi bi-save"></i> 保存
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+            tbody.innerHTML = html;
+        }
+        
+        // 保存门店打印机配置
+        function saveMachinePrinterConfig(machineId) {
+            const printerPath = document.getElementById(`printer_path_${machineId}`).value;
+            const proxyUrl = document.getElementById(`proxy_url_${machineId}`).value;
+            const apiKey = document.getElementById(`api_key_${machineId}`).value;
+            
+            if (!printerPath && !proxyUrl) {
+                showAlert('machinePrinterConfigAlert', 'warning', '请至少配置本地打印机路径或打印代理服务地址');
+                return;
+            }
+            
+            fetch('/api/admin/print-config/machines', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    machine_id: machineId,
+                    local_printer_path: printerPath,
+                    local_printer_proxy_url: proxyUrl,
+                    local_printer_proxy_api_key: apiKey
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    showAlert('machinePrinterConfigAlert', 'success', data.message || '配置保存成功');
+                } else {
+                    showAlert('machinePrinterConfigAlert', 'danger', data.message || '保存失败');
+                }
+            })
+            .catch(error => {
+                showAlert('machinePrinterConfigAlert', 'danger', '保存失败：' + error.message);
+            });
+        }
+        
+        // 加载打印尺寸配置列表
+        function loadSizeConfigs() {
+            fetch('/api/admin/print-config/size')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        renderSizeConfigTable(data.data);
+                    } else {
+                        document.getElementById('sizeConfigTableBody').innerHTML = 
+                            '<tr><td colspan="9" class="text-center text-danger">加载失败：' + data.message + '</td></tr>';
+                    }
+                })
+                .catch(error => {
+                    document.getElementById('sizeConfigTableBody').innerHTML = 
+                        '<tr><td colspan="9" class="text-center text-danger">加载失败：' + error.message + '</td></tr>';
+                });
+        }
+        
+        // 渲染打印尺寸配置表格
+        function renderSizeConfigTable(configs) {
+            const tbody = document.getElementById('sizeConfigTableBody');
+            if (configs.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="9" class="text-center text-muted">暂无配置，请点击"添加打印配置"按钮添加</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = configs.map(config => `
+                <tr>
+                    <td>${config.id}</td>
+                    <td>${config.product || '<span class="text-muted">默认（纯照片打印）</span>'}</td>
+                    <td>${config.size_name || '-'}</td>
+                    <td>${config.print_width_cm} × ${config.print_height_cm} cm</td>
+                    <td>${config.crop_mode || 'center'}</td>
+                    <td>${config.template_name || '-'}</td>
+                    <td>${config.dpi || 300}</td>
+                    <td>
+                        ${config.is_active ? 
+                            '<span class="badge badge-success">启用</span>' : 
+                            '<span class="badge badge-secondary">禁用</span>'}
+                    </td>
+                    <td>
+                        <button class="btn btn-sm btn-primary" onclick="editSizeConfig(${config.id})">
+                            <i class="bi bi-pencil"></i> 编辑
+                        </button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteSizeConfig(${config.id})">
+                            <i class="bi bi-trash"></i> 删除
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+        
+        // 打开添加/编辑配置模态框
+        function openSizeConfigModal(configId = null) {
+            const modal = new bootstrap.Modal(document.getElementById('sizeConfigModal'));
+            const form = document.getElementById('sizeConfigForm');
+            
+            if (configId) {
+                document.getElementById('sizeConfigModalTitle').textContent = '编辑打印配置';
+                // 加载配置数据
+                fetch('/api/admin/print-config/size')
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.status === 'success') {
+                            const config = data.data.find(c => c.id === configId);
+                            if (config) {
+                                fillSizeConfigForm(config);
+                                modal.show();
+                            } else {
+                                showAlert('sizeConfigAlert', 'danger', '配置不存在');
+                            }
+                        }
+                    })
+                    .catch(error => {
+                        showAlert('sizeConfigAlert', 'danger', '加载配置失败：' + error.message);
+                    });
+            } else {
+                document.getElementById('sizeConfigModalTitle').textContent = '添加打印配置';
+                form.reset();
+                document.getElementById('sizeConfigId').value = '';
+                document.getElementById('is_active').checked = true;
+                modal.show();
+            }
+        }
+        
+        // 填充配置表单
+        function fillSizeConfigForm(config) {
+            document.getElementById('sizeConfigId').value = config.id || '';
+            document.getElementById('config_product_id').value = config.product_id || '';
+            document.getElementById('config_size_id').value = config.size_id || '';
+            document.getElementById('print_width_cm').value = config.print_width_cm || '';
+            document.getElementById('print_height_cm').value = config.print_height_cm || '';
+            document.getElementById('crop_x').value = config.crop_x || 0;
+            document.getElementById('crop_y').value = config.crop_y || 0;
+            document.getElementById('crop_width').value = config.crop_width || '';
+            document.getElementById('crop_height').value = config.crop_height || '';
+            document.getElementById('crop_mode').value = config.crop_mode || 'center';
+            document.getElementById('template_name').value = config.template_name || '';
+            document.getElementById('dpi').value = config.dpi || 300;
+            document.getElementById('color_mode').value = config.color_mode || 'RGB';
+            document.getElementById('printer_product_id').value = config.printer_product_id || '';
+            document.getElementById('printer_product_name').value = config.printer_product_name || '';
+            document.getElementById('sort_order').value = config.sort_order || 0;
+            document.getElementById('notes').value = config.notes || '';
+            document.getElementById('is_active').checked = config.is_active !== false;
+            
+            // 加载产品规格
+            if (config.product_id) {
+                loadProductSizes(config.product_id, config.size_id);
+            }
+        }
+        
+        // 加载产品规格
+        function loadProductSizes(productId, selectedSizeId = null) {
+            if (!productId) {
+                document.getElementById('config_size_id').innerHTML = '<option value="">-- 选择规格（可选）--</option>';
+                return;
+            }
+            
+            // 调用API获取产品详情（包含规格）
+            fetch(`/admin/shop/products/${productId}`)
+                .then(response => response.json())
+                .then(data => {
+                    const sizeSelect = document.getElementById('config_size_id');
+                    sizeSelect.innerHTML = '<option value="">-- 选择规格（可选）--</option>';
+                    
+                    if (data.status === 'success' && data.data && data.data.sizes) {
+                        data.data.sizes.forEach(size => {
+                            const option = document.createElement('option');
+                            option.value = size.id;
+                            option.textContent = size.size_name;
+                            if (selectedSizeId && size.id === selectedSizeId) {
+                                option.selected = true;
+                            }
+                            sizeSelect.appendChild(option);
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error('加载产品规格失败：', error);
+                });
+        }
+        
+        // 编辑配置
+        function editSizeConfig(configId) {
+            // 先加载所有配置，然后找到对应的配置
+            fetch('/api/admin/print-config/size')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        const config = data.data.find(c => c.id === configId);
+                        if (config) {
+                            openSizeConfigModal(configId);
+                        } else {
+                            showAlert('sizeConfigAlert', 'danger', '配置不存在');
+                        }
+                    }
+                })
+                .catch(error => {
+                    showAlert('sizeConfigAlert', 'danger', '加载配置失败：' + error.message);
+                });
+        }
+        
+        // 保存打印尺寸配置
+        function saveSizeConfig() {
+            const form = document.getElementById('sizeConfigForm');
+            const formData = new FormData(form);
+            const data = {};
+            
+            for (let [key, value] of formData.entries()) {
+                if (key === 'id' && !value) continue;
+                if (key === 'product_id' && !value) {
+                    data[key] = null;
+                } else if (key === 'size_id' && !value) {
+                    data[key] = null;
+                } else if (key === 'crop_width' && !value) {
+                    data[key] = null;
+                } else if (key === 'crop_height' && !value) {
+                    data[key] = null;
+                } else if (key === 'is_active') {
+                    data[key] = formData.has('is_active');
+                } else {
+                    data[key] = value;
+                }
+            }
+            
+            fetch('/api/admin/print-config/size', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.status === 'success') {
+                    showAlert('sizeConfigAlert', 'success', '打印尺寸配置保存成功！');
+                    bootstrap.Modal.getInstance(document.getElementById('sizeConfigModal')).hide();
+                    loadSizeConfigs();
+                } else {
+                    showAlert('sizeConfigAlert', 'danger', '保存失败：' + result.message);
+                }
+            })
+            .catch(error => {
+                showAlert('sizeConfigAlert', 'danger', '保存失败：' + error.message);
+            });
+        }
+        
+        // 删除配置
+        function deleteSizeConfig(configId) {
+            if (!confirm('确定要删除这个打印配置吗？')) {
+                return;
+            }
+            
+            fetch(`/api/admin/print-config/size/${configId}`, {
+                method: 'DELETE'
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.status === 'success') {
+                    showAlert('sizeConfigAlert', 'success', '删除成功！');
+                    loadSizeConfigs();
+                } else {
+                    showAlert('sizeConfigAlert', 'danger', '删除失败：' + result.message);
+                }
+            })
+            .catch(error => {
+                showAlert('sizeConfigAlert', 'danger', '删除失败：' + error.message);
+            });
+        }
+        
+        // 显示提示消息
+        function showAlert(containerId, type, message) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = `
+                <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `;
+            
+            // 3秒后自动消失
+            setTimeout(() => {
+                const alert = container.querySelector('.alert');
+                if (alert) {
+                    bootstrap.Alert.getOrCreateInstance(alert).close();
+                }
+            }, 3000);
+        }
+    </script>
+</body>
+</html>

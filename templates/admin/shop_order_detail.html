@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>商城订单详情 - 管理后台</title>
+    <link href="/static/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body {
+            background: #f0f2f5;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        .main-container {
+            max-width: 1200px;
+            margin: 20px auto;
+            background: #fff;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .page-title {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: #333;
+        }
+        .order-info-card {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .image-item {
+            display: flex;
+            gap: 16px;
+            padding: 16px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            align-items: flex-start;
+        }
+        .image-preview {
+            flex-shrink: 0;
+            width: 200px;
+        }
+        .image-preview img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            border-radius: 8px;
+            cursor: pointer;
+            border: 2px solid #dee2e6;
+        }
+        .image-info {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .product-list {
+            display: flex;
+            flex-direction: row;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        .product-item {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            padding: 12px;
+            background: #fff;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+            min-width: 180px;
+            max-width: 220px;
+            flex: 0 0 auto;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .product-name {
+            font-size: 14px;
+            color: #333;
+            font-weight: 500;
+            text-align: center;
+            width: 100%;
+        }
+        .product-size {
+            font-size: 12px;
+            color: #666;
+            text-align: center;
+        }
+        .product-item-price {
+            font-size: 16px;
+            font-weight: 600;
+            color: #4361ee;
+            text-align: center;
+        }
+        .product-quantity {
+            font-size: 12px;
+            color: #666;
+        }
+        .total-section {
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+        .status-badge {
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        .status-pending { background: #ffc107; color: #000; }
+        .status-paid { background: #17a2b8; color: #fff; }
+        .status-processing { background: #007bff; color: #fff; }
+        .status-shipped { background: #28a745; color: #fff; }
+        .status-completed { background: #6c757d; color: #fff; }
+        .status-cancelled { background: #dc3545; color: #fff; }
+    </style>
+</head>
+<body>
+    {% include 'admin/_navbar.html' %}
+    
+    <div class="main-container">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1 class="page-title">
+                <i class="fas fa-shopping-cart"></i> 商城订单详情
+            </h1>
+            <a href="{{ url_for('admin_shop.admin_shop_orders') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> 返回订单列表
+            </a>
+        </div>
+        
+        <!-- 订单基本信息 -->
+        <div class="order-info-card">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5 class="mb-3">订单信息</h5>
+                    <table class="table table-sm table-borderless">
+                        <tr>
+                            <td class="text-muted" style="width: 120px;">订单号:</td>
+                            <td><strong>{{ shop_order.order_number }}</strong></td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">关联订单:</td>
+                            <td>
+                                {% if original_order %}
+                                    <a href="{{ url_for('admin_orders.admin_order_detail', order_id=original_order.id) }}" class="badge bg-info">
+                                        {{ original_order.order_number }}
+                                    </a>
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">订单状态:</td>
+                            <td>
+                                {% if shop_order.status == 'pending' %}
+                                    <span class="status-badge status-pending">待支付</span>
+                                {% elif shop_order.status == 'paid' %}
+                                    <span class="status-badge status-paid">已支付</span>
+                                {% elif shop_order.status == 'processing' %}
+                                    <span class="status-badge status-processing">处理中</span>
+                                {% elif shop_order.status == 'shipped' %}
+                                    <span class="status-badge status-shipped">已发货</span>
+                                {% elif shop_order.status == 'completed' %}
+                                    <span class="status-badge status-completed">已完成</span>
+                                {% elif shop_order.status == 'cancelled' %}
+                                    <span class="status-badge status-cancelled">已取消</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">{{ shop_order.status }}</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">下单时间:</td>
+                            <td>
+                                {% if shop_order.created_at %}
+                                    {{ shop_order.created_at.strftime('%Y-%m-%d %H:%M:%S') }}
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="col-md-6">
+                    <h5 class="mb-3">客户信息</h5>
+                    <table class="table table-sm table-borderless">
+                        <tr>
+                            <td class="text-muted" style="width: 120px;">客户姓名:</td>
+                            <td><strong>{{ shop_order.customer_name }}</strong></td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">联系电话:</td>
+                            <td>{{ shop_order.customer_phone }}</td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">收货地址:</td>
+                            <td>{{ shop_order.customer_address }}</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 选中的图片和产品 -->
+        <div class="mb-4">
+            <h5 class="mb-3">
+                <i class="fas fa-images text-primary"></i> 选中的照片及关联产品
+            </h5>
+            
+            {% if selected_images and selected_images|length > 0 %}
+                {% for selected in selected_images %}
+                <div class="image-item">
+                    <div class="image-preview">
+                        <img src="{{ selected.image_url }}" 
+                             alt="选片 {{ loop.index }}"
+                             onclick="viewImageModal('{{ selected.image_url }}', '{{ selected.image_path }}')">
+                        <div class="text-center mt-2">
+                            <span class="badge bg-info">图片 {{ loop.index }}</span>
+                        </div>
+                    </div>
+                    <div class="image-info">
+                        <h6 class="mb-2">
+                            <i class="fas fa-shopping-bag text-primary"></i> 关联产品（{{ selected.products|length }} 个）
+                        </h6>
+                        {% if selected.products and selected.products|length > 0 %}
+                            <div class="product-list">
+                                {% for product in selected.products %}
+                                <div class="product-item">
+                                    <div class="product-name">{{ product.product_name }}</div>
+                                    <div class="product-size">规格: {{ product.size_name }}</div>
+                                    <div class="product-quantity">数量: {{ product.quantity }} 张</div>
+                                    <div class="product-item-price">¥{{ '%.2f'|format(product.total_price) }}</div>
+                                    <div class="small text-muted">单价: ¥{{ '%.2f'|format(product.price) }}</div>
+                                    <div class="small text-muted">订单: {{ product.order_number }}</div>
+                                    {% if product.status %}
+                                    <div class="mt-1">
+                                        {% if product.status == 'pending' %}
+                                            <span class="badge bg-warning">待支付</span>
+                                        {% elif product.status == 'paid' %}
+                                            <span class="badge bg-info">已支付</span>
+                                        {% elif product.status == 'processing' %}
+                                            <span class="badge bg-primary">处理中</span>
+                                        {% elif product.status == 'shipped' %}
+                                            <span class="badge bg-success">已发货</span>
+                                        {% elif product.status == 'completed' %}
+                                            <span class="badge bg-secondary">已完成</span>
+                                        {% elif product.status == 'cancelled' %}
+                                            <span class="badge bg-danger">已取消</span>
+                                        {% endif %}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% set image_total_price = [] %}
+                            {% set image_total_quantity = [] %}
+                            {% for product in selected.products %}
+                                {% if image_total_price.append(product.total_price) %}{% endif %}
+                                {% if image_total_quantity.append(product.quantity) %}{% endif %}
+                            {% endfor %}
+                            <div class="mt-2 p-2 bg-light rounded">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="fw-bold">该图片小计:</span>
+                                    <span class="fw-bold text-primary">
+                                        共 {{ image_total_quantity|sum }} 张，总价 ¥{{ '%.2f'|format(image_total_price|sum) }}
+                                    </span>
+                                </div>
+                            </div>
+                        {% else %}
+                            <div class="alert alert-warning mb-0">
+                                <i class="fas fa-exclamation-triangle"></i> 该图片未关联任何产品
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+                
+                <!-- 总计 -->
+                {% set grand_total_price = [] %}
+                {% set grand_total_quantity = [] %}
+                {% for selected in selected_images %}
+                    {% for product in selected.products %}
+                        {% if grand_total_price.append(product.total_price) %}{% endif %}
+                        {% if grand_total_quantity.append(product.quantity) %}{% endif %}
+                    {% endfor %}
+                {% endfor %}
+                <div class="total-section">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="mb-0">订单总计</h5>
+                            <small class="text-muted">共 {{ selected_images|length }} 张照片</small>
+                        </div>
+                        <div class="text-end">
+                            <div class="h4 mb-0 text-primary">
+                                总计: {{ grand_total_quantity|sum }} 张
+                            </div>
+                            <div class="h5 mb-0 text-success">
+                                ¥{{ '%.2f'|format(grand_total_price|sum) }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% else %}
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i> 暂无选片数据
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- 图片查看模态框 -->
+    <div class="modal fade" id="imageModal" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">查看大图</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body text-center">
+                    <img id="modalImage" src="" alt="大图" class="img-fluid" style="max-height: 70vh;">
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="/static/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function viewImageModal(imageUrl, imagePath) {
+            const modal = new bootstrap.Modal(document.getElementById('imageModal'));
+            document.getElementById('modalImage').src = imageUrl;
+            modal.show();
+        }
+    </script>
+</body>
+</html>

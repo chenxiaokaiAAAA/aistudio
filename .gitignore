@@ -1,0 +1,211 @@
+# Python缓存文件
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# 日志文件
+*.log
+logs/*.log
+!logs/.gitkeep
+
+# 临时文件
+*.tmp
+*.temp
+*.bak
+*.swp
+*.swo
+*~
+
+# Windows系统文件
+Thumbs.db
+.DS_Store
+desktop.ini
+
+# 百度云上传临时文件
+*.uploading.cfg
+
+# 数据库备份文件（保留最近的）
+instance/backups/*.bak
+!instance/backups/.gitkeep
+
+# Nginx临时文件
+temp/
+
+# 测试备份目录
+test_*_backup_*/
+backup_*/
+
+# 测试和检查脚本（开发时使用，生产环境不需要）
+test_*.py
+check_*.py
+!test_server.py  # 保留主应用文件
+
+# IDE文件
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# 环境变量文件
+.env
+.env.local
+
+# 压缩文件备份
+*.zip.bak
+
+# 排除嵌套的 Git 仓库 
+AI-studio/.git/ 
+AI-studio/AI-studio/.git/ 
+ 
+# 排除包含 token 的上传脚本 
+上传到GitHub*.bat 
+修复并上传.bat 
+publish_to_github.py 
+publish_to_github.bat 
+scripts/上传到GitHub.bat 
+GITHUB_PUBLISH.md
+
+# ==================== 数据库文件 ====================
+# SQLite数据库文件
+*.db
+*.sqlite
+*.sqlite3
+*.db-shm
+*.db-wal
+instance/*.db
+instance/*.sqlite
+unused_databases/
+moeart_paintings.db
+pet_painting.db
+
+# 数据库备份
+*.sql.bak
+*.db.bak
+data/backups/*.sql
+data/backups/*.db
+backups/*.db
+backups/*.sql
+
+# ==================== 图片和媒体文件 ====================
+# 用户上传的图片
+uploads/
+!uploads/.gitkeep
+
+# AI生成的效果图
+final_works/
+!final_works/.gitkeep
+
+# 高清图片
+hd_images/
+!hd_images/.gitkeep
+
+# 静态图片资源（保留目录结构，但忽略图片文件）
+static/images/**/*.jpg
+static/images/**/*.jpeg
+static/images/**/*.png
+static/images/**/*.gif
+static/images/**/*.webp
+static/images/**/*.bmp
+static/images/**/*.svg
+static/qrcodes/*.jpg
+static/qrcodes/*.png
+!static/images/.gitkeep
+!static/qrcodes/.gitkeep
+
+# 其他图片文件
+*.jpg
+*.jpeg
+*.png
+*.gif
+*.webp
+*.bmp
+*.svg
+!static/**/*.css
+!static/**/*.js
+!templates/**/*.html
+
+# 二维码图片
+*.qrcode.png
+*.qrcode.jpg
+merchant_*.png
+merchant_*.jpg
+qrcode_*.jpg
+qrcode_*.png
+website_qrcode.png
+test_qrcode.jpg
+
+# ==================== 实例和配置 ====================
+# 实例目录（包含数据库和敏感配置）
+instance/
+!instance/.gitkeep
+
+# 环境变量和敏感配置
+.env
+.env.local
+.env.production
+.env.development
+*.key
+*.pem
+*.p12
+*.pfx
+aliyun-key/
+server_config.py  # 包含服务器地址配置
+
+# 配置文件（如果包含敏感信息）
+printer_config.py  # 可能包含API密钥
+size_config.py
+
+# ==================== 日志文件 ====================
+logs/*.log
+logs/*.pid
+app.log
+*.log
+!logs/.gitkeep
+
+# ==================== 临时和备份文件 ====================
+backups/
+back/
+*.backup
+*.backup_*
+data/backups/
+data/reports/
+
+# ==================== 系统文件 ====================
+# Windows
+Thumbs.db
+desktop.ini
+$RECYCLE.BIN/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Linux
+*~
+
+# ==================== IDE和编辑器 ====================
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+*.swp
+*.swo
+
+# ==================== 其他临时文件 ====================
+*.tmp
+*.temp
+*.cache
+*.pid
+gunicorn.pid
+*.lock
+
+# FRP内网穿透工具（二进制文件）
+frp_*/
+*.exe
+*.toml.bak
+
+# 工作流文件（可能包含敏感信息）
+workflows/*.json
+!workflows/.gitkeep 

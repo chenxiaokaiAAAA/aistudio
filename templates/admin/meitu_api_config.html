@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>美图API配置 - AI拍照管理系统</title>
+    <link href="/static/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .config-card {
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            background: #fff;
+        }
+        .config-card h5 {
+            color: #495057;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 10px;
+        }
+        .form-label {
+            font-weight: 600;
+            color: #495057;
+        }
+        .help-text {
+            font-size: 0.875rem;
+            color: #6c757d;
+            margin-top: 5px;
+        }
+        .upload-area {
+            border: 2px dashed #dee2e6;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: #f8f9fa;
+        }
+        .upload-area:hover {
+            border-color: #007bff;
+            background: #e7f3ff;
+        }
+        .preview-image {
+            max-width: 200px;
+            max-height: 200px;
+            border-radius: 8px;
+            margin-top: 10px;
+        }
+        body {
+            padding-top: 80px;
+        }
+        .navbar-custom {
+            background: #0a0a0a !important;
+            border-bottom: 1px solid #1a1a1a;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        }
+        .navbar-brand, .nav-link {
+            color: #e0e0e0 !important;
+        }
+        .nav-link:hover {
+            color: #ffffff !important;
+        }
+        .nav-link.active {
+            color: #ffffff !important;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <!-- 导航栏 -->
+    {% include 'admin/_navbar.html' %}
+
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-md-12">
+                <h2 class="mb-4">
+                    <i class="fas fa-cog"></i> 美图API配置
+                </h2>
+                
+                <!-- API配置 -->
+                <div class="config-card">
+                    <h5><i class="fas fa-key"></i> API密钥配置</h5>
+                    <form id="apiConfigForm">
+                        <div class="mb-3">
+                            <label for="appId" class="form-label">应用ID (APPID)</label>
+                            <input type="text" class="form-control" id="appId" 
+                                   placeholder="355298">
+                            <div class="help-text">美图开放平台分配的应用ID（可选）</div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="apiKey" class="form-label">API密钥 (APIKEY)</label>
+                            <input type="text" class="form-control" id="apiKey" 
+                                   placeholder="0557ed8dac294f9380b1e287c876f9e7" required>
+                            <div class="help-text">美图开放平台分配的API密钥 (APIKEY)</div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="apiSecret" class="form-label">API密钥 (SECRETID)</label>
+                            <input type="text" class="form-control" id="apiSecret" 
+                                   placeholder="e3f88c3983a64fa38581fd7eacdb8d84" required>
+                            <div class="help-text">美图开放平台分配的API密钥 (SECRETID)</div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="apiBaseUrl" class="form-label">API基础URL</label>
+                            <input type="text" class="form-control" id="apiBaseUrl" 
+                                   value="https://api.yunxiu.meitu.com" required>
+                            <div class="help-text">美图API的基础URL地址（官方地址：https://api.yunxiu.meitu.com）</div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="apiEndpoint" class="form-label">API接口路径</label>
+                            <input type="text" class="form-control" id="apiEndpoint" 
+                                   value="/openapi/realphotolocal_async" required>
+                            <div class="help-text">美图API的接口路径</div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="repostUrl" class="form-label">回调URL（可选）</label>
+                            <input type="text" class="form-control" id="repostUrl" 
+                                   placeholder="https://your-domain.com/api/meitu/callback">
+                            <div class="help-text">美图API处理完成后的回调地址（可选）</div>
+                        </div>
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="isActive" checked>
+                                <label class="form-check-label" for="isActive">
+                                    启用此配置
+                                </label>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="enableInWorkflow" role="switch">
+                                <label class="form-check-label" for="enableInWorkflow">
+                                    <strong>在订单处理流程中启用美颜API</strong>
+                                </label>
+                                <div class="help-text">
+                                    开启后，用户通过自拍机上传原图时，会先经过美图API处理，处理完成后再调用对应的AI工作流进行任务处理，最终返回效果图。<br>
+                                    如果美图API超时（1-2分钟）或报错，则自动跳过，直接进行AI工作流处理。
+                                </div>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> 保存配置
+                        </button>
+                    </form>
+                </div>
+
+                <!-- 预设配置 -->
+                <div class="config-card">
+                    <h5><i class="fas fa-list"></i> 预设配置</h5>
+                    <div class="mb-3">
+                        <button type="button" class="btn btn-success" onclick="showAddPresetModal()">
+                            <i class="fas fa-plus"></i> 添加预设
+                        </button>
+                    </div>
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>映射类型</th>
+                                <th>映射对象</th>
+                                <th>预设ID</th>
+                                <th>预设名称</th>
+                                <th>状态</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="presetTableBody">
+                            <!-- 动态加载 -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- API测试 -->
+                <div class="config-card">
+                    <h5><i class="fas fa-vial"></i> API测试</h5>
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i> 上传测试图片，选择预设ID，测试美图API调用并查看响应时间
+                    </div>
+                    <form id="testForm">
+                        <div class="mb-3">
+                            <label for="testPresetId" class="form-label">预设ID</label>
+                            <select class="form-select" id="testPresetId" onchange="updatePresetIdInput()">
+                                <option value="">请选择预设（或手动输入）</option>
+                            </select>
+                            <input type="text" class="form-control mt-2" id="testPresetIdManual" placeholder="或手动输入预设ID，如：MTyunxiu175dabef25">
+                            <div class="help-text">从预设列表选择或手动输入预设ID</div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="testImageFile" class="form-label">测试图片</label>
+                            <div class="upload-area" onclick="document.getElementById('testImageFile').click()" style="min-height: 150px; border: 2px dashed #ccc; border-radius: 8px; padding: 20px; text-align: center; cursor: pointer;">
+                                <div id="testImageUploadArea">
+                                    <i class="fas fa-cloud-upload-alt fa-2x mb-2 text-muted"></i>
+                                    <p class="mb-0">点击上传测试图片</p>
+                                    <small class="text-muted">支持 JPG、PNG 格式</small>
+                                </div>
+                                <img id="testImagePreview" class="preview-image" style="display: none; max-width: 100%; max-height: 200px; margin: 0 auto;">
+                            </div>
+                            <input type="file" id="testImageFile" accept="image/*" style="display: none;" onchange="handleTestImageUpload(this)">
+                        </div>
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="uploadToCloud" checked>
+                                <label class="form-check-label" for="uploadToCloud">
+                                    先上传到云服务器（本地测试时推荐开启）
+                                </label>
+                            </div>
+                            <div class="help-text">
+                                开启后，本地图片会先上传到云服务器（与API服务商相同的服务器），然后使用云端URL进行测试。
+                                <br>如果关闭，将使用OSS或本地URL（需要公网可访问）。
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-primary" onclick="testMeituAPI()" id="testBtn">
+                            <i class="fas fa-play"></i> 开始测试
+                        </button>
+                    </form>
+                    <div id="testResult" style="display: none; margin-top: 20px;">
+                        <div class="alert" id="testResultAlert">
+                            <h6>测试结果</h6>
+                            <div id="testResultContent"></div>
+                        </div>
+                    </div>
+                    <div id="testProgress" style="display: none; margin-top: 20px;">
+                        <div class="progress mb-3">
+                            <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 100%">处理中...</div>
+                        </div>
+                        <p class="text-muted text-center">正在调用美图API，请稍候...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 添加/编辑预设模态框 -->
+    <div class="modal fade" id="presetModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="presetModalTitle">添加预设</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="presetForm">
+                        <input type="hidden" id="presetId">
+                        <div class="mb-3">
+                            <label class="form-label">映射类型</label>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="mappingType" id="mappingTypeCategory" value="category" checked onchange="toggleMappingType()">
+                                <label class="form-check-label" for="mappingTypeCategory">
+                                    映射到整个风格分类
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="mappingType" id="mappingTypeImage" value="image" onchange="toggleMappingType()">
+                                <label class="form-check-label" for="mappingTypeImage">
+                                    映射到单个风格图片
+                                </label>
+                            </div>
+                        </div>
+                        <div class="mb-3" id="categoryMappingGroup">
+                            <label for="presetStyleCategoryId" class="form-label">风格分类</label>
+                            <select class="form-select" id="presetStyleCategoryId">
+                                <option value="">请选择风格分类</option>
+                            </select>
+                        </div>
+                        <div class="mb-3" id="imageMappingGroup" style="display: none;">
+                            <label for="presetStyleImageId" class="form-label">风格图片</label>
+                            <select class="form-select" id="presetStyleImageId">
+                                <option value="">请选择风格图片</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="presetPresetId" class="form-label">预设ID</label>
+                            <input type="text" class="form-control" id="presetPresetId" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="presetName" class="form-label">预设名称</label>
+                            <input type="text" class="form-control" id="presetName">
+                        </div>
+                        <div class="mb-3">
+                            <label for="presetDescription" class="form-label">描述</label>
+                            <textarea class="form-control" id="presetDescription" rows="3"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="presetIsActive" checked>
+                                <label class="form-check-label" for="presetIsActive">
+                                    启用
+                                </label>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" onclick="savePreset()">保存</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // 页面加载时初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            loadConfig();
+            loadPresets();
+            loadStyleCategories();
+            loadStyleImages();
+            loadPresetsForTest();
+        });
+        
+        // 加载预设列表用于测试
+        async function loadPresetsForTest() {
+            try {
+                const response = await fetch('/admin/meitu/api/presets');
+                const result = await response.json();
+                
+                if (result.status === 'success' && result.data) {
+                    const select = document.getElementById('testPresetId');
+                    result.data.forEach(preset => {
+                        const option = document.createElement('option');
+                        option.value = preset.preset_id;
+                        option.textContent = `${preset.preset_name || preset.preset_id} (${preset.preset_id})`;
+                        select.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                console.error('加载预设列表失败:', error);
+            }
+        }
+        
+        // 更新预设ID输入框
+        function updatePresetIdInput() {
+            const select = document.getElementById('testPresetId');
+            const manual = document.getElementById('testPresetIdManual');
+            if (select.value) {
+                manual.value = select.value;
+            }
+        }
+        
+        // 切换映射类型
+        function toggleMappingType() {
+            const mappingType = document.querySelector('input[name="mappingType"]:checked');
+            if (!mappingType) return;
+            
+            const value = mappingType.value;
+            const categoryGroup = document.getElementById('categoryMappingGroup');
+            const imageGroup = document.getElementById('imageMappingGroup');
+            
+            if (value === 'category') {
+                categoryGroup.style.display = 'block';
+                imageGroup.style.display = 'none';
+                const categorySelect = document.getElementById('presetStyleCategoryId');
+                const imageSelect = document.getElementById('presetStyleImageId');
+                if (categorySelect) categorySelect.required = true;
+                if (imageSelect) imageSelect.required = false;
+                if (imageSelect) imageSelect.value = '';
+            } else {
+                categoryGroup.style.display = 'none';
+                imageGroup.style.display = 'block';
+                const categorySelect = document.getElementById('presetStyleCategoryId');
+                const imageSelect = document.getElementById('presetStyleImageId');
+                if (categorySelect) categorySelect.required = false;
+                if (imageSelect) imageSelect.required = true;
+                if (categorySelect) categorySelect.value = '';
+            }
+        }
+
+        // 加载API配置
+        async function loadConfig() {
+            try {
+                const response = await fetch('/admin/meitu/api/config');
+                const result = await response.json();
+                
+                if (result.status === 'success' && result.data) {
+                    const config = result.data;
+                    // 兼容新旧字段
+                    document.getElementById('apiKey').value = config.api_key || config.app_id || '';
+                    document.getElementById('apiSecret').value = config.api_secret || config.secret_id || '';
+                    document.getElementById('apiBaseUrl').value = config.api_base_url || 'https://api.yunxiu.meitu.com';
+                    document.getElementById('apiEndpoint').value = config.api_endpoint || '/openapi/realphotolocal_async';
+                    document.getElementById('repostUrl').value = config.repost_url || '';
+                    document.getElementById('isActive').checked = config.is_active !== false;
+                    document.getElementById('enableInWorkflow').checked = config.enable_in_workflow === true;
+                }
+            } catch (error) {
+                console.error('加载配置失败:', error);
+            }
+        }
+
+        // 保存API配置
+        document.getElementById('apiConfigForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const data = {
+                app_id: document.getElementById('appId').value.trim(),
+                api_key: document.getElementById('apiKey').value.trim(),
+                api_secret: document.getElementById('apiSecret').value.trim(),
+                api_base_url: document.getElementById('apiBaseUrl').value.trim(),
+                api_endpoint: document.getElementById('apiEndpoint').value.trim(),
+                repost_url: document.getElementById('repostUrl').value.trim() || null,
+                is_active: document.getElementById('isActive').checked,
+                enable_in_workflow: document.getElementById('enableInWorkflow').checked
+            };
+            
+            try {
+                const response = await fetch('/admin/meitu/api/config', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                if (result.status === 'success') {
+                    alert('配置保存成功！');
+                } else {
+                    alert('保存失败: ' + result.message);
+                }
+            } catch (error) {
+                alert('保存失败: ' + error.message);
+            }
+        });
+
+        // 加载风格分类列表
+        async function loadStyleCategories() {
+            try {
+                const response = await fetch('/admin/meitu/api/style-categories');
+                const result = await response.json();
+                
+                if (result.status === 'success' && result.data) {
+                    const select = document.getElementById('presetStyleCategoryId');
+                    select.innerHTML = '<option value="">请选择风格分类</option>';
+                    result.data.forEach(cat => {
+                        const option = document.createElement('option');
+                        option.value = cat.id;
+                        option.textContent = cat.name;
+                        select.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                console.error('加载风格分类列表失败:', error);
+            }
+        }
+        
+        // 加载风格图片列表
+        async function loadStyleImages() {
+            try {
+                const response = await fetch('/admin/meitu/api/style-images');
+                const result = await response.json();
+                
+                if (result.status === 'success' && result.data) {
+                    const select = document.getElementById('presetStyleImageId');
+                    select.innerHTML = '<option value="">请选择风格图片</option>';
+                    result.data.forEach(img => {
+                        const option = document.createElement('option');
+                        option.value = img.id;
+                        option.textContent = `${img.category_name} - ${img.name}`;
+                        option.setAttribute('data-category', img.category_name);
+                        select.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                console.error('加载风格图片列表失败:', error);
+            }
+        }
+
+        // 加载预设列表
+        async function loadPresets() {
+            try {
+                const response = await fetch('/admin/meitu/api/presets');
+                const result = await response.json();
+                
+                if (result.status === 'success') {
+                    const tbody = document.getElementById('presetTableBody');
+                    tbody.innerHTML = '';
+                    
+                    if (result.data && result.data.length > 0) {
+                        result.data.forEach(preset => {
+                            const tr = document.createElement('tr');
+                            const mappingType = preset.mapping_type || (preset.style_category_id ? 'category' : 'image');
+                            const mappingName = mappingType === 'category' 
+                                ? `<span class="badge bg-info">分类</span> ${preset.category_name || 'N/A'}`
+                                : `<span class="badge bg-primary">图片</span> ${preset.category_name || 'N/A'} - ${preset.image_name || 'N/A'}`;
+                            
+                            tr.innerHTML = `
+                                <td>${mappingType === 'category' ? '<span class="badge bg-info">整个分类</span>' : '<span class="badge bg-primary">单个图片</span>'}</td>
+                                <td>${mappingName}</td>
+                                <td>${preset.preset_id}</td>
+                                <td>${preset.preset_name || '-'}</td>
+                                <td>${preset.is_active ? '<span class="badge bg-success">启用</span>' : '<span class="badge bg-secondary">禁用</span>'}</td>
+                                <td>
+                                    <button class="btn btn-sm btn-primary" onclick="editPreset(${preset.id})">编辑</button>
+                                    <button class="btn btn-sm btn-danger" onclick="deletePreset(${preset.id})">删除</button>
+                                </td>
+                            `;
+                            tbody.appendChild(tr);
+                        });
+                    } else {
+                        tbody.innerHTML = '<tr><td colspan="6" class="text-center">暂无预设配置</td></tr>';
+                    }
+                }
+            } catch (error) {
+                console.error('加载预设列表失败:', error);
+            }
+        }
+
+        // 显示添加预设模态框
+        function showAddPresetModal() {
+            document.getElementById('presetModalTitle').textContent = '添加预设';
+            document.getElementById('presetForm').reset();
+            document.getElementById('presetId').value = '';
+            // 重置为默认选择（分类映射）
+            document.getElementById('mappingTypeCategory').checked = true;
+            toggleMappingType();
+            new bootstrap.Modal(document.getElementById('presetModal')).show();
+        }
+
+        // 编辑预设
+        async function editPreset(id) {
+            try {
+                const response = await fetch(`/admin/meitu/api/presets/${id}`);
+                const result = await response.json();
+                
+                if (result.status === 'success') {
+                    const preset = result.data;
+                    document.getElementById('presetModalTitle').textContent = '编辑预设';
+                    document.getElementById('presetId').value = preset.id;
+                    
+                    // 设置映射类型
+                    const mappingType = preset.mapping_type || (preset.style_category_id ? 'category' : 'image');
+                    if (mappingType === 'category') {
+                        document.getElementById('mappingTypeCategory').checked = true;
+                        document.getElementById('presetStyleCategoryId').value = preset.style_category_id || '';
+                    } else {
+                        document.getElementById('mappingTypeImage').checked = true;
+                        document.getElementById('presetStyleImageId').value = preset.style_image_id || '';
+                    }
+                    toggleMappingType();
+                    
+                    document.getElementById('presetPresetId').value = preset.preset_id;
+                    document.getElementById('presetName').value = preset.preset_name || '';
+                    document.getElementById('presetDescription').value = preset.description || '';
+                    document.getElementById('presetIsActive').checked = preset.is_active !== false;
+                    new bootstrap.Modal(document.getElementById('presetModal')).show();
+                }
+            } catch (error) {
+                alert('加载预设失败: ' + error.message);
+            }
+        }
+
+        // 保存预设
+        async function savePreset() {
+            const presetId = document.getElementById('presetId').value;
+            const mappingType = document.querySelector('input[name="mappingType"]:checked').value;
+            
+            const data = {
+                preset_id: document.getElementById('presetPresetId').value.trim(),
+                preset_name: document.getElementById('presetName').value.trim(),
+                description: document.getElementById('presetDescription').value.trim(),
+                is_active: document.getElementById('presetIsActive').checked
+            };
+            
+            // 根据映射类型设置对应的ID
+            if (mappingType === 'category') {
+                const categoryId = document.getElementById('presetStyleCategoryId').value;
+                if (!categoryId) {
+                    alert('请选择风格分类');
+                    return;
+                }
+                data.style_category_id = parseInt(categoryId);
+                data.style_image_id = null;
+            } else {
+                const imageId = document.getElementById('presetStyleImageId').value;
+                if (!imageId) {
+                    alert('请选择风格图片');
+                    return;
+                }
+                data.style_image_id = parseInt(imageId);
+                data.style_category_id = null;
+            }
+            
+            try {
+                const url = presetId 
+                    ? `/admin/meitu/api/presets/${presetId}`
+                    : '/admin/meitu/api/presets';
+                const method = presetId ? 'PUT' : 'POST';
+                
+                const response = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                if (result.status === 'success') {
+                    bootstrap.Modal.getInstance(document.getElementById('presetModal')).hide();
+                    loadPresets();
+                    alert('保存成功！');
+                } else {
+                    alert('保存失败: ' + result.message);
+                }
+            } catch (error) {
+                alert('保存失败: ' + error.message);
+            }
+        }
+
+        // 删除预设
+        async function deletePreset(id) {
+            if (!confirm('确定要删除这个预设配置吗？')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/admin/meitu/api/presets/${id}`, {
+                    method: 'DELETE'
+                });
+                
+                const result = await response.json();
+                if (result.status === 'success') {
+                    loadPresets();
+                    alert('删除成功！');
+                } else {
+                    alert('删除失败: ' + result.message);
+                }
+            } catch (error) {
+                alert('删除失败: ' + error.message);
+            }
+        }
+        
+        // 处理测试图片上传
+        let testImageFile = null;
+        function handleTestImageUpload(input) {
+            const file = input.files[0];
+            if (!file) return;
+            
+            testImageFile = file;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById('testImagePreview').src = e.target.result;
+                document.getElementById('testImagePreview').style.display = 'block';
+                document.getElementById('testImageUploadArea').style.display = 'none';
+            };
+            reader.readAsDataURL(file);
+        }
+        
+        // 测试美图API
+        async function testMeituAPI() {
+            const presetIdSelect = document.getElementById('testPresetId').value.trim();
+            const presetIdManual = document.getElementById('testPresetIdManual').value.trim();
+            const presetId = presetIdManual || presetIdSelect;
+            
+            if (!presetId) {
+                alert('请选择或输入预设ID');
+                return;
+            }
+            
+            if (!testImageFile) {
+                alert('请上传测试图片');
+                return;
+            }
+            
+            // 显示进度
+            document.getElementById('testProgress').style.display = 'block';
+            document.getElementById('testResult').style.display = 'none';
+            document.getElementById('testBtn').disabled = true;
+            
+            const startTime = new Date();
+            let cloudImageUrl = null;
+            
+            try {
+                // 检查是否需要先上传到云服务器
+                const uploadToCloud = document.getElementById('uploadToCloud').checked;
+                
+                if (uploadToCloud) {
+                    // 先上传到云服务器
+                    const uploadFormData = new FormData();
+                    uploadFormData.append('image', testImageFile);
+                    
+                    const uploadResponse = await fetch('/api/admin/styles/images/upload-to-grsai', {
+                        method: 'POST',
+                        body: uploadFormData
+                    });
+                    
+                    const uploadResult = await uploadResponse.json();
+                    
+                    if (uploadResult.status === 'success' && uploadResult.data && uploadResult.data.url) {
+                        cloudImageUrl = uploadResult.data.url;
+                        console.log('✅ 图片已上传到云服务器:', cloudImageUrl);
+                    } else {
+                        alert('上传到云服务器失败: ' + (uploadResult.message || '未知错误'));
+                        document.getElementById('testProgress').style.display = 'none';
+                        document.getElementById('testBtn').disabled = false;
+                        return;
+                    }
+                }
+                
+                // 调用美图API测试接口
+                const formData = new FormData();
+                if (cloudImageUrl) {
+                    // 如果已上传到云服务器，传递云端URL
+                    formData.append('cloud_image_url', cloudImageUrl);
+                } else {
+                    // 否则传递文件（使用原来的逻辑）
+                    formData.append('image', testImageFile);
+                }
+                formData.append('preset_id', presetId);
+                
+                const response = await fetch('/admin/meitu/api/test', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                const endTime = new Date();
+                const totalTime = endTime - startTime;
+                
+                document.getElementById('testProgress').style.display = 'none';
+                document.getElementById('testResult').style.display = 'block';
+                document.getElementById('testBtn').disabled = false;
+                
+                if (result.status === 'success') {
+                    document.getElementById('testResultAlert').className = 'alert alert-success';
+                    let content = '<p><strong>✅ 测试成功！</strong></p>';
+                    content += `<p><strong>请求时间：</strong>${startTime.toLocaleString('zh-CN')}</p>`;
+                    content += `<p><strong>响应时间：</strong>${endTime.toLocaleString('zh-CN')}</p>`;
+                    content += `<p><strong>总耗时：</strong>${totalTime}ms (${(totalTime/1000).toFixed(2)}秒)</p>`;
+                    
+                    if (result.data) {
+                        content += `<p><strong>任务ID：</strong>${result.data.task_id || 'N/A'}</p>`;
+                        content += `<p><strong>订单号：</strong>${result.data.order_number || 'N/A'}</p>`;
+                        if (result.data.result_image_url) {
+                            content += `<p><strong>结果图片：</strong><a href="${result.data.result_image_url}" target="_blank" style="color: #7ab99a;">${result.data.result_image_url}</a></p>`;
+                            content += `<div class="mt-3"><img src="${result.data.result_image_url}" style="max-width: 100%; border: 1px solid #2a2a2a; border-radius: 4px;"></div>`;
+                        }
+                        if (result.data.duration_ms) {
+                            content += `<p><strong>API耗时：</strong>${result.data.duration_ms}ms</p>`;
+                        }
+                    }
+                    content += `<p class="mt-3"><a href="/admin/meitu/tasks" class="btn btn-sm btn-primary" target="_blank">查看任务详情</a></p>`;
+                    document.getElementById('testResultContent').innerHTML = content;
+                } else {
+                    document.getElementById('testResultAlert').className = 'alert alert-danger';
+                    let content = '<p><strong>❌ 测试失败</strong></p>';
+                    content += `<p><strong>请求时间：</strong>${startTime.toLocaleString('zh-CN')}</p>`;
+                    content += `<p><strong>失败时间：</strong>${endTime.toLocaleString('zh-CN')}</p>`;
+                    content += `<p><strong>总耗时：</strong>${totalTime}ms</p>`;
+                    content += `<p><strong>错误信息：</strong>${result.message || '未知错误'}</p>`;
+                    if (result.error) {
+                        content += `<pre style="background: #050505; color: #d97a7a; padding: 10px; border-radius: 4px; overflow-x: auto; font-size: 12px; border: 1px solid #2a1a1a;">${result.error}</pre>`;
+                    }
+                    if (result.data && result.data.task_id) {
+                        content += `<p class="mt-3"><a href="/admin/meitu/tasks" class="btn btn-sm btn-primary" target="_blank">查看任务详情</a></p>`;
+                    }
+                    document.getElementById('testResultContent').innerHTML = content;
+                }
+            } catch (error) {
+                const endTime = new Date();
+                const totalTime = endTime - startTime;
+                document.getElementById('testProgress').style.display = 'none';
+                document.getElementById('testResult').style.display = 'block';
+                document.getElementById('testResultAlert').className = 'alert alert-danger';
+                document.getElementById('testResultContent').innerHTML = `
+                    <p><strong>❌ 测试失败</strong></p>
+                    <p><strong>请求时间：</strong>${startTime.toLocaleString('zh-CN')}</p>
+                    <p><strong>失败时间：</strong>${endTime.toLocaleString('zh-CN')}</p>
+                    <p><strong>总耗时：</strong>${totalTime}ms</p>
+                    <p><strong>错误：</strong>${error.message || '网络错误'}</p>
+                `;
+                document.getElementById('testBtn').disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>
+

@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>抖音订单同步管理</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <!-- 侧边栏 -->
+            <nav class="col-md-3 col-lg-2 d-md-block bg-light sidebar">
+                <div class="position-sticky pt-3">
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link" href="/admin/dashboard">
+                                <i class="bi bi-house"></i> 首页
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/admin/promotion">
+                                <i class="bi bi-share"></i> 小程序分佣管理
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link active" href="/admin/douyin">
+                                <i class="bi bi-shop"></i> 抖音订单同步
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+
+            <!-- 主内容区 -->
+            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                    <h1 class="h2">抖音订单同步管理</h1>
+                </div>
+
+                <!-- 状态卡片 -->
+                <div class="row mb-4">
+                    <div class="col-md-3">
+                        <div class="card text-white bg-primary">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between">
+                                    <div>
+                                        <h4 class="card-title" id="totalOrders">0</h4>
+                                        <p class="card-text">抖音订单总数</p>
+                                    </div>
+                                    <div class="align-self-center">
+                                        <i class="bi bi-cart fs-1"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card text-white bg-success">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between">
+                                    <div>
+                                        <h4 class="card-title" id="recentOrders">0</h4>
+                                        <p class="card-text">24小时内同步</p>
+                                    </div>
+                                    <div class="align-self-center">
+                                        <i class="bi bi-clock fs-1"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card text-white bg-info">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between">
+                                    <div>
+                                        <h4 class="card-title" id="apiStatus">未知</h4>
+                                        <p class="card-text">API连接状态</p>
+                                    </div>
+                                    <div class="align-self-center">
+                                        <i class="bi bi-wifi fs-1"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card text-white bg-warning">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between">
+                                    <div>
+                                        <h4 class="card-title" id="lastSync">从未</h4>
+                                        <p class="card-text">最后同步时间</p>
+                                    </div>
+                                    <div class="align-self-center">
+                                        <i class="bi bi-arrow-clockwise fs-1"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 操作按钮 -->
+                <div class="row mb-4">
+                    <div class="col-md-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0">同步操作</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-3">
+                                        <button class="btn btn-primary w-100" onclick="syncRecentOrders()">
+                                            <i class="bi bi-arrow-clockwise"></i> 同步最近订单
+                                        </button>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <button class="btn btn-success w-100" onclick="syncAllOrders()">
+                                            <i class="bi bi-download"></i> 同步所有订单
+                                        </button>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <button class="btn btn-info w-100" onclick="testWebhook()">
+                                            <i class="bi bi-bug"></i> 测试Webhook
+                                        </button>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <button class="btn btn-warning w-100" onclick="refreshStatus()">
+                                            <i class="bi bi-arrow-repeat"></i> 刷新状态
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 配置信息 -->
+                <div class="row mb-4">
+                    <div class="col-md-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0">配置信息</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <h6>API配置</h6>
+                                        <ul class="list-unstyled">
+                                            <li><strong>App ID:</strong> <span id="appId">未配置</span></li>
+                                            <li><strong>店铺ID:</strong> <span id="shopId">未配置</span></li>
+                                            <li><strong>API状态:</strong> <span id="apiStatusDetail">未知</span></li>
+                                        </ul>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <h6>Webhook配置</h6>
+                                        <ul class="list-unstyled">
+                                            <li><strong>Webhook URL:</strong> <code>https://yourdomain.com/api/douyin/webhook</code></li>
+                                            <li><strong>支持事件:</strong> 订单创建、支付、发货、完成、取消</li>
+                                            <li><strong>签名验证:</strong> <span id="signatureStatus">未配置</span></li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 同步日志 -->
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0">同步日志</h5>
+                            </div>
+                            <div class="card-body">
+                                <div id="syncLog" class="bg-dark text-light p-3" style="height: 300px; overflow-y: auto;">
+                                    <div class="text-muted">等待同步操作...</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            refreshStatus();
+        });
+
+        // 刷新状态
+        function refreshStatus() {
+            fetch('/api/douyin/webhook/status')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        document.getElementById('totalOrders').textContent = data.data.total_douyin_orders;
+                        document.getElementById('recentOrders').textContent = data.data.recent_synced_orders;
+                        document.getElementById('apiStatus').textContent = data.data.api_status === 'connected' ? '已连接' : '未连接';
+                        document.getElementById('lastSync').textContent = data.data.last_sync_time ? 
+                            new Date(data.data.last_sync_time).toLocaleString() : '从未';
+                    }
+                })
+                .catch(error => {
+                    console.error('获取状态失败:', error);
+                    addLog('获取状态失败: ' + error.message, 'error');
+                });
+        }
+
+        // 同步最近订单
+        function syncRecentOrders() {
+            addLog('开始同步最近订单...', 'info');
+            
+            fetch('/api/douyin/sync/recent', {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    addLog(`同步完成: ${data.synced_count} 个订单`, 'success');
+                    refreshStatus();
+                } else {
+                    addLog('同步失败: ' + data.message, 'error');
+                }
+            })
+            .catch(error => {
+                addLog('同步异常: ' + error.message, 'error');
+            });
+        }
+
+        // 同步所有订单
+        function syncAllOrders() {
+            addLog('开始同步所有订单...', 'info');
+            
+            fetch('/api/douyin/sync/all', {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    addLog(`同步完成: ${data.synced_count} 个订单`, 'success');
+                    refreshStatus();
+                } else {
+                    addLog('同步失败: ' + data.message, 'error');
+                }
+            })
+            .catch(error => {
+                addLog('同步异常: ' + error.message, 'error');
+            });
+        }
+
+        // 测试Webhook
+        function testWebhook() {
+            addLog('测试Webhook...', 'info');
+            
+            fetch('/api/douyin/webhook/test', {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.message) {
+                    addLog('Webhook测试成功: ' + data.message, 'success');
+                } else {
+                    addLog('Webhook测试失败: ' + data.error, 'error');
+                }
+            })
+            .catch(error => {
+                addLog('Webhook测试异常: ' + error.message, 'error');
+            });
+        }
+
+        // 添加日志
+        function addLog(message, type = 'info') {
+            const log = document.getElementById('syncLog');
+            const timestamp = new Date().toLocaleTimeString();
+            const typeClass = type === 'error' ? 'text-danger' : type === 'success' ? 'text-success' : 'text-info';
+            
+            const logEntry = document.createElement('div');
+            logEntry.className = typeClass;
+            logEntry.innerHTML = `[${timestamp}] ${message}`;
+            
+            log.appendChild(logEntry);
+            log.scrollTop = log.scrollHeight;
+        }
+    </script>
+</body>
+</html>
+
+
+
+

@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>为 {{ account.company_name }} 充值 - AI拍照管理系统</title>
+    <link href="/static/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            padding-top: 80px;
+        }
+        .navbar-custom {
+            background: #0a0a0a !important;
+            border-bottom: 1px solid #1a1a1a;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        }
+        .navbar-brand, .nav-link {
+            color: #e0e0e0 !important;
+        }
+        .nav-link:hover {
+            color: #ffffff !important;
+        }
+        .nav-link.active {
+            color: #ffffff !important;
+            font-weight: 600;
+        }
+        .form-container { max-width: 600px; margin: 0 auto; }
+        .account-info { background: #f8f9fa; padding: 15px; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <!-- 导航栏 -->
+    {% include 'admin/_navbar.html' %}
+
+    <div class="container mt-4">
+        <div class="form-container">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>💰 为加盟商充值</h2>
+                <a href="/franchisee/admin/accounts/{{ account.id }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> 返回详情
+                </a>
+            </div>
+
+            <!-- 消息提示 -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <!-- 账户信息 -->
+            <div class="account-info mb-4">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h5>{{ account.company_name }}</h5>
+                        <p class="text-muted mb-0">{{ account.contact_person }} - {{ account.contact_phone }}</p>
+                    </div>
+                    <div class="col-md-6 text-end">
+                        <div class="row">
+                            <div class="col-4">
+                                <div class="text-center">
+                                    <h6 class="text-primary">¥{{ "%.2f"|format(account.total_quota) }}</h6>
+                                    <small class="text-muted">总额度</small>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="text-center">
+                                    <h6 class="text-warning">¥{{ "%.2f"|format(account.used_quota) }}</h6>
+                                    <small class="text-muted">已使用</small>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="text-center">
+                                    <h6 class="text-success">¥{{ "%.2f"|format(account.remaining_quota) }}</h6>
+                                    <small class="text-muted">剩余额度</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 充值表单 -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">充值信息</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="amount" class="form-label">充值金额 <span class="text-danger">*</span></label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">¥</span>
+                                        <input type="number" class="form-control" id="amount" name="amount" 
+                                               required min="0.01" step="0.01" placeholder="请输入充值金额">
+                                    </div>
+                                    <small class="text-muted">加盟商将看到此金额</small>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="bonus_amount" class="form-label">赠送金额 <span class="text-success">❤️</span></label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">¥</span>
+                                        <input type="number" class="form-control" id="bonus_amount" name="bonus_amount" 
+                                               value="0" min="0" step="0.01" placeholder="赠送金额">
+                                    </div>
+                                    <small class="text-muted">赠送部分不会显示给加盟商</small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="recharge_type" class="form-label">充值类型</label>
+                                    <select class="form-select" id="recharge_type" name="recharge_type">
+                                        <option value="manual">手动充值</option>
+                                        <option value="refund">退款</option>
+                                        <option value="adjustment">额度调整</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <!-- 预留空位 -->
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="description" class="form-label">充值说明</label>
+                            <textarea class="form-control" id="description" name="description" rows="3" 
+                                      placeholder="请输入充值说明（可选）"></textarea>
+                        </div>
+
+                        <!-- 快速充值按钮 -->
+                        <div class="mb-3">
+                            <label class="form-label">快速充值</label>
+                            <div class="btn-group w-100" role="group">
+                                <button type="button" class="btn btn-outline-primary" onclick="setAmount(100)">¥100</button>
+                                <button type="button" class="btn btn-outline-primary" onclick="setAmount(500)">¥500</button>
+                                <button type="button" class="btn btn-outline-primary" onclick="setAmount(1000)">¥1000</button>
+                                <button type="button" class="btn btn-outline-primary" onclick="setAmount(5000)">¥5000</button>
+                                <button type="button" class="btn btn-outline-primary" onclick="setAmount(10000)">¥10000</button>
+                            </div>
+                        </div>
+
+                        <!-- 充值预览 -->
+                        <div class="alert alert-info" id="preview" style="display: none;">
+                            <h6>充值预览：</h6>
+                            <p class="mb-1">当前剩余额度：<strong>¥{{ "%.2f"|format(account.remaining_quota) }}</strong></p>
+                            <p class="mb-1">充值金额：<strong class="text-success" id="preview-amount">¥0.00</strong></p>
+                            <p class="mb-1" id="preview-bonus" style="display: none;">赠送金额：<strong class="text-danger">+¥<span id="preview-bonus-amount">0.00</span></strong></p>
+                            <p class="mb-0">实际到账：<strong class="text-primary" id="preview-total">¥{{ "%.2f"|format(account.remaining_quota) }}</strong></p>
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="/franchisee/admin/accounts/{{ account.id }}" class="btn btn-secondary me-md-2">取消</a>
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-plus"></i> 确认充值
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- 最近充值记录 -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h6 class="mb-0">📋 最近充值记录</h6>
+                </div>
+                <div class="card-body">
+                    {% if account.recharge_records %}
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>金额</th>
+                                    <th>类型</th>
+                                    <th>操作员</th>
+                                    <th>时间</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for record in account.recharge_records[:5] %}
+                                <tr>
+                                    <td class="text-success">+¥{{ "%.2f"|format(record.amount) }}</td>
+                                    <td>
+                                        {% if record.recharge_type == 'manual' %}
+                                            <span class="badge bg-primary">手动充值</span>
+                                        {% elif record.recharge_type == 'refund' %}
+                                            <span class="badge bg-warning">退款</span>
+                                        {% else %}
+                                            <span class="badge bg-info">调整</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ record.admin_user.username }}</td>
+                                    <td>{{ record.created_at.strftime('%m-%d %H:%M') }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-muted text-center">暂无充值记录</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function setAmount(amount) {
+            document.getElementById('amount').value = amount;
+            updatePreview();
+        }
+
+        function updatePreview() {
+            const amount = parseFloat(document.getElementById('amount').value) || 0;
+            const bonus = parseFloat(document.getElementById('bonus_amount').value) || 0;
+            const current = {{ account.remaining_quota }};
+            const total = current + amount + bonus;
+            
+            document.getElementById('preview-amount').textContent = '¥' + amount.toFixed(2);
+            document.getElementById('preview-total').textContent = '¥' + total.toFixed(2);
+            
+            if (bonus > 0) {
+                document.getElementById('preview-bonus').style.display = 'block';
+                document.getElementById('preview-bonus-amount').textContent = bonus.toFixed(2);
+            } else {
+                document.getElementById('preview-bonus').style.display = 'none';
+            }
+            
+            if (amount > 0) {
+                document.getElementById('preview').style.display = 'block';
+            } else {
+                document.getElementById('preview').style.display = 'none';
+            }
+        }
+
+        // 监听金额输入
+        document.getElementById('amount').addEventListener('input', updatePreview);
+        document.getElementById('bonus_amount').addEventListener('input', updatePreview);
+    </script>
+</body>
+</html>
+
+
+
+
+
+
+

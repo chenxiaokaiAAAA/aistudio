@@ -1,0 +1,2237 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>产品配置 - 管理后台</title>
+    <link href="/static/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            overflow-x: hidden;
+            padding-top: 80px;
+        }
+        .navbar-custom {
+            background: #0a0a0a !important;
+            border-bottom: 1px solid #1a1a1a;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        }
+        .navbar-brand, .nav-link {
+            color: #e0e0e0 !important;
+        }
+        .nav-link:hover {
+            color: #ffffff !important;
+        }
+        .nav-link.active {
+            color: #ffffff !important;
+            font-weight: 600;
+        }
+        
+        .main-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            margin: 20px auto !important;
+            padding: 30px;
+            max-width: 1400px !important;
+            width: calc(100% - 40px);
+            box-sizing: border-box;
+            display: block;
+        }
+        
+        
+        .page-title {
+            text-align: center;
+            color: #212529;
+            margin-bottom: 30px;
+            font-weight: 600;
+            font-size: 1.8rem;
+        }
+        
+        .add-product-card {
+            background: #ffffff;
+            border: 1px solid #dee2e6;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+        
+        /* 产品卡片容器 - 与添加产品卡片样式一致 */
+        .products-container {
+            background: #ffffff;
+            border: 1px solid #dee2e6;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+        
+        .add-product-card h4 {
+            color: #212529;
+            font-weight: 600;
+            margin-bottom: 20px;
+            font-size: 1.2rem;
+        }
+        
+        .add-product-card label {
+            color: #212529;
+            font-weight: 500;
+            margin-bottom: 8px;
+        }
+        
+        .add-product-card .form-control {
+            background: #ffffff;
+            border: 1px solid #ced4da;
+            color: #212529;
+        }
+        
+        .add-product-card .form-control:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.15);
+        }
+        
+        .add-product-card .text-muted {
+            color: #6c757d !important;
+        }
+        
+        .add-product-card i {
+            color: #495057;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .add-product-card .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .add-product-card .form-group label {
+            font-size: 0.9rem;
+            margin-bottom: 6px;
+        }
+        
+        .add-product-card .form-control {
+            padding: 8px 12px;
+            font-size: 0.9rem;
+        }
+        
+        .form-control {
+            border: none;
+            border-radius: 10px;
+            padding: 12px 15px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+        
+        .form-control:focus {
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.3);
+            transform: translateY(-2px);
+        }
+        
+        .btn-primary {
+            background: #667eea;
+            border: none;
+            border-radius: 6px;
+            padding: 10px 20px;
+            color: white;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            min-width: 100px;
+            font-size: 0.9rem;
+        }
+        
+        .btn-primary:hover {
+            background: #5568d3;
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+        }
+        
+        .btn-outline-primary {
+            background: transparent;
+            border: 1px solid #667eea;
+            color: #667eea;
+            border-radius: 6px;
+            padding: 8px 16px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-outline-primary:hover {
+            background: #667eea;
+            color: white;
+        }
+        
+        .btn-outline-danger {
+            background: transparent;
+            border: 1px solid #dc3545;
+            color: #dc3545;
+            border-radius: 6px;
+            padding: 6px 12px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-outline-danger:hover {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .btn-upload {
+            background: #6c757d;
+            border: none;
+            border-radius: 6px;
+            padding: 10px 20px;
+            color: white;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-upload:hover {
+            background: #5a6268;
+            box-shadow: 0 2px 8px rgba(108, 117, 125, 0.3);
+        }
+        
+        .size-input-group {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            padding: 8px;
+            margin-bottom: 8px;
+        }
+        
+        /* 旧的产品卡片样式 - 已被products-grid覆盖 */
+        .product-card:not(.products-grid .product-card) {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .product-card:not(.products-grid .product-card):hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+        }
+        
+        .product-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f8f9fa;
+        }
+        
+        .product-info h5 {
+            color: #333;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+        
+        .product-code {
+            color: #666;
+            font-size: 0.9rem;
+            background: #f8f9fa;
+            padding: 3px 8px;
+            border-radius: 5px;
+            display: inline-block;
+        }
+        
+        .product-description {
+            color: #888;
+            font-size: 0.9rem;
+            margin-top: 5px;
+        }
+        
+        /* 统一文字颜色，提高可读性 */
+        .form-label, label {
+            color: #212529;
+            font-weight: 500;
+        }
+        
+        .text-muted {
+            color: #6c757d !important;
+        }
+        
+        small {
+            color: #6c757d;
+        }
+        
+        h6 {
+            color: #212529;
+            font-weight: 600;
+        }
+        
+        h4, h5 {
+            color: #212529;
+        }
+        
+        /* 统一所有文本颜色 */
+        body, .main-container {
+            color: #212529;
+        }
+        
+        .product-image {
+            width: 80px;
+            height: 80px;
+            border-radius: 10px;
+            object-fit: cover;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .no-image {
+            width: 100% !important;
+            aspect-ratio: 1 / 1 !important;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #999;
+            font-size: 0.8rem;
+            flex-shrink: 0;
+        }
+        
+        .size-item {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s ease;
+        }
+        
+        .size-item:hover {
+            background: linear-gradient(135deg, #e9ecef 0%, #dee2e6 100%);
+        }
+        
+        .size-name {
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .size-price {
+            font-weight: 700;
+            color: #667eea;
+            font-size: 1.1rem;
+        }
+        
+        .pet-option-display {
+            color: #495057;
+            font-size: 0.85rem;
+            margin-left: 8px;
+        }
+        
+        .btn-delete {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
+            border: none;
+            border-radius: 20px;
+            padding: 8px 15px;
+            color: white;
+            font-size: 0.8rem;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-delete:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 107, 107, 0.4);
+        }
+        
+        .btn-edit {
+            background: linear-gradient(135deg, #51cf66 0%, #40c057 100%);
+            border: none;
+            border-radius: 20px;
+            padding: 8px 15px;
+            color: white;
+            font-size: 0.8rem;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-edit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(81, 207, 102, 0.4);
+        }
+        
+        .btn-add-size {
+            background: #28a745;
+            border: none;
+            border-radius: 6px;
+            padding: 10px 20px;
+            color: white;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            min-width: 100px;
+        }
+        
+        .btn-add-size:hover {
+            background: #218838;
+            box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+            border: none;
+            border-radius: 6px;
+            padding: 10px 20px;
+            color: white;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            min-width: 100px;
+        }
+        
+        .btn-secondary:hover {
+            background: #5a6268;
+            box-shadow: 0 2px 8px rgba(108, 117, 125, 0.3);
+        }
+        
+        .hidden {
+            display: none !important;
+        }
+        
+        
+        /* 网格容器 - 在固定背景容器内 */
+        .products-container .products-grid {
+            display: grid !important;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)) !important;
+            grid-auto-rows: 400px !important; /* 固定行高 */
+            gap: 20px !important;
+            justify-content: center !important;
+            align-items: start !important; /* 防止卡片拉伸 */
+            width: 100% !important;
+            max-width: 100% !important;
+            padding: 0 !important; /* 容器已有padding，网格不需要额外padding */
+            margin: 0 auto !important;
+            box-sizing: border-box !important;
+        }
+        
+        /* 网格子项 - 强制固定尺寸，禁止拉伸 */
+        .products-grid > .product-card {
+            width: 300px !important;
+            height: 400px !important;
+            min-width: 300px !important;
+            min-height: 400px !important;
+            max-width: 300px !important;
+            max-height: 400px !important;
+            flex: 0 0 300px !important; /* 禁止 flex 拉伸 */
+            display: flex !important;
+            flex-direction: column !important;
+            overflow: hidden !important;
+            box-sizing: border-box !important;
+            margin: 0 !important;
+            padding: 15px !important;
+            border-radius: 15px !important;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1) !important;
+            background: white !important;
+            text-align: center !important;
+            cursor: pointer !important;
+            transition: all 0.3s ease !important;
+            border: 2px solid transparent !important;
+        }
+        
+        /* 强制取消卡片的浮动/定位干扰 */
+        .products-grid .product-card {
+            float: none !important;
+            position: relative !important;
+            top: auto !important;
+            left: auto !important;
+            transform: none !important;
+        }
+        
+        .products-grid .product-card:hover {
+            transform: translateY(-5px) !important;
+            box-shadow: 0 10px 25px rgba(79, 172, 254, 0.3) !important;
+            border-color: #4facfe !important;
+        }
+        
+        .products-grid .product-image {
+            width: 70% !important;
+            max-width: 160px !important;
+            height: auto !important;
+            aspect-ratio: 1 / 1 !important;
+            object-fit: cover !important;
+            border-radius: 10px;
+            margin: 0 auto 10px auto !important;
+            flex-shrink: 0;
+            display: block;
+        }
+        
+        .products-grid .no-image {
+            width: 70% !important;
+            max-width: 160px !important;
+            aspect-ratio: 1 / 1 !important;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex-shrink: 0;
+            justify-content: center;
+            color: #999;
+            font-size: 0.9rem;
+            margin: 0 auto 10px auto !important;
+        }
+        
+        .products-grid .product-info {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        .products-grid .product-info h5 {
+            font-size: 16px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 8px;
+            line-height: 1.3;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+        }
+        
+        .products-grid .product-code {
+            font-size: 11px;
+            color: #999;
+            background: #f8f9fa;
+            padding: 2px 6px;
+            border-radius: 5px;
+            display: inline-block;
+            margin-bottom: 6px;
+        }
+        
+        .products-grid .product-description {
+            color: #666;
+            font-size: 12px;
+            margin-bottom: 6px;
+            line-height: 1.4;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            flex: 1;
+        }
+        
+        .products-grid .product-sort-info {
+            font-size: 11px;
+            color: #999;
+            margin-top: auto;
+        }
+        
+        .products-grid .product-actions {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid #f0f0f0;
+            flex-shrink: 0;
+        }
+        
+        .products-grid .product-actions button {
+            margin: 0 5px;
+        }
+        
+        .products-grid .product-actions .btn-sm {
+            padding: 4px 12px;
+            font-size: 0.75rem;
+        }
+        
+        /* 移除旧的产品卡片样式，避免冲突 */
+        .product-header {
+            display: none !important;
+        }
+        
+        .size-item {
+            display: none !important;
+        }
+        
+        /* 产品头部响应式布局 */
+        @media (max-width: 768px) {
+            .product-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .product-header > div:last-child {
+                margin-top: 10px;
+            }
+        }
+        
+        .file-input {
+            display: none;
+        }
+        
+        .btn-upload.has-file {
+            background: #28a745;
+        }
+        
+        .btn-upload.has-file:hover {
+            background: #218838;
+        }
+        
+        /* 统一图标颜色 */
+        .add-product-card i,
+        .add-product-card .fas,
+        .add-product-card .bi {
+            color: #495057;
+        }
+        
+        /* 统一提示框颜色 */
+        .alert-info {
+            background-color: #e7f3ff;
+            border-color: #b8daff;
+            color: #004085;
+        }
+        
+        .alert-warning {
+            background-color: #fff3cd;
+            border-color: #ffeaa7;
+            color: #856404;
+        }
+        
+        .edit-form {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 10px;
+            font-size: 0.9rem;
+        }
+        
+        /* 编辑模态框样式 */
+        .edit-modal .modal-dialog {
+            max-width: 90%;
+            margin: 1.75rem auto;
+        }
+        
+        .edit-modal .modal-content {
+            border-radius: 15px;
+            border: none;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+        
+        .edit-modal .modal-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 15px 15px 0 0;
+            border-bottom: none;
+            padding: 20px 30px;
+        }
+        
+        .edit-modal .modal-header .btn-close {
+            filter: invert(1);
+        }
+        
+        .edit-modal .modal-body {
+            padding: 30px;
+            max-height: calc(100vh - 200px);
+            overflow-y: auto;
+        }
+        
+        .edit-modal .modal-footer {
+            border-top: 1px solid #dee2e6;
+            padding: 20px 30px;
+        }
+        
+        .edit-size-item {
+            background: white;
+            border-radius: 8px;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #dee2e6;
+        }
+        
+        .custom-field-item {
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+            border: 1px solid #dee2e6;
+        }
+        
+        /* 统一复选框和表单元素颜色 */
+        .form-check-input:checked {
+            background-color: #667eea;
+            border-color: #667eea;
+        }
+        
+        .form-check-label {
+            color: #212529;
+        }
+        
+        /* 统一所有图标颜色 */
+        i.fas, i.bi {
+            color: #495057;
+        }
+        
+        /* 统一边框颜色 */
+        .border {
+            border-color: #dee2e6 !important;
+        }
+        
+        .border-primary {
+            border-color: #667eea !important;
+        }
+        
+        /* 统一背景色 */
+        .bg-light {
+            background-color: #f8f9fa !important;
+        }
+    </style>
+</head>
+<body>
+    <!-- 导航栏 -->
+    {% include 'admin/_navbar.html' %}
+
+    <div class="main-container">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1 class="page-title mb-0">产品配置管理</h1>
+            <div>
+                <button type="button" class="btn btn-outline-primary" onclick="alert('同步功能暂未开放')">
+                    <i class="bi bi-arrow-repeat"></i> 同步管理
+                </button>
+            </div>
+        </div>
+        
+        <!-- 添加产品卡片 -->
+        <div class="add-product-card">
+            <h4 class="mb-4">添加新产品</h4>
+            <form method="POST" action="{{ url_for('admin_products.admin_sizes') }}" enctype="multipart/form-data" id="productForm">
+                <input type="hidden" name="action" value="add_product_with_sizes">
+                
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label>产品代码</label>
+                            <input type="text" class="form-control" name="code" required placeholder="如: keychain">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label>产品名称</label>
+                            <input type="text" class="form-control" name="name" required placeholder="如: 艺术钥匙扣">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label>产品描述</label>
+                            <input type="text" class="form-control" name="description" placeholder="如: 精美钥匙扣定制">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label>排序顺序 <small class="text-muted">(数字越小越靠前)</small></label>
+                            <input type="number" class="form-control" name="sort_order" value="0" min="0" placeholder="默认: 0">
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="form-group">
+                            <label>选片赠送张数 <small class="text-muted">(默认1张)</small></label>
+                            <input type="number" class="form-control" name="free_selection_count" value="1" min="0" placeholder="默认: 1">
+                            <small class="text-muted">该产品在选片时免费赠送的照片张数</small>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="form-group">
+                            <label>每加一张照片价格 <small class="text-muted">(默认10元)</small></label>
+                            <input type="number" class="form-control" name="extra_photo_price" value="10.0" min="0" step="0.01" placeholder="默认: 10.0">
+                            <small class="text-muted">超出免费张数后，每张照片的额外费用（元）</small>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="form-group">
+                            <label>产品图片</label>
+                            <button type="button" class="btn btn-upload" onclick="document.getElementById('product_images').click()">
+                                <input type="file" id="product_images" name="product_images[]" accept="image/*" class="file-input" multiple>
+                                <span id="upload-text">点击上传图片</span>
+                                <span id="file-name" class="hidden"></span>
+                            </button>
+                            <small class="text-muted d-block mt-1">支持多图上传，最多4张</small>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 风格分类绑定 -->
+                <div class="mt-2">
+                    <label style="font-size: 0.85rem;"><i class="fas fa-palette"></i> 绑定风格分类</label>
+                    <div class="form-text mb-1" style="font-size: 0.75rem;">选择该产品可用的风格分类，加盟商下单时将只显示绑定的风格</div>
+                    <div class="row">
+                        {% for category in style_categories %}
+                        <div class="col-md-4 mb-1">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" 
+                                       name="style_category_ids[]" 
+                                       value="{{ category.id }}" 
+                                       id="style_cat_new_{{ category.id }}">
+                                <label class="form-check-label" for="style_cat_new_{{ category.id }}">
+                                    {{ category.name }}
+                                    {% if category.icon %}{{ category.icon }}{% endif %}
+                                </label>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% if not style_categories %}
+                    <p class="text-muted">暂无风格分类，请先在风格管理中创建</p>
+                    {% endif %}
+                </div>
+                
+                <!-- 尺寸规格 -->
+                <div class="mt-2">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <label class="mb-0" style="font-size: 0.85rem;"><i class="fas fa-ruler"></i> 尺寸规格</label>
+                        <button type="button" class="btn btn-outline-primary btn-sm" onclick="addSize()" style="padding: 4px 8px; font-size: 0.75rem;">+ 添加尺寸</button>
+                    </div>
+                    <!-- 宠物数量选项说明已注释 - 设备主要用于人像拍照，不需要宠物相关选项
+                    <div class="alert alert-info mb-2" style="font-size: 0.75rem; padding: 6px 10px;">
+                        <strong>说明：</strong>每个尺寸可以添加多个"宠物数量"选项（如：单只、多只），每个选项有对应的价格。
+                        <br><strong>示例：</strong>8寸尺寸，单只66元，多只86元
+                    </div>
+                    -->
+                    <div id="sizesContainer">
+                        <div class="size-input-group border rounded p-3 mb-3">
+                            <div class="row mb-2">
+                                <div class="col-md-3">
+                                    <label class="form-label small">尺寸名称 <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" name="size_name[]" placeholder="如: 8寸 (22x27cm) 桌摆画框" required>
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label small">厂家ID</label>
+                                    <input type="text" class="form-control" name="size_printer_id[]" placeholder="如: 33673">
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label small">价格 <span class="text-danger">*</span></label>
+                                    <input type="number" step="0.01" class="form-control" name="size_price[]" placeholder="如: 66.00" required>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label small">效果图</label>
+                                    <input type="file" class="form-control form-control-sm" name="size_effect_image[]" accept="image/*">
+                                    <small class="text-muted" style="font-size: 0.7rem;">用于选片页面显示</small>
+                                    <input type="hidden" name="size_effect_image_url[]" value="">
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label small">&nbsp;</label>
+                                    <button type="button" class="btn btn-outline-danger btn-sm w-100" onclick="removeSize(this)">删除尺寸</button>
+                                </div>
+                            </div>
+                            <!-- 宠物数量选项已注释 - 设备主要用于人像拍照，不需要宠物相关选项
+                            <div class="pet-options-container">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <label class="form-label small mb-0">宠物数量选项</label>
+                                    <button type="button" class="btn btn-outline-primary btn-sm" onclick="addPetOption(this)">+ 添加选项</button>
+                                </div>
+                                <div class="pet-option-item mb-2">
+                                    <div class="row">
+                                        <div class="col-md-4">
+                                            <input type="text" class="form-control" name="pet_option_name[]" placeholder="选项名称，如: 单只" required>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <input type="number" step="0.01" class="form-control" name="pet_option_price[]" placeholder="价格，如: 66.00" required>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <button type="button" class="btn btn-outline-danger btn-sm w-100" onclick="removePetOption(this)">删除</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            -->
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 颜色选项配置说明（证件照产品专用） -->
+                <div class="mt-2 mb-2">
+                    <div class="alert alert-warning" style="font-size: 0.75rem; padding: 8px 10px; border-left: 4px solid #ff9800;">
+                        <strong><i class="fas fa-exclamation-triangle"></i> 重要提示：颜色选项配置（证件照产品）：</strong><br>
+                        <strong style="color: #d32f2f;">⚠️ 请只添加一个字段，不要添加多个字段！</strong><br>
+                        如果该产品需要用户选择颜色（如证件照的背景色），请在下方"自定义字段"中添加<strong>一个</strong>字段：
+                        <ul class="mb-0 mt-1" style="padding-left: 18px; font-size: 0.7rem;">
+                            <li><strong>字段名称：</strong><code>背景色</code> 或 <code>颜色</code> 或 <code>背景颜色</code></li>
+                            <li><strong>字段类型：</strong>必须选择 <code>下拉选择</code>（不是"文本"！）</li>
+                            <li><strong>字段选项：</strong><code>红底,蓝底,白底</code>（用逗号分隔，不要有空格）</li>
+                            <li><strong>是否必填：</strong>勾选 <code>是</code></li>
+                        </ul>
+                        <strong style="color: #d32f2f;">❌ 错误示例：</strong>添加三个字段"红底"、"蓝底"、"白底"（这样是错误的！）<br>
+                        <strong style="color: #388e3c;">✅ 正确示例：</strong>添加一个字段"背景色"，类型为"下拉选择"，选项填写"红底,蓝底,白底"<br>
+                        配置后，小程序端会显示两排选择：第一排选择尺寸，第二排选择颜色。
+                    </div>
+                </div>
+                
+                <!-- 自定义字段 -->
+                <div class="mt-2">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <label class="mb-0" style="font-size: 0.85rem;"><i class="fas fa-tags"></i> 自定义字段（如：颜色等）</label>
+                        <button type="button" class="btn btn-outline-primary btn-sm add-custom-field-btn" data-product-id="new" style="padding: 4px 8px; font-size: 0.75rem;">+ 添加字段</button>
+                    </div>
+                    <!-- 宠物数量字段提示已注释 - 设备主要用于人像拍照，不需要宠物相关选项
+                    <div class="alert alert-warning mb-2" style="font-size: 0.75rem; padding: 6px 10px;">
+                        <strong>提示：</strong>如果添加"宠物数量"字段，请设置为下拉选择类型，选项填写"单只,多只"。
+                        <br>价格已在上面"尺寸规格"中设置，这里只需要配置字段选项。
+                    </div>
+                    -->
+                    <div id="customFieldsContainer_new"></div>
+                </div>
+                    <div class="mt-2">
+                        <button type="submit" class="btn btn-primary" style="padding: 6px 15px; font-size: 0.85rem;">添加产品</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- 产品列表 - 使用固定背景容器，与添加产品卡片样式一致 -->
+        <div class="products-container">
+            <h4 class="mb-4">产品列表</h4>
+            <div class="products-grid">
+            {% for product in products %}
+            <div class="product-card" onclick="openEditModal({{ product.id }})" style="cursor: pointer;">
+                <!-- 产品图片 -->
+                {% if product.image_url %}
+                <img src="{{ product.image_url }}" alt="{{ product.name }}" class="product-image">
+                {% else %}
+                <div class="no-image">
+                    <i class="fas fa-image fa-3x"></i>
+                    <div>无图片</div>
+                </div>
+                {% endif %}
+                
+                <!-- 产品信息 -->
+                <div class="product-info">
+                    <h5>{{ product.name }}{% if not product.is_active %}<span class="badge bg-secondary ms-2">已下架</span>{% endif %}</h5>
+                    <p class="text-muted small mb-2">
+                        <i class="fas fa-gift"></i> 选片赠送: <strong>{{ product.free_selection_count or 1 }}</strong> 张
+                        <span class="ms-2">
+                            <i class="fas fa-yen-sign"></i> 加片价格: <strong>{{ product.extra_photo_price or 10.0 }}</strong> 元/张
+                        </span>
+                    </p>
+                    <span class="product-code">{{ product.code }}</span>
+                    {% if product.description %}
+                    <div class="product-description">{{ product.description }}</div>
+                    {% endif %}
+                    <div class="product-sort-info">排序: {{ product.sort_order or 0 }}</div>
+                </div>
+                
+                <!-- 操作按钮区域 - 阻止事件冒泡 -->
+                <div class="product-actions" onclick="event.stopPropagation();">
+                    <form method="POST" action="{{ url_for('admin_products.admin_sizes') }}" style="display: inline;" onsubmit="event.stopPropagation();">
+                        <input type="hidden" name="action" value="toggle_product_status">
+                        <input type="hidden" name="product_id" value="{{ product.id }}">
+                        <button type="submit" class="btn btn-sm {% if product.is_active %}btn-warning{% else %}btn-success{% endif %}">
+                            {% if product.is_active %}下架{% else %}上架{% endif %}
+                        </button>
+                    </form>
+                    <form method="POST" action="{{ url_for('admin_products.admin_sizes') }}" style="display: inline; margin-left: 5px;" class="delete-product-form" data-product-name="{{ product.name }}" data-product-id="{{ product.id }}" onsubmit="event.stopPropagation(); return confirm('确定要删除产品 {{ product.name }} 吗？');">
+                        <input type="hidden" name="action" value="delete_product">
+                        <input type="hidden" name="product_id" value="{{ product.id }}">
+                        <button type="submit" class="btn btn-delete btn-sm">删除</button>
+                    </form>
+                </div>
+            </div>
+            {% endfor %}
+            </div>
+        </div>
+        
+        <!-- 编辑表单容器 - 移到网格外，避免Grid子项嵌套干扰，完全隐藏 -->
+        <div style="display: none !important; visibility: hidden !important; position: absolute !important; left: -9999px !important; width: 0 !important; height: 0 !important; overflow: hidden !important;">
+            {% for product in products %}
+            <div id="edit-form-container-{{ product.id }}" style="display: none !important;">
+                <!-- 编辑模式 -->
+                <div id="edit-{{ product.id }}" class="edit-form" style="display: none !important;">
+                            <form method="POST" action="{{ url_for('admin_products.admin_sizes') }}" enctype="multipart/form-data">
+                                <input type="hidden" name="action" value="edit_product">
+                                <input type="hidden" name="product_id" value="{{ product.id }}">
+                                
+                                <!-- 产品基本信息编辑 -->
+                                <div class="row mb-3">
+                                    <div class="col-md-3">
+                                        <label>产品代码</label>
+                                        <input type="text" class="form-control" name="code" value="{{ product.code }}" required>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label>产品名称</label>
+                                        <input type="text" class="form-control" name="name" value="{{ product.name }}" required>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label>产品描述</label>
+                                        <input type="text" class="form-control" name="description" value="{{ product.description or '' }}">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label>排序顺序 <small class="text-muted">(数字越小越靠前)</small></label>
+                                        <input type="number" class="form-control" name="sort_order" value="{{ product.sort_order or 0 }}" min="0">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label>选片赠送张数 <small class="text-muted">(默认1张)</small></label>
+                                        <input type="number" class="form-control" name="free_selection_count" value="{{ product.free_selection_count or 1 }}" min="0" placeholder="默认: 1">
+                                        <small class="text-muted">该产品在选片时免费赠送的照片张数</small>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label>每加一张照片价格 <small class="text-muted">(默认10元)</small></label>
+                                        <input type="number" class="form-control" name="extra_photo_price" value="{{ product.extra_photo_price or 10.0 }}" min="0" step="0.01" placeholder="默认: 10.0">
+                                        <small class="text-muted">超出免费张数后，每张照片的额外费用（元）</small>
+                                    </div>
+                                </div>
+                                
+                                <!-- 图片上传 -->
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <label>更新图片</label>
+                                        <button type="button" class="btn btn-upload" onclick="document.getElementById('edit_images_{{ product.id }}').click()">
+                                            <input type="file" id="edit_images_{{ product.id }}" name="product_images[]" accept="image/*" class="file-input" multiple>
+                                            <span id="edit-upload-text-{{ product.id }}">点击上传多图</span>
+                                            <span id="edit-file-name-{{ product.id }}" class="hidden"></span>
+                                        </button>
+                                        <small class="text-muted d-block mt-1">支持多图上传，最多4张</small>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label>当前图片</label>
+                                        {% set product_imgs = product_images | selectattr('product_id', 'equalto', product.id) | list %}
+                                        {% if product_imgs %}
+                                        <div class="d-flex flex-wrap gap-2">
+                                            {% for img in product_imgs %}
+                                            <div class="position-relative">
+                                                <img src="{{ img.image_url }}" alt="产品图片" style="width: 60px; height: 60px; border-radius: 5px; object-fit: cover;">
+                                                <button type="button" class="btn btn-sm btn-danger position-absolute delete-product-image-btn" style="top: -5px; right: -5px; width: 20px; height: 20px; padding: 0; font-size: 0.7rem;" data-image-id="{{ img.id }}">×</button>
+                                            </div>
+                                            {% endfor %}
+                                        </div>
+                                        {% else %}
+                                        <small class="text-muted">暂无图片</small>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                
+                                <!-- 风格分类绑定 -->
+                                <div class="mb-3">
+                                    <label><i class="fas fa-palette"></i> 绑定风格分类</label>
+                                    <div class="form-text mb-2">选择该产品可用的风格分类，加盟商下单时将只显示绑定的风格</div>
+                                    <div class="row">
+                                        {% for category in style_categories %}
+                                        <div class="col-md-4 mb-2">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" 
+                                                       name="style_category_ids[]" 
+                                                       value="{{ category.id }}" 
+                                                       id="style_cat_{{ product.id }}_{{ category.id }}"
+                                                       {% if product_style_bindings.get(product.id, []) and category.id in product_style_bindings[product.id] %}checked{% endif %}>
+                                                <label class="form-check-label" for="style_cat_{{ product.id }}_{{ category.id }}">
+                                                    {{ category.name }}
+                                                    {% if category.icon %}{{ category.icon }}{% endif %}
+                                                </label>
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                    {% if not style_categories %}
+                                    <p class="text-muted">暂无风格分类，请先在风格管理中创建</p>
+                                    {% endif %}
+                                </div>
+                                
+                                <!-- 颜色选项配置说明（证件照产品专用） -->
+                                <div class="mt-4 mb-3">
+                                    <div class="alert alert-warning" style="font-size: 0.85rem; padding: 10px; border-left: 4px solid #ff9800;">
+                                        <strong><i class="fas fa-exclamation-triangle"></i> 重要提示：颜色选项配置（证件照产品）：</strong><br>
+                                        <strong style="color: #d32f2f;">⚠️ 请只添加一个字段，不要添加多个字段！</strong><br>
+                                        如果该产品需要用户选择颜色（如证件照的背景色），请在下方"自定义字段"中添加<strong>一个</strong>字段：
+                                        <ul class="mb-0 mt-2" style="padding-left: 20px;">
+                                            <li><strong>字段名称：</strong><code>背景色</code> 或 <code>颜色</code> 或 <code>背景颜色</code></li>
+                                            <li><strong>字段类型：</strong>必须选择 <code>下拉选择</code>（不是"文本"！）</li>
+                                            <li><strong>字段选项：</strong><code>红底,蓝底,白底</code>（用逗号分隔，不要有空格）</li>
+                                            <li><strong>是否必填：</strong>勾选 <code>是</code></li>
+                                        </ul>
+                                        <strong style="color: #d32f2f;">❌ 错误示例：</strong>添加三个字段"红底"、"蓝底"、"白底"（这样是错误的！）<br>
+                                        <strong style="color: #388e3c;">✅ 正确示例：</strong>添加一个字段"背景色"，类型为"下拉选择"，选项填写"红底,蓝底,白底"<br>
+                                        配置后，小程序端会显示两排选择：第一排选择尺寸，第二排选择颜色。
+                                    </div>
+                                </div>
+                                
+                                <!-- 自定义字段编辑 -->
+                                <div class="mt-4">
+                                    <div class="d-flex justify-content-between align-items-center mb-3">
+                                        <label class="mb-0"><i class="fas fa-tags"></i> 自定义字段</label>
+                                        <button type="button" class="btn btn-outline-primary btn-sm add-custom-field-btn" data-product-id="{{ product.id }}">+ 添加字段</button>
+                                    </div>
+                                    <div id="customFieldsContainer_{{ product.id }}">
+                                        {% for field in product.custom_fields %}
+                                        <div class="custom-field-item mb-3 p-3 border rounded">
+                                            <input type="hidden" name="existing_custom_field_id[]" value="{{ field.id }}">
+                                            <div class="row">
+                                                <div class="col-md-3">
+                                                    <input type="text" class="form-control" name="custom_field_name[]" value="{{ field.field_name }}" placeholder="字段名称" required>
+                                                </div>
+                                                <div class="col-md-2">
+                                                    <select class="form-control" name="custom_field_type[]" onchange="window.toggleFieldOptions(this)">
+                                                        <option value="text" {% if field.field_type == 'text' %}selected{% endif %}>文本</option>
+                                                        <option value="number" {% if field.field_type == 'number' %}selected{% endif %}>数字</option>
+                                                        <option value="select" {% if field.field_type == 'select' %}selected{% endif %}>下拉选择</option>
+                                                    </select>
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <input type="text" class="form-control field-options" name="custom_field_options[]" value="{{ field.field_options }}" placeholder="选项（下拉选择时用逗号分隔，如：红色,蓝色,绿色）" {% if field.field_type != 'select' %}style="display:none"{% endif %}>
+                                                </div>
+                                                <div class="col-md-2">
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" name="custom_field_required[]" value="1" {% if field.is_required %}checked{% endif %}>
+                                                        <label class="form-check-label">必填</label>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-1">
+                                                    <button type="button" class="btn btn-outline-danger btn-sm" onclick="window.removeCustomField(this)">删除</button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                
+                                <!-- 尺寸编辑 -->
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <label class="mb-0" style="font-size: 0.85rem;"><i class="fas fa-ruler"></i> 尺寸规格</label>
+                                    <button type="button" class="btn btn-outline-primary btn-sm add-edit-size-btn" data-product-id="{{ product.id }}" style="padding: 4px 8px; font-size: 0.75rem;">+ 添加尺寸</button>
+                                </div>
+                                <!-- 宠物数量选项说明已注释 - 设备主要用于人像拍照，不需要宠物相关选项
+                                <div class="alert alert-info mb-3" style="font-size: 0.85rem; padding: 8px;">
+                                    <strong>说明：</strong>每个尺寸可以添加多个"宠物数量"选项（如：单只、多只），每个选项有对应的价格。
+                                </div>
+                                -->
+                                <div id="edit-sizes-{{ product.id }}">
+                                    {% for size in product_sizes %}
+                                    {% if size.product_id == product.id %}
+                                    {% set size_index = loop.index0 %}
+                                    {% set size_id_str = 'edit_size_' ~ size.id %}
+                                    <div class="edit-size-item mb-3 p-3 border rounded {% if not size.is_active %}border-warning bg-light{% endif %}" data-size-id="{{ size.id }}">
+                                        <div class="row mb-2">
+                                            <div class="col-md-3">
+                                                <label class="form-label small">尺寸名称 <span class="text-danger">*</span>{% if not size.is_active %} <span class="badge bg-warning text-dark">已下架</span>{% endif %}</label>
+                                                <input type="text" class="form-control" name="size_name[]" value="{{ size.size_name }}" required>
+                                            </div>
+                                            <div class="col-md-2">
+                                                <label class="form-label small">厂家ID</label>
+                                                <input type="text" class="form-control" name="size_printer_id[]" value="{{ size.printer_product_id or '' }}" placeholder="如: 33673">
+                                            </div>
+                                            <div class="col-md-2">
+                                                <label class="form-label small">价格 <span class="text-danger">*</span></label>
+                                                <input type="number" step="0.01" class="form-control" name="size_price[]" value="{{ size.price or 0 }}" placeholder="如: 66.00" required>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label class="form-label small">效果图</label>
+                                                <input type="file" class="form-control form-control-sm" name="size_effect_image[]" accept="image/*">
+                                                <small class="text-muted" style="font-size: 0.7rem;">用于选片页面显示</small>
+                                                {% if size.effect_image_url %}
+                                                <div class="mt-1">
+                                                    <img src="{{ size.effect_image_url }}" alt="效果图" style="max-width: 60px; max-height: 60px; border-radius: 4px;">
+                                                </div>
+                                                {% endif %}
+                                                <input type="hidden" name="size_effect_image_url[]" value="{{ size.effect_image_url or '' }}">
+                                            </div>
+                                            <div class="col-md-2">
+                                                <label class="form-label small">&nbsp;</label>
+                                                <input type="hidden" name="existing_size_id[]" value="{{ size.id }}">
+                                                <button type="button" class="btn btn-delete w-100" onclick="removeEditSize(this)">删除尺寸</button>
+                                                {% if not size.is_active %}
+                                                <small class="text-muted d-block mt-1">该尺寸已下架（有订单关联）</small>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                        <!-- 宠物数量选项已注释 - 设备主要用于人像拍照，不需要宠物相关选项
+                                        <div class="pet-options-container-edit" data-size-id="{{ size_id_str }}">
+                                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                                <label class="form-label small mb-0">宠物数量选项</label>
+                                                <button type="button" class="btn btn-outline-primary btn-sm add-pet-option-btn" data-size-id="{{ size_id_str }}">+ 添加选项</button>
+                                            </div>
+                                            {% if size.pet_options and size.pet_options|length > 0 %}
+                                                {% for opt in size.pet_options %}
+                                                <div class="pet-option-item-edit mb-2">
+                                                    <input type="hidden" name="existing_pet_option_id_{{ size_id_str }}[]" value="{{ opt.id }}">
+                                                    <div class="row">
+                                                        <div class="col-md-4">
+                                                            <input type="text" class="form-control" name="pet_option_name_{{ size_id_str }}[]" value="{{ opt.pet_count_name }}" placeholder="选项名称，如: 单只" required>
+                                                        </div>
+                                                        <div class="col-md-4">
+                                                            <input type="number" step="0.01" class="form-control" name="pet_option_price_{{ size_id_str }}[]" value="{{ opt.price }}" placeholder="价格，如: 66.00" required>
+                                                        </div>
+                                                        <div class="col-md-4">
+                                                            <button type="button" class="btn btn-outline-danger btn-sm w-100 remove-pet-option-btn">删除</button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                {% endfor %}
+                                            {% else %}
+                                                <div class="pet-option-item-edit mb-2">
+                                                    <div class="row">
+                                                        <div class="col-md-4">
+                                                            <input type="text" class="form-control" name="pet_option_name_{{ size_id_str }}[]" placeholder="选项名称，如: 单只" required>
+                                                        </div>
+                                                        <div class="col-md-4">
+                                                            <input type="number" step="0.01" class="form-control" name="pet_option_price_{{ size_id_str }}[]" value="{{ size.price }}" placeholder="价格，如: 66.00" required>
+                                                        </div>
+                                                        <div class="col-md-4">
+                                                            <button type="button" class="btn btn-outline-danger btn-sm w-100 remove-pet-option-btn">删除</button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                        -->
+                                    </div>
+                                    {% endif %}
+                                    {% endfor %}
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- 编辑产品模态框 -->
+    <div class="modal fade edit-modal" id="editProductModal" tabindex="-1" aria-labelledby="editProductModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editProductModalLabel">编辑产品</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="editProductModalBody">
+                    <!-- 内容将通过JavaScript动态加载 -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" onclick="submitEditForm()">保存</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/bootstrap.bundle.min.js"></script>
+    <script>
+        
+        let sizeCounter = 0;
+        
+        // 添加尺寸输入框
+        function addSize() {
+            const container = document.getElementById('sizesContainer');
+            const sizeId = 'size_' + (sizeCounter++);
+            const newSizeGroup = document.createElement('div');
+            newSizeGroup.className = 'size-input-group border rounded p-3 mb-3';
+            newSizeGroup.dataset.sizeId = sizeId;
+            newSizeGroup.innerHTML = `
+                <div class="row mb-2">
+                    <div class="col-md-3">
+                        <label class="form-label small">尺寸名称 <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" name="size_name[]" placeholder="如: 8寸 (22x27cm) 桌摆画框" required>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small">厂家ID</label>
+                        <input type="text" class="form-control" name="size_printer_id[]" placeholder="如: 33673">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small">价格 <span class="text-danger">*</span></label>
+                        <input type="number" step="0.01" class="form-control" name="size_price[]" placeholder="如: 66.00" required>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small">效果图</label>
+                        <input type="file" class="form-control form-control-sm" name="size_effect_image[]" accept="image/*">
+                        <small class="text-muted" style="font-size: 0.7rem;">用于选片页面显示</small>
+                        <input type="hidden" name="size_effect_image_url[]" value="">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small">&nbsp;</label>
+                        <button type="button" class="btn btn-outline-danger btn-sm w-100" onclick="removeSize(this)">删除尺寸</button>
+                    </div>
+                </div>
+                <!-- 宠物数量选项已注释 - 设备主要用于人像拍照，不需要宠物相关选项
+                <div class="pet-options-container" data-size-id="${sizeId}">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <label class="form-label small mb-0">宠物数量选项</label>
+                        <button type="button" class="btn btn-outline-primary btn-sm" onclick="addPetOption(this)">+ 添加选项</button>
+                    </div>
+                    <div class="pet-option-item mb-2">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <input type="text" class="form-control" name="pet_option_name_${sizeId}[]" placeholder="选项名称，如: 单只" required>
+                            </div>
+                            <div class="col-md-4">
+                                <input type="number" step="0.01" class="form-control" name="pet_option_price_${sizeId}[]" placeholder="价格，如: 66.00" required>
+                            </div>
+                            <div class="col-md-4">
+                                <button type="button" class="btn btn-outline-danger btn-sm w-100" onclick="removePetOption(this)">删除</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                -->
+            `;
+            container.appendChild(newSizeGroup);
+        }
+        
+        // 添加宠物数量选项
+        function addPetOption(button) {
+            const container = button.closest('.pet-options-container');
+            const sizeId = container.dataset.sizeId;
+            const newOption = document.createElement('div');
+            newOption.className = 'pet-option-item mb-2';
+            newOption.innerHTML = `
+                <div class="row">
+                    <div class="col-md-4">
+                        <input type="text" class="form-control" name="pet_option_name_${sizeId}[]" placeholder="选项名称，如: 多只" required>
+                    </div>
+                    <div class="col-md-4">
+                        <input type="number" step="0.01" class="form-control" name="pet_option_price_${sizeId}[]" placeholder="价格，如: 86.00" required>
+                    </div>
+                    <div class="col-md-4">
+                        <button type="button" class="btn btn-outline-danger btn-sm w-100" onclick="removePetOption(this)">删除</button>
+                    </div>
+                </div>
+            `;
+            container.appendChild(newOption);
+        }
+        
+        // 删除宠物数量选项
+        function removePetOption(button) {
+            const container = button.closest('.pet-options-container');
+            const optionItems = container.querySelectorAll('.pet-option-item');
+            if (optionItems.length > 1) {
+                button.closest('.pet-option-item').remove();
+            } else {
+                alert('至少需要保留一个宠物数量选项');
+            }
+        }
+        
+        // 删除尺寸输入框
+        function removeSize(button) {
+            const sizeGroup = button.closest('.size-input-group');
+            const container = document.getElementById('sizesContainer');
+            
+            // 如果只有一个尺寸输入框，不允许删除
+            if (container.children.length > 1) {
+                sizeGroup.remove();
+            } else {
+                alert('至少需要保留一个尺寸规格');
+            }
+        }
+        
+        // 添加自定义字段（确保在全局作用域）
+        window.addCustomField = function(productId) {
+            console.log('addCustomField 被调用，productId:', productId);
+            // 优先在模态框中查找容器
+            const modal = document.getElementById('editProductModal');
+            let container = null;
+            if (modal && modal.classList.contains('show')) {
+                container = modal.querySelector('#customFieldsContainer_' + productId);
+            }
+            // 如果模态框中没找到，在主页面查找
+            if (!container) {
+                container = document.getElementById('customFieldsContainer_' + productId);
+            }
+            
+            if (!container) {
+                console.error('找不到自定义字段容器，productId:', productId);
+                alert('找不到自定义字段容器，请刷新页面重试');
+                return;
+            }
+            
+            const newField = document.createElement('div');
+            newField.className = 'custom-field-item mb-3 p-3 border rounded';
+            newField.innerHTML = `
+                <input type="hidden" name="existing_custom_field_id[]" value="">
+                <div class="row">
+                    <div class="col-md-3">
+                        <input type="text" class="form-control" name="custom_field_name[]" placeholder="字段名称（如：背景色）" required>
+                    </div>
+                    <div class="col-md-2">
+                        <select class="form-control" name="custom_field_type[]" onchange="window.toggleFieldOptions(this)">
+                            <option value="text">文本</option>
+                            <option value="number">数字</option>
+                            <option value="select">下拉选择</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <input type="text" class="form-control field-options" name="custom_field_options[]" placeholder="选项（下拉选择时用逗号分隔，如：红底,蓝底,白底）" style="display:none">
+                    </div>
+                    <div class="col-md-2">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="custom_field_required[]" value="1">
+                            <label class="form-check-label">必填</label>
+                        </div>
+                    </div>
+                    <div class="col-md-1">
+                        <button type="button" class="btn btn-outline-danger btn-sm" onclick="window.removeCustomField(this)">删除</button>
+                    </div>
+                </div>
+            `;
+            container.appendChild(newField);
+            console.log('自定义字段已添加，容器中的字段数量:', container.querySelectorAll('.custom-field-item').length);
+        }
+        
+        // 保留原函数名以兼容
+        function addCustomField(productId) {
+            window.addCustomField(productId);
+        }
+        
+        // 删除自定义字段（确保在全局作用域）
+        window.removeCustomField = function(button) {
+            const fieldItem = button.closest('.custom-field-item');
+            if (fieldItem) {
+                fieldItem.remove();
+                console.log('自定义字段已删除');
+            } else {
+                console.error('找不到要删除的字段项');
+            }
+        }
+        
+        // 保留原函数名以兼容
+        function removeCustomField(button) {
+            window.removeCustomField(button);
+        }
+        
+        // 切换字段选项显示（确保在全局作用域）
+        window.toggleFieldOptions = function(select) {
+            const fieldItem = select.closest('.custom-field-item');
+            if (!fieldItem) {
+                console.error('找不到字段项');
+                return;
+            }
+            const optionsInput = fieldItem.querySelector('.field-options');
+            if (!optionsInput) {
+                console.error('找不到选项输入框');
+                return;
+            }
+            if (select.value === 'select') {
+                optionsInput.style.display = 'block';
+                optionsInput.required = true;
+            } else {
+                optionsInput.style.display = 'none';
+                optionsInput.required = false;
+                optionsInput.value = '';
+            }
+        }
+        
+        // 删除自定义字段（确保在全局作用域）
+        window.removeCustomField = function(button) {
+            const fieldItem = button.closest('.custom-field-item');
+            if (fieldItem) {
+                fieldItem.remove();
+                console.log('自定义字段已删除');
+            }
+        }
+        
+        // 删除产品确认处理
+        document.querySelectorAll('.delete-product-form').forEach(form => {
+            form.addEventListener('submit', function(e) {
+                const productName = this.dataset.productName;
+                if (!confirm('确定要删除产品 ' + productName + ' 吗？')) {
+                    e.preventDefault();
+                    return false;
+                }
+            });
+        });
+        
+        // 打开编辑模态框 - 确保在全局作用域
+        window.openEditModal = function(productId) {
+            console.log('openEditModal called with productId:', productId);
+            // 获取编辑表单内容
+            const editDiv = document.getElementById(`edit-${productId}`);
+            if (!editDiv) {
+                alert('找不到编辑表单');
+                return;
+            }
+            
+            // 获取模态框元素
+            const modalElement = document.getElementById('editProductModal');
+            const modalBody = document.getElementById('editProductModalBody');
+            
+            if (!modalElement || !modalBody) {
+                alert('找不到模态框元素，请刷新页面重试');
+                console.error('Modal elements not found:', {modalElement, modalBody});
+                return;
+            }
+            
+            // 获取原始表单
+            const originalForm = editDiv.querySelector('form');
+            if (!originalForm) {
+                alert('找不到编辑表单');
+                return;
+            }
+            
+            // 直接克隆整个表单（包括所有子元素和结构）
+            const formClone = originalForm.cloneNode(true);
+            
+            // 确保表单的action属性正确（从原始表单复制）
+            const originalAction = originalForm.getAttribute('action');
+            if (originalAction) {
+                formClone.setAttribute('action', originalAction);
+                console.log('✅ 已设置表单action为:', originalAction);
+            } else {
+                // 如果没有action，使用当前页面路径
+                formClone.setAttribute('action', window.location.pathname);
+                console.log('⚠️ 原始表单没有action，使用当前路径:', window.location.pathname);
+            }
+            
+            // 修改表单中的按钮
+            const cancelBtn = formClone.querySelector('.exit-edit-mode-btn');
+            if (cancelBtn) {
+                cancelBtn.className = 'btn btn-secondary';
+                cancelBtn.setAttribute('data-bs-dismiss', 'modal');
+                cancelBtn.textContent = '取消';
+                cancelBtn.removeAttribute('data-product-id');
+                cancelBtn.removeAttribute('onclick');
+            }
+            
+            // 修改保存按钮，改为调用submitEditForm
+            const submitBtn = formClone.querySelector('button[type="submit"]');
+            if (submitBtn) {
+                submitBtn.type = 'button';
+                submitBtn.onclick = function() { submitEditForm(); };
+            }
+            
+            // 清空模态框内容并添加表单
+            modalBody.innerHTML = '';
+            modalBody.appendChild(formClone);
+            
+            // 确保input元素和相关的span元素的ID正确
+            const fileInput = formClone.querySelector(`input[type="file"]`);
+            if (fileInput) {
+                const oldId = fileInput.id;
+                fileInput.id = `edit_images_${productId}`;
+                fileInput.name = 'product_images[]';
+                // 确保文件input的属性正确
+                fileInput.multiple = true;
+                fileInput.accept = 'image/*';
+                console.log(`更新文件input ID: ${oldId} -> ${fileInput.id}, name: ${fileInput.name}`);
+            } else {
+                console.error('克隆的表单中找不到文件input元素');
+            }
+            
+            // 更新uploadText元素的ID
+            const uploadText = formClone.querySelector(`span[id*="edit-upload-text"]`);
+            if (uploadText) {
+                const oldTextId = uploadText.id;
+                uploadText.id = `edit-upload-text-${productId}`;
+                console.log(`更新uploadText ID: ${oldTextId} -> ${uploadText.id}`);
+            } else {
+                console.error('克隆的表单中找不到uploadText元素');
+            }
+            
+            // 更新按钮的onclick，确保指向正确的input ID - 保持与添加产品相同的方式
+            const uploadButton = formClone.querySelector('button.btn-upload');
+            if (uploadButton && fileInput) {
+                // 直接设置onclick属性，就像添加产品那样
+                uploadButton.setAttribute('onclick', `document.getElementById('edit_images_${productId}').click()`);
+                console.log('已更新上传按钮onclick');
+            }
+            
+            // 为模态框内的"添加尺寸"按钮绑定事件
+            const addSizeBtnsInModal = formClone.querySelectorAll('.add-edit-size-btn');
+            addSizeBtnsInModal.forEach(btn => {
+                btn.onclick = function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const btnProductId = btn.dataset.productId || btn.getAttribute('data-product-id');
+                    console.log('模态框中点击添加尺寸按钮，productId:', btnProductId);
+                    if (btnProductId) {
+                        addEditSize(parseInt(btnProductId));
+                    }
+                };
+            });
+            
+            // 为模态框内的"添加自定义字段"按钮绑定事件
+            const addCustomFieldBtnsInModal = formClone.querySelectorAll('.add-custom-field-btn');
+            addCustomFieldBtnsInModal.forEach(btn => {
+                btn.onclick = function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const btnProductId = btn.dataset.productId || btn.getAttribute('data-product-id');
+                    console.log('模态框中点击添加自定义字段按钮，productId:', btnProductId);
+                    if (btnProductId) {
+                        window.addCustomField(btnProductId);
+                    } else {
+                        alert('按钮配置错误，请刷新页面重试');
+                    }
+                };
+            });
+            
+            // 为模态框内的"删除自定义字段"按钮绑定事件
+            const removeCustomFieldBtnsInModal = formClone.querySelectorAll('button[onclick*="removeCustomField"]');
+            removeCustomFieldBtnsInModal.forEach(btn => {
+                btn.onclick = function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    window.removeCustomField(this);
+                };
+            });
+            
+            // 为模态框内的字段类型选择框绑定事件
+            const fieldTypeSelectsInModal = formClone.querySelectorAll('select[name="custom_field_type[]"]');
+            fieldTypeSelectsInModal.forEach(select => {
+                select.onchange = function() {
+                    window.toggleFieldOptions(this);
+                };
+            });
+            
+            // 显示模态框
+            const modal = new bootstrap.Modal(modalElement);
+            
+            // 监听模态框显示事件，确保DOM完全加载后再初始化
+            let initCalled = false;
+            function initImageUpload() {
+                if (!initCalled) {
+                    initCalled = true;
+                    console.log('模态框已完全显示，开始初始化图片上传功能，productId:', productId);
+                    setupEditImageUpload(productId);
+                }
+            }
+            modalElement.addEventListener('shown.bs.modal', initImageUpload);
+            
+            modal.show();
+            
+            // 备用：如果事件监听器没有触发，使用setTimeout
+            setTimeout(function() {
+                if (!initCalled) {
+                    console.log('备用初始化（setTimeout），productId:', productId);
+                    setupEditImageUpload(productId);
+                }
+            }, 800);
+            
+            // 保存当前编辑的产品ID
+            modalElement.dataset.productId = productId;
+        };
+        
+        // 确保openEditModal在全局作用域可用（兼容HTML中的onclick）
+        function openEditModal(productId) {
+            window.openEditModal(productId);
+        }
+        
+        // 确保openEditModal在全局作用域可用（兼容HTML中的onclick）
+        function openEditModal(productId) {
+            window.openEditModal(productId);
+        }
+        
+        // 提交编辑表单
+        function submitEditForm() {
+            const modal = document.getElementById('editProductModal');
+            if (!modal) {
+                alert('找不到模态框');
+                return;
+            }
+            const modalElement = document.getElementById('editProductModal');
+            const productId = modalElement ? modalElement.dataset.productId : null;
+            
+            const form = modal.querySelector('form');
+            if (!form) {
+                alert('找不到表单');
+                return;
+            }
+            
+            // 检查是否有文件被选择 - 使用产品ID直接查找，确保找到正确的input
+            let fileInput = null;
+            
+            if (productId) {
+                // 先通过ID查找
+                fileInput = document.getElementById(`edit_images_${productId}`);
+                console.log('🔍 通过ID查找文件input，productId:', productId, '找到:', fileInput ? fileInput.id : '未找到');
+            }
+            
+            // 如果没找到，尝试在表单中查找
+            if (!fileInput) {
+                fileInput = form.querySelector('input[type="file"]');
+                console.log('🔍 在表单中查找文件input，找到:', fileInput ? fileInput.id : '未找到');
+            }
+            
+            // 列出表单中所有的文件input
+            const allFileInputs = form.querySelectorAll('input[type="file"]');
+            console.log('📋 表单中所有文件input:', Array.from(allFileInputs).map(inp => ({
+                id: inp.id,
+                name: inp.name,
+                filesCount: inp.files ? inp.files.length : 0
+            })));
+            
+            if (fileInput) {
+                console.log('✅ 找到文件input，ID:', fileInput.id, 'name:', fileInput.name);
+                console.log('📁 文件input的files属性:', fileInput.files);
+                console.log('📊 文件数量:', fileInput.files ? fileInput.files.length : 0);
+                console.log('💾 文件input的value:', fileInput.value);
+                
+                if (fileInput.files && fileInput.files.length > 0) {
+                    console.log('✅ 准备提交表单，包含', fileInput.files.length, '个文件');
+                    console.log('📝 文件列表:', Array.from(fileInput.files).map(f => f.name));
+                } else {
+                    console.warn('⚠️ 文件input存在但没有选择文件');
+                    console.log('💡 提示：如果刚才选择了文件但这里显示为空，可能是文件input被重置了');
+                }
+                
+                // 确保文件input的name正确
+                if (!fileInput.name || fileInput.name !== 'product_images[]') {
+                    fileInput.name = 'product_images[]';
+                    console.log('🔧 已设置文件input的name为product_images[]');
+                }
+            } else {
+                console.error('❌ 找不到文件input元素');
+                alert('错误：找不到文件上传输入框，请刷新页面重试');
+                return;
+            }
+            
+            // 确保表单有正确的enctype
+            if (!form.getAttribute('enctype')) {
+                form.setAttribute('enctype', 'multipart/form-data');
+                console.log('🔧 已设置表单enctype为multipart/form-data');
+            }
+            
+            // 获取正确的提交URL
+            let submitUrl = form.getAttribute('action');
+            if (!submitUrl || submitUrl === '' || submitUrl.includes('[object')) {
+                // 如果action属性无效，使用当前页面的URL
+                submitUrl = window.location.pathname + window.location.search;
+            }
+            // 确保是绝对路径或相对路径
+            if (!submitUrl.startsWith('http') && !submitUrl.startsWith('/')) {
+                submitUrl = '/' + submitUrl;
+            }
+            console.log('🔗 提交URL:', submitUrl);
+            
+            // 使用FormData和fetch API提交，确保文件被正确包含
+            const formData = new FormData(form);
+            
+            // 确保文件被包含在FormData中
+            if (fileInput.files && fileInput.files.length > 0) {
+                // 清除可能存在的旧文件数据
+                formData.delete('product_images[]');
+                // 添加所有选中的文件
+                for (let i = 0; i < fileInput.files.length; i++) {
+                    formData.append('product_images[]', fileInput.files[i]);
+                    console.log('📎 已添加文件到FormData:', fileInput.files[i].name, '大小:', fileInput.files[i].size, 'bytes');
+                }
+                console.log('✅ FormData中已包含', fileInput.files.length, '个文件');
+                
+                // 验证FormData中确实有文件
+                const filesInFormData = formData.getAll('product_images[]');
+                console.log('🔍 FormData验证: 包含', filesInFormData.length, '个文件');
+            } else {
+                console.log('ℹ️ 没有选择新文件，将只更新产品信息（不更新图片）');
+            }
+            
+            // 显示加载状态
+            const submitBtn = form.querySelector('button[type="button"]');
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                const originalText = submitBtn.textContent;
+                submitBtn.textContent = '保存中...';
+                
+                // 如果出错，恢复按钮状态
+                setTimeout(() => {
+                    if (submitBtn.disabled) {
+                        submitBtn.disabled = false;
+                        submitBtn.textContent = originalText;
+                    }
+                }, 10000);
+            }
+            
+            console.log('🚀 使用fetch提交表单到:', submitUrl);
+            
+            // 使用fetch提交表单
+            fetch(submitUrl, {
+                method: 'POST',
+                body: formData,
+                // 不设置Content-Type，让浏览器自动设置（包含boundary）
+            })
+            .then(response => {
+                console.log('📡 服务器响应状态:', response.status, response.statusText);
+                if (response.redirected) {
+                    console.log('🔄 重定向到:', response.url);
+                    window.location.href = response.url;
+                } else if (response.ok) {
+                    return response.text().then(html => {
+                        document.open();
+                        document.write(html);
+                        document.close();
+                    });
+                } else {
+                    throw new Error(`服务器错误: ${response.status} ${response.statusText}`);
+                }
+            })
+            .catch(error => {
+                console.error('❌ 提交表单时出错:', error);
+                alert('提交失败: ' + error.message + '\n请检查控制台获取更多信息');
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = '保存';
+                }
+            });
+        }
+        
+        // 使用事件委托处理所有按钮点击 - 确保在DOM加载后绑定
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Setting up event listeners...');
+            
+            // 使用事件委托处理所有按钮点击
+            document.addEventListener('click', function(e) {
+                // 编辑产品按钮 - 使用closest确保能捕获按钮点击
+                const editBtn = e.target.closest('.edit-product-btn');
+                if (editBtn) {
+                    console.log('Edit button clicked!');
+                    const productId = parseInt(editBtn.dataset.productId);
+                    console.log('Product ID:', productId);
+                    if (productId && !isNaN(productId)) {
+                        openEditModal(productId);
+                    }
+                    e.preventDefault();
+                    e.stopPropagation();
+                    return false;
+                }
+            
+                // 退出编辑模式按钮
+                const exitBtn = e.target.closest('.exit-edit-mode-btn');
+                if (exitBtn) {
+                    const productId = parseInt(exitBtn.dataset.productId);
+                    if (productId && !isNaN(productId)) {
+                        exitEditMode(productId);
+                    }
+                    e.preventDefault();
+                    return false;
+                }
+                
+                // 添加编辑尺寸按钮
+                const addSizeBtn = e.target.closest('.add-edit-size-btn');
+                if (addSizeBtn) {
+                    const productId = parseInt(addSizeBtn.dataset.productId);
+                    if (productId && !isNaN(productId)) {
+                        addEditSize(productId);
+                    }
+                    e.preventDefault();
+                    return false;
+                }
+                
+                // 删除产品图片按钮
+                const deleteImgBtn = e.target.closest('.delete-product-image-btn');
+                if (deleteImgBtn) {
+                    const imageId = parseInt(deleteImgBtn.dataset.imageId);
+                    if (imageId && !isNaN(imageId)) {
+                        deleteProductImage(imageId);
+                    }
+                    e.preventDefault();
+                    return false;
+                }
+                
+                // 添加自定义字段按钮
+                const addCustomFieldBtn = e.target.closest('.add-custom-field-btn');
+                if (addCustomFieldBtn) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const productId = addCustomFieldBtn.dataset.productId || addCustomFieldBtn.getAttribute('data-product-id');
+                    console.log('点击添加自定义字段按钮，productId:', productId);
+                    if (productId) {
+                        const container = document.getElementById('customFieldsContainer_' + productId);
+                        if (!container) {
+                            console.error('找不到自定义字段容器，productId:', productId);
+                            alert('找不到自定义字段容器，请刷新页面重试');
+                            return false;
+                        }
+                        addCustomField(productId);
+                    } else {
+                        console.error('按钮没有productId属性');
+                        alert('按钮配置错误，请刷新页面重试');
+                    }
+                    return false;
+                }
+            });
+            
+            console.log('Event listeners setup complete!');
+        });
+        
+        // toggleEdit函数已移除，产品详情默认展开显示
+        
+        // 进入编辑模式
+        function enterEditMode(productId) {
+            console.log('enterEditMode called with productId:', productId);
+            const displayDiv = document.getElementById('display-' + productId);
+            const editDiv = document.getElementById('edit-' + productId);
+            const editButton = document.querySelector('.product-actions button.edit-product-btn[data-product-id="' + productId + '"]');
+            
+            console.log('displayDiv:', displayDiv, 'editDiv:', editDiv, 'editButton:', editButton);
+            
+            // 切换到编辑模式
+            if (displayDiv) {
+                displayDiv.classList.add('hidden');
+            }
+            if (editDiv) {
+                editDiv.classList.remove('hidden');
+                // 初始化编辑模式的图片上传
+                try {
+                    setupEditImageUpload(productId);
+                } catch (e) {
+                    console.error('setupEditImageUpload error:', e);
+                }
+            }
+            
+            // 更新按钮文本和类名，以便切换回显示模式
+            if (editButton) {
+                editButton.textContent = '取消';
+                editButton.classList.add('cancel-edit-btn');
+            }
+        }
+        
+        // 退出编辑模式（取消编辑）
+        function exitEditMode(productId) {
+            const displayDiv = document.getElementById(`display-${productId}`);
+            const editDiv = document.getElementById(`edit-${productId}`);
+            const editButton = document.querySelector(`.product-actions button.edit-product-btn[data-product-id="${productId}"]`);
+            
+            // 切换回显示模式
+            if (displayDiv) displayDiv.classList.remove('hidden');
+            if (editDiv) editDiv.classList.add('hidden');
+            
+            // 更新按钮文本和类名
+            if (editButton) {
+                editButton.textContent = '编辑';
+                editButton.classList.remove('cancel-edit-btn');
+            }
+        }
+        
+        function addEditSize(productId) {
+            // 优先在模态框中查找，如果不存在则在原位置查找
+            const modal = document.getElementById('editProductModal');
+            let container = null;
+            if (modal && modal.classList.contains('show')) {
+                container = modal.querySelector(`#edit-sizes-${productId}`);
+            }
+            if (!container) {
+                container = document.getElementById(`edit-sizes-${productId}`);
+            }
+            if (!container) {
+                alert('找不到尺寸容器');
+                return;
+            }
+            
+            const sizeId = 'new_size_' + Date.now();
+            const newSizeItem = document.createElement('div');
+            newSizeItem.className = 'edit-size-item mb-3 p-3 border rounded';
+            newSizeItem.dataset.sizeId = sizeId;
+            newSizeItem.innerHTML = `
+                <div class="row mb-2">
+                    <div class="col-md-4">
+                        <label class="form-label small">尺寸名称 <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" name="size_name[]" placeholder="如: 8寸 (22x27cm) 桌摆画框" required>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small">厂家ID</label>
+                        <input type="text" class="form-control" name="size_printer_id[]" placeholder="如: 33673">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small">价格 <span class="text-danger">*</span></label>
+                        <input type="number" step="0.01" class="form-control" name="size_price[]" placeholder="如: 66.00" required>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small">&nbsp;</label>
+                        <button type="button" class="btn btn-delete w-100" onclick="removeEditSize(this)">删除尺寸</button>
+                    </div>
+                </div>
+                <!-- 宠物数量选项已注释 - 设备主要用于人像拍照，不需要宠物相关选项
+                <div class="pet-options-container-edit" data-size-id="${sizeId}">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <label class="form-label small mb-0">宠物数量选项</label>
+                        <button type="button" class="btn btn-outline-primary btn-sm add-pet-option-btn" data-size-id="${sizeId}">+ 添加选项</button>
+                    </div>
+                    <div class="pet-option-item-edit mb-2">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <input type="text" class="form-control" name="pet_option_name_${sizeId}[]" placeholder="选项名称，如: 单只" required>
+                            </div>
+                            <div class="col-md-4">
+                                <input type="number" step="0.01" class="form-control" name="pet_option_price_${sizeId}[]" placeholder="价格，如: 66.00" required>
+                            </div>
+                            <div class="col-md-4">
+                                <button type="button" class="btn btn-outline-danger btn-sm w-100 remove-pet-option-btn">删除</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                -->
+                <input type="hidden" name="existing_size_id[]" value="">
+            `;
+            container.appendChild(newSizeItem);
+        }
+        
+        // 添加编辑模式下的宠物数量选项
+        function addEditPetOption(button, sizeId) {
+            const container = button.closest('.pet-options-container-edit');
+            const newOption = document.createElement('div');
+            newOption.className = 'pet-option-item-edit mb-2';
+            // 转义sizeId中的特殊字符，避免在模板字符串中出现问题
+            const sizeIdSafe = String(sizeId).replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '\\"').replace(/`/g, '\\`');
+            newOption.innerHTML = `
+                <div class="row">
+                    <div class="col-md-4">
+                        <input type="text" class="form-control" name="pet_option_name_${sizeIdSafe}[]" placeholder="选项名称，如: 多只" required>
+                    </div>
+                    <div class="col-md-4">
+                        <input type="number" step="0.01" class="form-control" name="pet_option_price_${sizeIdSafe}[]" placeholder="价格，如: 86.00" required>
+                    </div>
+                    <div class="col-md-4">
+                        <button type="button" class="btn btn-outline-danger btn-sm w-100 remove-pet-option-btn">删除</button>
+                    </div>
+                </div>
+            `;
+            container.appendChild(newOption);
+        }
+        
+        // 删除编辑模式下的宠物数量选项
+        function removeEditPetOption(button) {
+            const container = button.closest('.pet-options-container-edit');
+            const optionItems = container.querySelectorAll('.pet-option-item-edit');
+            if (optionItems.length > 1) {
+                button.closest('.pet-option-item-edit').remove();
+            } else {
+                alert('至少需要保留一个宠物数量选项');
+            }
+        }
+        
+        // 使用事件委托处理添加和删除宠物选项按钮
+        document.addEventListener('click', function(e) {
+            if (e.target.classList.contains('add-pet-option-btn')) {
+                const sizeId = e.target.dataset.sizeId;
+                if (sizeId) {
+                    addEditPetOption(e.target, sizeId);
+                }
+            }
+            if (e.target.classList.contains('remove-pet-option-btn')) {
+                removeEditPetOption(e.target);
+            }
+        });
+        
+        // 删除编辑模式下的尺寸（旧函数，保留兼容）
+        function removeEditSize(button) {
+            button.closest('.edit-size-item').remove();
+        }
+        
+        // 旧的addEditSize函数（已更新，保留注释）
+        /*
+        function addEditSize(productId) {
+            const container = document.getElementById(`edit-sizes-${productId}`);
+            const newSizeItem = document.createElement('div');
+            newSizeItem.className = 'edit-size-item';
+            newSizeItem.innerHTML = `
+                <div class="row">
+                    <div class="col-md-5">
+                        <input type="text" class="form-control" name="size_name[]" placeholder="尺寸名称" required>
+                    </div>
+                    <div class="col-md-4">
+                        <input type="number" step="0.01" class="form-control" name="size_price[]" placeholder="价格" required>
+                    </div>
+                    <div class="col-md-3">
+                        <button type="button" class="btn btn-delete" onclick="removeEditSize(this)">删除</button>
+                    </div>
+                </div>
+                <input type="hidden" name="existing_size_id[]" value="">
+            `;
+            container.appendChild(newSizeItem);
+        }
+        
+        function removeEditSize(button) {
+            button.closest('.edit-size-item').remove();
+        }
+        */
+        
+        // 多图上传处理 - 移到DOMContentLoaded中
+        document.addEventListener('DOMContentLoaded', function() {
+            const productImagesInput = document.getElementById('product_images');
+            if (productImagesInput) {
+                productImagesInput.addEventListener('change', function(e) {
+                    const files = e.target.files;
+                    const uploadText = document.getElementById('upload-text');
+                    const uploadButton = e.target.closest('.btn-upload');
+                    
+                    if (files.length > 0) {
+                        if (files.length > 4) {
+                            alert('最多只能上传4张图片');
+                            e.target.value = '';
+                            if (uploadText) uploadText.textContent = '点击上传图片';
+                            if (uploadButton) uploadButton.classList.remove('has-file');
+                            return;
+                        }
+                        
+                        let fileNames = Array.from(files).map(file => file.name).join(', ');
+                        if (fileNames.length > 30) {
+                            fileNames = fileNames.substring(0, 30) + '...';
+                        }
+                        if (uploadText) uploadText.textContent = `已选择${files.length}张图片`;
+                        if (uploadButton) uploadButton.classList.add('has-file');
+                    } else {
+                        if (uploadText) uploadText.textContent = '点击上传图片';
+                        if (uploadButton) uploadButton.classList.remove('has-file');
+                    }
+                });
+            }
+        });
+        
+        // 编辑模式图片上传处理 - 使用全局document.getElementById，完全复制添加产品的方式
+        function setupEditImageUpload(productId) {
+            // 直接通过ID查找，不依赖modalBody，就像添加产品那样使用document.getElementById
+            const fileInput = document.getElementById(`edit_images_${productId}`);
+            if (!fileInput) {
+                console.error('找不到图片上传input元素，productId:', productId);
+                const modalBody = document.getElementById('editProductModalBody');
+                if (modalBody) {
+                    console.log('模态框中的所有文件input:', modalBody.querySelectorAll('input[type="file"]'));
+                }
+                return;
+            }
+            
+            console.log('找到input元素:', fileInput.id, 'name:', fileInput.name);
+            
+            // 直接通过ID查找uploadText元素
+            const uploadText = document.getElementById(`edit-upload-text-${productId}`);
+            if (!uploadText) {
+                console.error('找不到uploadText元素，ID:', `edit-upload-text-${productId}`);
+                return;
+            }
+            
+            // 查找上传按钮
+            const uploadButton = fileInput.closest('.btn-upload');
+            
+            console.log('uploadText元素:', uploadText, 'ID: ' + uploadText.id);
+            console.log('uploadButton元素:', uploadButton);
+            
+            // 直接绑定change事件 - 完全复制添加产品的代码
+            fileInput.addEventListener('change', function(e) {
+                console.log('=== 文件选择change事件触发 ===');
+                const files = e.target.files;
+                console.log('文件数量:', files.length);
+                
+                if (files.length > 0) {
+                    console.log('文件列表:', Array.from(files).map(f => f.name));
+                }
+                
+                // 重新查找元素，确保找到正确的元素（因为可能DOM已更新）
+                // 优先在模态框中查找，确保找到模态框内的元素
+                const modal = document.getElementById('editProductModal');
+                let currentUploadText = null;
+                let currentUploadButton = null;
+                
+                if (modal && modal.classList.contains('show')) {
+                    // 在模态框中查找
+                    currentUploadText = modal.querySelector(`#edit-upload-text-${productId}`);
+                    currentUploadButton = modal.querySelector(`button.btn-upload`);
+                    console.log('🔍 在模态框中查找元素');
+                }
+                
+                // 如果没找到，使用全局查找
+                if (!currentUploadText) {
+                    currentUploadText = document.getElementById(`edit-upload-text-${productId}`);
+                    console.log('🔍 使用全局查找uploadText');
+                }
+                if (!currentUploadButton) {
+                    currentUploadButton = fileInput.closest('.btn-upload');
+                    console.log('🔍 使用closest查找uploadButton');
+                }
+                
+                console.log('currentUploadText:', currentUploadText, currentUploadText ? 'ID: ' + currentUploadText.id : '未找到');
+                console.log('currentUploadButton:', currentUploadButton);
+                
+                // 列出所有可能的uploadText元素
+                const allUploadTexts = document.querySelectorAll(`span[id*="edit-upload-text"]`);
+                if (allUploadTexts.length > 1) {
+                    console.log('⚠️ 发现多个uploadText元素:', Array.from(allUploadTexts).map(el => ({
+                        id: el.id,
+                        text: el.textContent,
+                        parent: el.parentElement ? el.parentElement.className : '无父元素',
+                        inModal: modal && modal.contains(el)
+                    })));
+                }
+                
+                if (files.length > 0) {
+                    if (files.length > 4) {
+                        alert('最多只能上传4张图片');
+                        e.target.value = '';
+                        if (currentUploadText) currentUploadText.textContent = '点击上传多图';
+                        if (currentUploadButton) currentUploadButton.classList.remove('has-file');
+                        return;
+                    }
+                    
+                    let fileNames = Array.from(files).map(file => file.name).join(', ');
+                    if (fileNames.length > 30) {
+                        fileNames = fileNames.substring(0, 30) + '...';
+                    }
+                    if (currentUploadText) {
+                        // 更新文本内容
+                        currentUploadText.textContent = `已选择${files.length}张图片`;
+                        console.log('✅ 已更新文本为:', currentUploadText.textContent);
+                        
+                        // 强制更新显示 - 确保文本可见
+                        currentUploadText.style.display = '';
+                        currentUploadText.style.visibility = 'visible';
+                        currentUploadText.style.opacity = '1';
+                        currentUploadText.style.zIndex = '10';
+                        
+                        // 触发重排，确保浏览器重新渲染
+                        currentUploadText.offsetHeight;
+                        
+                        // 再次确认文本内容
+                        console.log('🔍 验证文本内容:', currentUploadText.textContent);
+                        console.log('🔍 验证元素可见性:', {
+                            display: window.getComputedStyle(currentUploadText).display,
+                            visibility: window.getComputedStyle(currentUploadText).visibility,
+                            opacity: window.getComputedStyle(currentUploadText).opacity
+                        });
+                    } else {
+                        console.error('❌ 找不到uploadText元素，ID:', `edit-upload-text-${productId}`);
+                        // 尝试通过其他方式查找
+                        const allUploadTexts = document.querySelectorAll(`span[id*="edit-upload-text"]`);
+                        console.log('🔍 找到所有uploadText元素:', Array.from(allUploadTexts).map(el => ({
+                            id: el.id,
+                            text: el.textContent,
+                            visible: window.getComputedStyle(el).display !== 'none'
+                        })));
+                    }
+                    if (currentUploadButton) {
+                        currentUploadButton.classList.add('has-file');
+                        console.log('✅ 已添加has-file类');
+                    } else {
+                        console.warn('⚠️ 找不到uploadButton元素');
+                    }
+                } else {
+                    if (currentUploadText) currentUploadText.textContent = '点击上传多图';
+                    if (currentUploadButton) currentUploadButton.classList.remove('has-file');
+                }
+            });
+            
+            console.log('✅ 事件监听器已绑定到input元素');
+            console.log('图片上传功能已初始化，productId:', productId);
+        }
+        
+        // 删除产品图片
+        function deleteProductImage(imageId) {
+            if (confirm('确定要删除这张图片吗？')) {
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = '{{ url_for("admin_products.admin_sizes") }}';
+                
+                const actionInput = document.createElement('input');
+                actionInput.type = 'hidden';
+                actionInput.name = 'action';
+                actionInput.value = 'delete_product_image';
+                
+                const imageIdInput = document.createElement('input');
+                imageIdInput.type = 'hidden';
+                imageIdInput.name = 'image_id';
+                imageIdInput.value = imageId;
+                
+                form.appendChild(actionInput);
+                form.appendChild(imageIdInput);
+                document.body.appendChild(form);
+                form.submit();
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>小程序用户管理 - {{ brand_name }}系统</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        body {
+            background: #f5f5f5;
+            padding-top: 80px;
+        }
+        .navbar-custom {
+            background: #0a0a0a !important;
+            border-bottom: 1px solid #1a1a1a;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        }
+        .navbar-brand, .nav-link {
+            color: #e0e0e0 !important;
+        }
+        .nav-link:hover {
+            color: #ffffff !important;
+        }
+        .main-content {
+            padding: 20px;
+        }
+        .user-table {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .table th {
+            background: #f8f9fa;
+            font-weight: 600;
+        }
+        .clickable-card {
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .clickable-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+    </style>
+</head>
+<body>
+    <!-- 导航栏 -->
+    {% include 'admin/_navbar.html' %}
+
+    <div class="container-fluid main-content">
+        <div class="row">
+            <main class="col-12">
+                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center mb-4">
+                    <h2 class="mb-0">小程序用户管理</h2>
+                    <button class="btn btn-primary" onclick="loadUserData()">
+                        <i class="bi bi-arrow-clockwise"></i> 刷新
+                    </button>
+                </div>
+
+                <!-- 统计卡片 -->
+                <div class="row mb-4">
+                    <div class="col-md-3">
+                        <div class="card text-white bg-primary clickable-card" onclick="showTotalUsersModal()" style="cursor: pointer;">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h3 class="mb-0" id="totalUsersCount">0</h3>
+                                        <small>小程序用户总数</small>
+                                    </div>
+                                    <i class="bi bi-people fs-1 opacity-50"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                </div>
+
+                <!-- 筛选和搜索 -->
+                <div class="card mb-4">
+                            <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-2">
+                                <label class="form-label">搜索用户ID</label>
+                                <input type="text" class="form-control" id="filterUserId" placeholder="输入用户ID" onkeyup="applyFilter()">
+                                    </div>
+                            <div class="col-md-2">
+                                <label class="form-label">搜索昵称</label>
+                                <input type="text" class="form-control" id="filterNickname" placeholder="输入昵称" onkeyup="applyFilter()">
+                                    </div>
+                            <div class="col-md-2">
+                                <label class="form-label">搜索手机号</label>
+                                <input type="text" class="form-control" id="filterPhone" placeholder="输入手机号" onkeyup="applyFilter()">
+                    </div>
+                    <div class="col-md-3">
+                                <label class="form-label">快速筛选</label>
+                                <select class="form-select" id="filterQuick" onchange="applyFilter()">
+                                    <option value="">全部用户</option>
+                                    <option value="has_phone">已绑定手机号</option>
+                                    <option value="no_phone">未绑定手机号</option>
+                                    <option value="has_order">有支付订单</option>
+                                    <option value="no_order">无支付订单</option>
+                                    <option value="has_phone_and_order">已绑定手机号且有订单</option>
+                                </select>
+                    </div>
+                    <div class="col-md-3">
+                                <label class="form-label">操作</label>
+                                    <div>
+                                    <button class="btn btn-secondary" onclick="clearFilter()">
+                                        <i class="bi bi-x-circle"></i> 清除筛选
+                                    </button>
+                                    </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                
+                <!-- 用户列表表格 -->
+                <div class="card user-table">
+                    <div class="card-header">
+                        <h5 class="mb-0">用户列表</h5>
+                    </div>
+                            <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>用户ID</th>
+                                        <th>昵称</th>
+                                        <th>手机号</th>
+                                        <th>OpenID</th>
+                                        <th>访问次数</th>
+                                        <th>支付订单数</th>
+                                        <th>支付金额</th>
+                                        <th>操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="userTableBody">
+                                    <tr>
+                                        <td colspan="8" class="text-center text-muted">
+                                            <i class="bi bi-hourglass-split"></i> 正在加载数据...
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                                    </div>
+                        <!-- 分页 -->
+                        <nav aria-label="用户列表分页">
+                            <ul class="pagination justify-content-center" id="pagination">
+                            </ul>
+                        </nav>
+                                    </div>
+                                </div>
+            </main>
+                    </div>
+                </div>
+
+    <!-- 用户总数模态框 -->
+    <div class="modal fade" id="totalUsersModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">小程序用户总数统计</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                    </div>
+                <div class="modal-body" id="totalUsersModalBody">
+                    <p class="text-muted">正在加载统计数据...</p>
+                                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                                    </div>
+                                </div>
+        </div>
+    </div>
+
+    <!-- 消费记录模态框 -->
+    <div class="modal fade" id="orderModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">消费记录</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="orderModalBody">
+                    <p class="text-muted">正在加载...</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // 全局变量
+        var allUsers = [];
+        var currentPage = 1;
+        var pageSize = 20;
+        var totalPages = 1;
+        var statistics = {
+            today_active_users: 0,
+            yesterday_active_users: 0
+        };
+
+        // 转义HTML函数
+        function escapeHtml(str) {
+            if (!str) return '';
+            var s = String(str);
+            s = s.replace(/&/g, '&amp;');
+            s = s.replace(/</g, '&lt;');
+            s = s.replace(/>/g, '&gt;');
+            s = s.replace(/"/g, '&quot;');
+            s = s.replace(/'/g, '&#39;');
+            return s;
+        }
+
+        // 加载用户数据
+        function loadUserData() {
+            var tbody = document.getElementById('userTableBody');
+            if (!tbody) {
+                console.error('表格元素不存在');
+                return;
+            }
+
+            tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted"><i class="bi bi-hourglass-split"></i> 正在加载数据...</td></tr>';
+
+            fetch('/admin/api/promotion/users', {
+                    credentials: 'same-origin'
+                })
+            .then(function(response) {
+                        return response.json();
+                    })
+            .then(function(data) {
+                if (data.success && data.users) {
+                    allUsers = data.users;
+                    var totalCount = allUsers.length;
+                    document.getElementById('totalUsersCount').textContent = totalCount;
+                    
+                    // 保存统计数据
+                    if (data.statistics) {
+                        statistics.today_active_users = data.statistics.today_active_users || 0;
+                        statistics.yesterday_active_users = data.statistics.yesterday_active_users || 0;
+                    }
+                    
+                    applyFilter();
+                    } else {
+                    tbody.innerHTML = '<tr><td colspan="8" class="text-center text-danger">加载失败: ' + escapeHtml(data.message || '未知错误') + '</td></tr>';
+                }
+            })
+            .catch(function(error) {
+                console.error('加载用户数据失败:', error);
+                tbody.innerHTML = '<tr><td colspan="8" class="text-center text-danger">加载失败，请刷新页面重试</td></tr>';
+            });
+        }
+
+        // 应用筛选
+        function applyFilter() {
+            var filterUserId = document.getElementById('filterUserId').value.toLowerCase().trim();
+            var filterNickname = document.getElementById('filterNickname').value.toLowerCase().trim();
+            var filterPhone = document.getElementById('filterPhone').value.toLowerCase().trim();
+            var filterQuick = document.getElementById('filterQuick').value;
+
+            var filteredUsers = [];
+            for (var i = 0; i < allUsers.length; i++) {
+                var user = allUsers[i];
+                var userId = (user.user_id || '').toLowerCase();
+                var nickname = (user.nickname || '').toLowerCase();
+                var phone = (user.phone_number || '').toLowerCase();
+                var hasPhone = !!(user.phone_number && user.phone_number.trim());
+                var hasOrder = (user.own_orders || 0) > 0;
+
+                var match = true;
+                
+                // 文本搜索筛选
+                if (filterUserId && userId.indexOf(filterUserId) === -1) {
+                    match = false;
+                }
+                if (filterNickname && nickname.indexOf(filterNickname) === -1) {
+                    match = false;
+                }
+                if (filterPhone && phone.indexOf(filterPhone) === -1) {
+                    match = false;
+                }
+
+                // 快速筛选
+                if (match && filterQuick) {
+                    if (filterQuick === 'has_phone' && !hasPhone) {
+                        match = false;
+                    } else if (filterQuick === 'no_phone' && hasPhone) {
+                        match = false;
+                    } else if (filterQuick === 'has_order' && !hasOrder) {
+                        match = false;
+                    } else if (filterQuick === 'no_order' && hasOrder) {
+                        match = false;
+                    } else if (filterQuick === 'has_phone_and_order' && (!hasPhone || !hasOrder)) {
+                        match = false;
+                    }
+                }
+
+                if (match) {
+                    filteredUsers.push(user);
+                }
+            }
+
+            totalPages = Math.ceil(filteredUsers.length / pageSize);
+            if (totalPages === 0) totalPages = 1;
+            if (currentPage > totalPages) currentPage = 1;
+
+            renderUserTable(filteredUsers);
+        }
+
+        // 清除筛选
+        function clearFilter() {
+            document.getElementById('filterUserId').value = '';
+            document.getElementById('filterNickname').value = '';
+            document.getElementById('filterPhone').value = '';
+            document.getElementById('filterQuick').value = '';
+            currentPage = 1;
+            applyFilter();
+        }
+
+        // 切换页码
+        function changePage(page) {
+            if (page >= 1 && page <= totalPages) {
+                currentPage = page;
+                applyFilter();
+            }
+        }
+
+        // 渲染用户表格
+        function renderUserTable(users) {
+            var tbody = document.getElementById('userTableBody');
+            if (!tbody) return;
+
+            if (!users || users.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted">暂无用户数据</td></tr>';
+                renderPagination(0);
+                return;
+            }
+
+            // 计算分页
+            var startIndex = (currentPage - 1) * pageSize;
+            var endIndex = Math.min(startIndex + pageSize, users.length);
+            var pageUsers = users.slice(startIndex, endIndex);
+
+            var html = '';
+            for (var i = 0; i < pageUsers.length; i++) {
+                var user = pageUsers[i];
+                var userId = escapeHtml(user.user_id || '');
+                var nickname = escapeHtml(user.nickname || '未设置');
+                var phone = escapeHtml(user.phone_number || '未绑定');
+                var openId = escapeHtml(user.open_id || '未设置');
+                var visitCount = (user.visit_stats && user.visit_stats.total_visits) || 0;
+                var orderCount = user.own_orders || 0;
+                var paidAmount = (user.paid_amount || 0).toFixed(2);
+                
+                html += '<tr>';
+                html += '<td><code>' + userId + '</code></td>';
+                html += '<td>' + nickname + '</td>';
+                html += '<td>' + phone + '</td>';
+                html += '<td><code style="font-size: 0.85em;">' + openId + '</code></td>';
+                html += '<td><span class="badge bg-info">' + visitCount + '</span></td>';
+                html += '<td>' + orderCount + '</td>';
+                html += '<td>¥' + paidAmount + '</td>';
+                html += '<td>';
+                html += '<button class="btn btn-sm btn-outline-primary" onclick="showUserOrders(\'' + userId + '\', \'' + escapeHtml(nickname) + '\')">';
+                html += '<i class="bi bi-list-ul"></i> 查看消费记录';
+                html += '</button>';
+                html += '</td>';
+                html += '</tr>';
+            }
+            tbody.innerHTML = html;
+            renderPagination(users.length);
+        }
+
+        // 渲染分页
+        function renderPagination(totalCount) {
+            var pagination = document.getElementById('pagination');
+            if (!pagination) return;
+
+            if (totalCount === 0 || totalPages <= 1) {
+                pagination.innerHTML = '';
+                return;
+            }
+
+            var html = '';
+            
+            // 上一页
+            html += '<li class="page-item' + (currentPage === 1 ? ' disabled' : '') + '">';
+            html += '<a class="page-link" href="javascript:void(0)" onclick="changePage(' + (currentPage - 1) + ')">上一页</a>';
+            html += '</li>';
+
+            // 页码
+            var startPage = Math.max(1, currentPage - 2);
+            var endPage = Math.min(totalPages, currentPage + 2);
+            
+            if (startPage > 1) {
+                html += '<li class="page-item"><a class="page-link" href="javascript:void(0)" onclick="changePage(1)">1</a></li>';
+                if (startPage > 2) {
+                    html += '<li class="page-item disabled"><span class="page-link">...</span></li>';
+                }
+            }
+
+            for (var i = startPage; i <= endPage; i++) {
+                html += '<li class="page-item' + (i === currentPage ? ' active' : '') + '">';
+                html += '<a class="page-link" href="javascript:void(0)" onclick="changePage(' + i + ')">' + i + '</a>';
+                html += '</li>';
+            }
+
+            if (endPage < totalPages) {
+                if (endPage < totalPages - 1) {
+                    html += '<li class="page-item disabled"><span class="page-link">...</span></li>';
+                }
+                html += '<li class="page-item"><a class="page-link" href="javascript:void(0)" onclick="changePage(' + totalPages + ')">' + totalPages + '</a></li>';
+            }
+
+            // 下一页
+            html += '<li class="page-item' + (currentPage === totalPages ? ' disabled' : '') + '">';
+            html += '<a class="page-link" href="javascript:void(0)" onclick="changePage(' + (currentPage + 1) + ')">下一页</a>';
+            html += '</li>';
+
+            html += '<li class="page-item disabled"><span class="page-link">共 ' + totalCount + ' 条，第 ' + currentPage + '/' + totalPages + ' 页</span></li>';
+
+            pagination.innerHTML = html;
+        }
+
+        // 显示用户总数模态框
+        function showTotalUsersModal() {
+            var modal = new bootstrap.Modal(document.getElementById('totalUsersModal'));
+            var modalBody = document.getElementById('totalUsersModalBody');
+            
+            // 计算统计数据
+            var totalCount = allUsers.length;
+            var hasPhoneCount = 0;
+            var hasOrderCount = 0;
+            var totalPaidAmount = 0;
+            
+            for (var i = 0; i < allUsers.length; i++) {
+                var user = allUsers[i];
+                if (user.phone_number && user.phone_number.trim()) {
+                    hasPhoneCount++;
+                }
+                if ((user.own_orders || 0) > 0) {
+                    hasOrderCount++;
+                }
+                totalPaidAmount += (user.paid_amount || 0);
+            }
+
+            var html = '<div class="text-center mb-4">';
+            html += '<h2 class="text-primary">' + totalCount + '</h2>';
+            html += '<p class="text-muted">小程序用户总数</p>';
+            html += '</div>';
+
+            html += '<div class="row mb-3">';
+            html += '<div class="col-md-6"><div class="card border-primary"><div class="card-body text-center"><h4 class="text-primary">' + statistics.today_active_users + '</h4><small>今日活跃用户</small></div></div></div>';
+            html += '<div class="col-md-6"><div class="card border-info"><div class="card-body text-center"><h4 class="text-info">' + statistics.yesterday_active_users + '</h4><small>昨日活跃用户</small></div></div></div>';
+            html += '</div>';
+
+            html += '<div class="row">';
+            html += '<div class="col-md-4"><div class="card"><div class="card-body text-center"><h5>' + hasPhoneCount + '</h5><small>已绑定手机号</small></div></div></div>';
+            html += '<div class="col-md-4"><div class="card"><div class="card-body text-center"><h5>' + hasOrderCount + '</h5><small>有消费记录</small></div></div></div>';
+            html += '<div class="col-md-4"><div class="card"><div class="card-body text-center"><h5>¥' + totalPaidAmount.toFixed(2) + '</h5><small>总支付金额</small></div></div></div>';
+            html += '</div>';
+
+            modalBody.innerHTML = html;
+            modal.show();
+        }
+
+        // 显示用户消费记录
+        function showUserOrders(userId, nickname) {
+            var modal = new bootstrap.Modal(document.getElementById('orderModal'));
+            var modalBody = document.getElementById('orderModalBody');
+            
+            modalBody.innerHTML = '<p class="text-muted">正在加载用户 ' + escapeHtml(nickname) + ' 的消费记录...</p>';
+            modal.show();
+
+            fetch('/admin/api/promotion/user/own-orders?userId=' + encodeURIComponent(userId), {
+                credentials: 'same-origin'
+            })
+            .then(function(response) {
+                return response.json();
+            })
+            .then(function(data) {
+                if (data.success && data.own_orders) {
+                    renderOrders(data.own_orders, nickname);
+                } else {
+                    modalBody.innerHTML = '<p class="text-danger">加载失败: ' + escapeHtml(data.message || '未知错误') + '</p>';
+                }
+            })
+            .catch(function(error) {
+                console.error('加载消费记录失败:', error);
+                modalBody.innerHTML = '<p class="text-danger">加载失败，请重试</p>';
+            });
+        }
+
+        // 渲染消费记录
+        function renderOrders(orders, nickname) {
+            var modalBody = document.getElementById('orderModalBody');
+            
+            if (!orders || orders.length === 0) {
+                modalBody.innerHTML = '<p class="text-muted">用户 ' + escapeHtml(nickname) + ' 暂无消费记录</p>';
+                            return;
+                        }
+
+            var html = '<h6>用户: ' + escapeHtml(nickname) + '</h6>';
+            html += '<div class="table-responsive">';
+            html += '<table class="table table-sm">';
+            html += '<thead><tr><th>订单号</th><th>产品名称</th><th>风格</th><th>状态</th><th>创建时间</th></tr></thead>';
+            html += '<tbody>';
+
+            for (var i = 0; i < orders.length; i++) {
+                var order = orders[i];
+                var orderNumber = escapeHtml(order.order_number || '');
+                var productName = escapeHtml(order.product_name || '未知');
+                var styleName = escapeHtml(order.style_name || '未知');
+                var status = escapeHtml(order.status || '未知');
+                var createTime = order.created_at || '未知';
+                if (createTime && createTime !== '未知') {
+                    try {
+                        createTime = new Date(createTime).toLocaleString('zh-CN');
+            } catch (e) {
+                        createTime = String(createTime);
+                    }
+                }
+                
+                html += '<tr>';
+                html += '<td><code>' + orderNumber + '</code></td>';
+                html += '<td>' + productName + '</td>';
+                html += '<td>' + styleName + '</td>';
+                html += '<td><span class="badge bg-info">' + status + '</span></td>';
+                html += '<td>' + createTime + '</td>';
+                html += '</tr>';
+            }
+
+            html += '</tbody></table></div>';
+            modalBody.innerHTML = html;
+        }
+
+        // 页面加载完成后自动加载数据
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('页面加载完成，开始加载用户数据...');
+            loadUserData();
+        });
+    </script>
+</body>
+</html>

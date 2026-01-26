@@ -1,0 +1,1109 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>优惠券管理 - AI拍照管理系统</title>
+    <link href="/static/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            padding-top: 80px;
+        }
+        .navbar-custom {
+            background: #0a0a0a !important;
+            border-bottom: 1px solid #1a1a1a;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        }
+        .navbar-brand, .nav-link {
+            color: #e0e0e0 !important;
+        }
+        .nav-link:hover {
+            color: #ffffff !important;
+        }
+        .nav-link.active {
+            color: #ffffff !important;
+            font-weight: 600;
+        }
+        .coupon-card {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            background: #fff;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .coupon-type {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .type-cash { background-color: #28a745; color: white; font-size: 0.75rem; padding: 2px 6px; }
+        .type-discount { background-color: #007bff; color: white; font-size: 0.75rem; padding: 2px 6px; }
+        .type-free { background-color: #ffc107; color: black; font-size: 0.75rem; padding: 2px 6px; }
+        .status-active { color: #28a745; }
+        .status-inactive { color: #dc3545; }
+        .status-expired { color: #6c757d; }
+        .progress-bar-custom {
+            height: 8px;
+            border-radius: 4px;
+        }
+        /* 修复选中状态文字颜色 */
+        .list-group-item.active {
+            background-color: #e7f3ff;
+        }
+        .list-group-item.active a {
+            color: #333 !important;
+            font-weight: bold;
+        }
+        /* 表格文字大小 */
+        .table {
+            font-size: 0.9rem;
+        }
+        .table td {
+            font-size: 0.85rem;
+            padding: 0.5rem;
+        }
+        .table th {
+            font-size: 0.9rem;
+            padding: 0.6rem 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <!-- 导航栏 -->
+    {% include 'admin/_navbar.html' %}
+
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">🎫 优惠券管理</h5>
+                        <div>
+                            <button class="btn btn-success me-2" data-bs-toggle="modal" data-bs-target="#grouponVerifyModal">
+                                <i class="fas fa-qrcode"></i> 团购核销
+                            </button>
+                            <button class="btn btn-info me-2" data-bs-toggle="modal" data-bs-target="#thirdPartyGrouponConfigModal">
+                                <i class="fas fa-cog"></i> 第三方团购API配置
+                            </button>
+                            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createCouponModal">
+                                <i class="fas fa-plus"></i> 创建优惠券
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <!-- 筛选器 -->
+                        <div class="row mb-3">
+                            <div class="col-md-3">
+                                <select class="form-select" id="statusFilter">
+                                    <option value="active" selected>有效</option>
+                                    <option value="all">全部状态</option>
+                                    <option value="inactive">无效</option>
+                                    <option value="expired">已过期</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <select class="form-select" id="typeFilter">
+                                    <option value="all">全部类型</option>
+                                    <option value="cash">现金券</option>
+                                    <option value="discount">折扣券</option>
+                                    <option value="free">免费券</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <button class="btn btn-outline-secondary" onclick="refreshCoupons()">
+                                    <i class="fas fa-sync"></i> 刷新
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 优惠券列表 -->
+                        <div class="table-responsive">
+                            <table class="table table-hover table-striped">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 15%; font-size: 0.9rem;">优惠券名称</th>
+                                        <th style="width: 10%; font-size: 0.9rem;">类型</th>
+                                        <th style="width: 10%; font-size: 0.9rem;">代码</th>
+                                        <th style="width: 12%; font-size: 0.9rem;">优惠内容</th>
+                                        <th style="width: 10%; font-size: 0.9rem;">来源</th>
+                                        <th style="width: 8%; font-size: 0.9rem;">状态</th>
+                                        <th style="width: 10%; font-size: 0.9rem;">有效期</th>
+                                        <th style="width: 10%; font-size: 0.9rem;">发放情况</th>
+                                        <th style="width: 15%; text-align: center; font-size: 0.9rem;">操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="couponsList">
+                                    <tr>
+                                        <td colspan="9" class="text-center">
+                                            <div class="spinner-border" role="status">
+                                                <span class="visually-hidden">加载中...</span>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- 分页 -->
+                        <nav aria-label="优惠券分页">
+                            <ul class="pagination justify-content-center" id="pagination">
+                            </ul>
+                        </nav>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 创建优惠券模态框 -->
+    <div class="modal fade" id="createCouponModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">创建优惠券</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="createCouponForm">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="couponName" class="form-label">优惠券名称 *</label>
+                                    <input type="text" class="form-control" id="couponName" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="couponType" class="form-label">优惠券类型 *</label>
+                                    <select class="form-select" id="couponType" required>
+                                        <option value="">请选择类型</option>
+                                        <option value="cash">现金券</option>
+                                        <option value="discount">折扣券</option>
+                                        <option value="free">免费券</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="couponValue" class="form-label">优惠金额/折扣比例 *</label>
+                                    <input type="number" class="form-control" id="couponValue" step="0.01" required>
+                                    <div class="form-text">现金券填写金额，折扣券填写百分比（如20表示8折）</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="minAmount" class="form-label">最低消费金额</label>
+                                    <input type="number" class="form-control" id="minAmount" step="0.01" value="0">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="maxDiscount" class="form-label">最大折扣金额</label>
+                                    <input type="number" class="form-control" id="maxDiscount" step="0.01">
+                                    <div class="form-text">仅折扣券有效，限制最大优惠金额</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="totalCount" class="form-label">总发放数量 *</label>
+                                    <input type="number" class="form-control" id="totalCount" required>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="perUserLimit" class="form-label">每用户限领数量</label>
+                                    <input type="number" class="form-control" id="perUserLimit" value="1">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="couponStatus" class="form-label">状态</label>
+                                    <select class="form-select" id="couponStatus">
+                                        <option value="active">有效</option>
+                                        <option value="inactive">无效</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="startTime" class="form-label">开始时间</label>
+                                    <input type="datetime-local" class="form-control" id="startTime">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="endTime" class="form-label">结束时间</label>
+                                    <input type="datetime-local" class="form-control" id="endTime">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="couponDescription" class="form-label">优惠券描述</label>
+                            <textarea class="form-control" id="couponDescription" rows="3"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" onclick="createCoupon()">创建</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 团购核销模态框 -->
+    <div class="modal fade" id="grouponVerifyModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">团购订单核销</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="grouponVerifyForm">
+                        <div class="mb-3">
+                            <label for="grouponOrderId" class="form-label">团购订单号 *</label>
+                            <input type="text" class="form-control" id="grouponOrderId" placeholder="请输入团购平台的订单号" required>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="verifyAmount" class="form-label">核销金额 *</label>
+                                    <input type="number" class="form-control" id="verifyAmount" step="0.01" placeholder="0.00" required>
+                                    <div class="form-text">对应金额的免拍券</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="expireDays" class="form-label">有效期（天）</label>
+                                    <input type="number" class="form-control" id="expireDays" value="30" min="1" max="365">
+                                    <div class="form-text">默认30天</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="customerPhone" class="form-label">客户手机号 *</label>
+                                    <input type="tel" class="form-control" id="customerPhone" placeholder="用于记录客户信息" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="customerName" class="form-label">客户姓名</label>
+                                    <input type="text" class="form-control" id="customerName" placeholder="可选">
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                    
+                    <!-- 核销结果展示区域 -->
+                    <div id="verifyResult" style="display: none;" class="mt-4">
+                        <div class="alert alert-success">
+                            <h6>✅ 核销成功！</h6>
+                            <p class="mb-2">优惠券代码：<strong id="resultCouponCode"></strong></p>
+                            <p class="mb-2">优惠券名称：<strong id="resultCouponName"></strong></p>
+                            <p class="mb-2">核销金额：<strong id="resultVerifyAmount"></strong>元</p>
+                            <p class="mb-2">有效期至：<strong id="resultExpireTime"></strong></p>
+                        </div>
+                        <div class="text-center mb-3">
+                            <h6>领取二维码</h6>
+                            <img id="resultQrCode" src="" alt="二维码" class="img-fluid" style="max-width: 300px;">
+                            <p class="text-muted mt-2">用户扫码即可领取优惠券</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" onclick="resetGrouponVerifyForm()">关闭</button>
+                    <button type="button" class="btn btn-success" onclick="verifyGrouponOrder()" id="verifyBtn">
+                        <i class="fas fa-check"></i> 确认核销
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 第三方团购API配置模态框 -->
+    <div class="modal fade" id="thirdPartyGrouponConfigModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">第三方团购核销API配置</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i> 
+                        <strong>说明：</strong>配置第三方团购平台的API接口，用于验证和核销团购券码。配置后，用户可以在小程序中一键导入或手动输入券码进行核销。
+                    </div>
+                    <form id="thirdPartyGrouponConfigForm">
+                        <div class="mb-3">
+                            <label for="apiPlatform" class="form-label">团购平台 <span class="text-danger">*</span></label>
+                            <select class="form-select" id="apiPlatform" required>
+                                <option value="">请选择平台</option>
+                                <option value="meituan">美团</option>
+                                <option value="dianping">大众点评</option>
+                                <option value="custom">自定义</option>
+                            </select>
+                            <div class="form-text">选择第三方团购平台</div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="apiBaseUrl" class="form-label">API基础地址 <span class="text-danger">*</span></label>
+                            <input type="url" class="form-control" id="apiBaseUrl" 
+                                   placeholder="https://api.example.com" required>
+                            <div class="form-text">第三方平台的API基础URL</div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="verifyEndpoint" class="form-label">验证券码接口路径</label>
+                            <input type="text" class="form-control" id="verifyEndpoint" 
+                                   placeholder="/api/v1/verify" value="/api/v1/verify">
+                            <div class="form-text">用于验证团购券码是否有效的接口路径</div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="redeemEndpoint" class="form-label">核销券码接口路径</label>
+                            <input type="text" class="form-control" id="redeemEndpoint" 
+                                   placeholder="/api/v1/redeem" value="/api/v1/redeem">
+                            <div class="form-text">用于核销团购券码的接口路径</div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="queryEndpoint" class="form-label">查询券码接口路径</label>
+                            <input type="text" class="form-control" id="queryEndpoint" 
+                                   placeholder="/api/v1/query" value="/api/v1/query">
+                            <div class="form-text">用于根据手机号查询券码列表的接口路径（可选）</div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="apiKey" class="form-label">API密钥</label>
+                            <input type="text" class="form-control" id="apiKey" 
+                                   placeholder="请输入API密钥">
+                            <div class="form-text">第三方平台提供的API密钥（用于身份验证）</div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="apiSecret" class="form-label">API密钥（Secret）</label>
+                            <input type="password" class="form-control" id="apiSecret" 
+                                   placeholder="请输入API密钥Secret">
+                            <div class="form-text">第三方平台提供的API密钥Secret（用于签名验证）</div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="configStatus" class="form-label">配置状态</label>
+                            <select class="form-select" id="configStatus">
+                                <option value="active" selected>启用</option>
+                                <option value="inactive">禁用</option>
+                            </select>
+                            <div class="form-text">是否启用此API配置</div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="configNotes" class="form-label">备注</label>
+                            <textarea class="form-control" id="configNotes" rows="3" 
+                                      placeholder="配置说明、注意事项等（可选）"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" onclick="resetThirdPartyConfigForm()">关闭</button>
+                    <button type="button" class="btn btn-primary" onclick="saveThirdPartyConfig()" id="saveConfigBtn">
+                        <i class="fas fa-save"></i> 保存配置
+                    </button>
+                    <button type="button" class="btn btn-info" onclick="testThirdPartyAPI()" id="testApiBtn">
+                        <i class="fas fa-vial"></i> 测试连接
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 编辑优惠券模态框 -->
+    <div class="modal fade" id="editCouponModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">编辑优惠券</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="editCouponForm">
+                        <input type="hidden" id="editCouponId">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="editCouponName" class="form-label">优惠券名称 *</label>
+                                    <input type="text" class="form-control" id="editCouponName" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="editCouponType" class="form-label">优惠券类型 *</label>
+                                    <select class="form-select" id="editCouponType" required>
+                                        <option value="">请选择类型</option>
+                                        <option value="cash">现金券</option>
+                                        <option value="discount">折扣券</option>
+                                        <option value="free">免费券</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="editCouponValue" class="form-label">优惠金额/折扣比例 *</label>
+                                    <input type="number" class="form-control" id="editCouponValue" step="0.01" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="editMinAmount" class="form-label">最低消费金额</label>
+                                    <input type="number" class="form-control" id="editMinAmount" step="0.01">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="editMaxDiscount" class="form-label">最大折扣金额</label>
+                                    <input type="number" class="form-control" id="editMaxDiscount" step="0.01">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="editTotalCount" class="form-label">总发放数量 *</label>
+                                    <input type="number" class="form-control" id="editTotalCount" required>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="editPerUserLimit" class="form-label">每用户限领数量</label>
+                                    <input type="number" class="form-control" id="editPerUserLimit">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="editCouponStatus" class="form-label">状态</label>
+                                    <select class="form-select" id="editCouponStatus">
+                                        <option value="active">有效</option>
+                                        <option value="inactive">无效</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="editStartTime" class="form-label">开始时间</label>
+                                    <input type="datetime-local" class="form-control" id="editStartTime">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="editEndTime" class="form-label">结束时间</label>
+                                    <input type="datetime-local" class="form-control" id="editEndTime">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="editCouponDescription" class="form-label">优惠券描述</label>
+                            <textarea class="form-control" id="editCouponDescription" rows="3"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" onclick="updateCoupon()">更新</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let currentPage = 1;
+        let currentStatus = 'active';  // 默认显示有效优惠券
+        let currentType = 'all';
+        let currentSource = 'all';
+
+        // 页面加载时初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            loadCoupons();
+            
+            // 绑定筛选器事件
+            document.getElementById('statusFilter').addEventListener('change', function() {
+                currentStatus = this.value;
+                currentPage = 1;
+                loadCoupons();
+            });
+            
+            document.getElementById('typeFilter').addEventListener('change', function() {
+                currentType = this.value;
+                currentPage = 1;
+                loadCoupons();
+            });
+            
+            // 来源筛选器
+            const sourceFilter = document.getElementById('sourceFilter');
+            if (sourceFilter) {
+                sourceFilter.addEventListener('change', function() {
+                    currentSource = this.value;
+                    currentPage = 1;
+                    loadCoupons();
+                });
+            }
+        });
+
+        // 加载优惠券列表
+        function loadCoupons() {
+            // 默认加载所有状态，前端再过滤（因为需要检查过期时间）
+            const params = new URLSearchParams({
+                page: currentPage,
+                per_page: 10,
+                status: 'all'  // 获取所有状态，前端根据过期时间判断
+            });
+            
+            fetch(`/api/coupons/list?${params}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        displayCoupons(data.data);
+                        updatePagination(data.total, data.pages);
+                    } else {
+                        showAlert('加载优惠券列表失败: ' + data.message, 'danger');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showAlert('加载优惠券列表失败', 'danger');
+                });
+        }
+
+        // 显示优惠券列表
+        function displayCoupons(coupons) {
+            const container = document.getElementById('couponsList');
+            
+            if (coupons.length === 0) {
+                container.innerHTML = '<tr><td colspan="9" class="text-center text-muted">暂无优惠券</td></tr>';
+                return;
+            }
+            
+            let html = '';
+            const now = new Date();
+            
+            coupons.forEach(coupon => {
+                // 类型过滤
+                if (currentType !== 'all' && coupon.type !== currentType) {
+                    return;
+                }
+                
+                // 来源过滤
+                if (currentSource !== 'all' && coupon.source_type !== currentSource) {
+                    return;
+                }
+                
+                // 检查是否过期
+                const endTime = new Date(coupon.end_time);
+                const isExpired = endTime < now;
+                const actualStatus = isExpired ? 'expired' : coupon.status;
+                
+                // 状态过滤（如果选择有效，需要排除已过期的）
+                if (currentStatus === 'active' && isExpired) {
+                    return;
+                }
+                if (currentStatus === 'expired' && !isExpired) {
+                    return;
+                }
+                if (currentStatus === 'inactive' && actualStatus !== 'inactive') {
+                    return;
+                }
+                
+                const typeClass = `type-${coupon.type}`;
+                const typeText = {
+                    'cash': '现金券',
+                    'discount': '折扣券',
+                    'free': '免费券'
+                }[coupon.type];
+                
+                const statusClass = isExpired ? 'status-expired' : `status-${coupon.status}`;
+                const statusText = isExpired ? '已过期' : {
+                    'active': '有效',
+                    'inactive': '无效',
+                    'expired': '已过期'
+                }[coupon.status] || '未知';
+                
+                // 来源类型显示
+                const sourceText = {
+                    'system': '系统发放',
+                    'groupon': '团购核销',
+                    'share': '分享奖励',
+                    'store': '门店生成'
+                }[coupon.source_type || 'system'] || '系统发放';
+                
+                const sourceClass = {
+                    'system': 'badge-secondary',
+                    'groupon': 'badge-success',
+                    'share': 'badge-info',
+                    'store': 'badge-warning'
+                }[coupon.source_type || 'system'] || 'badge-secondary';
+                
+                // 格式化日期
+                const startDate = new Date(coupon.start_time);
+                const endDate = new Date(coupon.end_time);
+                const dateStr = `${startDate.toLocaleDateString('zh-CN')} - ${endDate.toLocaleDateString('zh-CN')}`;
+                
+                // 优惠内容
+                let contentText = '';
+                if (coupon.type === 'cash') {
+                    contentText = `减${coupon.value}元`;
+                } else if (coupon.type === 'discount') {
+                    contentText = `${coupon.value}折`;
+                } else {
+                    contentText = '免费';
+                }
+                if (coupon.min_amount > 0) {
+                    contentText += `，满${coupon.min_amount}元可用`;
+                } else {
+                    contentText += '，无门槛';
+                }
+                
+                html += `
+                    <tr>
+                        <td style="font-size: 0.85rem;">
+                            <div>${coupon.name}</div>
+                            ${coupon.is_random_code ? '<small class="text-info">随机码券</small>' : ''}
+                            ${coupon.groupon_order_id ? `<small class="text-muted">团购: ${coupon.groupon_order_id}</small>` : ''}
+                        </td>
+                        <td style="font-size: 0.8rem;">
+                            <span class="coupon-type ${typeClass}">${typeText}</span>
+                        </td>
+                        <td style="font-size: 0.8rem;"><code>${coupon.code}</code></td>
+                        <td style="font-size: 0.8rem;">${contentText}</td>
+                        <td style="font-size: 0.8rem;">
+                            <span class="badge ${sourceClass}">${sourceText}</span>
+                        </td>
+                        <td style="font-size: 0.8rem;">
+                            <span class="badge ${statusClass}">${statusText}</span>
+                        </td>
+                        <td style="font-size: 0.8rem;">
+                            ${dateStr}
+                        </td>
+                        <td style="font-size: 0.8rem;">
+                            ${coupon.used_count || 0}/${coupon.total_count || 0}<br>
+                            <span class="text-muted">剩余: ${coupon.remaining_count || 0}</span>
+                        </td>
+                        <td style="text-align: center; font-size: 0.8rem;">
+                            <button class="btn btn-sm btn-outline-primary" onclick="editCoupon(${coupon.id})" title="编辑" style="font-size: 0.75rem; padding: 0.2rem 0.4rem;">
+                                编辑
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger" onclick="deleteCoupon(${coupon.id})" title="删除" style="font-size: 0.75rem; padding: 0.2rem 0.4rem; margin-left: 0.2rem;">
+                                删除
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            container.innerHTML = html || '<tr><td colspan="9" class="text-center text-muted">暂无符合条件的优惠券</td></tr>';
+        }
+
+        // 更新分页
+        function updatePagination(total, pages) {
+            const container = document.getElementById('pagination');
+            let html = '';
+            
+            // 上一页
+            html += `<li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
+                <a class="page-link" href="#" onclick="changePage(${currentPage - 1})">上一页</a>
+            </li>`;
+            
+            // 页码
+            for (let i = 1; i <= pages; i++) {
+                html += `<li class="page-item ${i === currentPage ? 'active' : ''}">
+                    <a class="page-link" href="#" onclick="changePage(${i})">${i}</a>
+                </li>`;
+            }
+            
+            // 下一页
+            html += `<li class="page-item ${currentPage === pages ? 'disabled' : ''}">
+                <a class="page-link" href="#" onclick="changePage(${currentPage + 1})">下一页</a>
+            </li>`;
+            
+            container.innerHTML = html;
+        }
+
+        // 切换页面
+        function changePage(page) {
+            currentPage = page;
+            loadCoupons();
+        }
+
+        // 刷新优惠券列表
+        function refreshCoupons() {
+            currentPage = 1;
+            loadCoupons();
+        }
+
+        // 团购订单核销
+        function verifyGrouponOrder() {
+            const formData = {
+                groupon_order_id: document.getElementById('grouponOrderId').value,
+                verify_amount: parseFloat(document.getElementById('verifyAmount').value),
+                customer_phone: document.getElementById('customerPhone').value,
+                customer_name: document.getElementById('customerName').value || '',
+                expire_days: parseInt(document.getElementById('expireDays').value) || 30
+            };
+            
+            // 验证必填字段
+            if (!formData.groupon_order_id || !formData.verify_amount || !formData.customer_phone) {
+                showAlert('请填写所有必填字段', 'warning');
+                return;
+            }
+            
+            if (formData.verify_amount <= 0) {
+                showAlert('核销金额必须大于0', 'warning');
+                return;
+            }
+            
+            // 禁用按钮，防止重复提交
+            const verifyBtn = document.getElementById('verifyBtn');
+            verifyBtn.disabled = true;
+            verifyBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> 核销中...';
+            
+            fetch('/api/admin/groupon/verify', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(formData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                verifyBtn.disabled = false;
+                verifyBtn.innerHTML = '<i class="fas fa-check"></i> 确认核销';
+                
+                if (data.status === 'success') {
+                    // 显示核销结果
+                    document.getElementById('resultCouponCode').textContent = data.data.coupon_code;
+                    document.getElementById('resultCouponName').textContent = data.data.coupon_name;
+                    document.getElementById('resultVerifyAmount').textContent = data.data.verify_amount;
+                    document.getElementById('resultExpireTime').textContent = data.data.expire_time;
+                    document.getElementById('resultQrCode').src = data.data.qr_code_url;
+                    document.getElementById('verifyResult').style.display = 'block';
+                    
+                    // 滚动到结果区域
+                    document.getElementById('verifyResult').scrollIntoView({ behavior: 'smooth' });
+                    
+                    showAlert('团购核销成功！优惠券已生成', 'success');
+                    
+                    // 刷新优惠券列表
+                    setTimeout(() => {
+                        loadCoupons();
+                    }, 1000);
+                } else {
+                    showAlert('核销失败: ' + data.message, 'danger');
+                }
+            })
+            .catch(error => {
+                verifyBtn.disabled = false;
+                verifyBtn.innerHTML = '<i class="fas fa-check"></i> 确认核销';
+                console.error('Error:', error);
+                showAlert('核销失败，请重试', 'danger');
+            });
+        }
+
+        // 重置团购核销表单
+        function resetGrouponVerifyForm() {
+            document.getElementById('grouponVerifyForm').reset();
+            document.getElementById('verifyResult').style.display = 'none';
+            document.getElementById('expireDays').value = '30';
+        }
+
+        // 加载第三方团购API配置
+        function loadThirdPartyConfig() {
+            fetch('/api/admin/third-party-groupon/config')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.data) {
+                        const config = data.data;
+                        document.getElementById('apiPlatform').value = config.platform || '';
+                        document.getElementById('apiBaseUrl').value = config.api_base_url || '';
+                        document.getElementById('verifyEndpoint').value = config.verify_endpoint || '/api/v1/verify';
+                        document.getElementById('redeemEndpoint').value = config.redeem_endpoint || '/api/v1/redeem';
+                        document.getElementById('queryEndpoint').value = config.query_endpoint || '/api/v1/query';
+                        document.getElementById('apiKey').value = config.api_key || '';
+                        document.getElementById('apiSecret').value = config.api_secret || '';
+                        document.getElementById('configStatus').value = config.status || 'active';
+                        document.getElementById('configNotes').value = config.notes || '';
+                    }
+                })
+                .catch(error => {
+                    console.error('加载配置失败:', error);
+                });
+        }
+
+        // 保存第三方团购API配置
+        function saveThirdPartyConfig() {
+            const formData = {
+                platform: document.getElementById('apiPlatform').value,
+                api_base_url: document.getElementById('apiBaseUrl').value,
+                verify_endpoint: document.getElementById('verifyEndpoint').value,
+                redeem_endpoint: document.getElementById('redeemEndpoint').value,
+                query_endpoint: document.getElementById('queryEndpoint').value,
+                api_key: document.getElementById('apiKey').value,
+                api_secret: document.getElementById('apiSecret').value,
+                status: document.getElementById('configStatus').value,
+                notes: document.getElementById('configNotes').value
+            };
+
+            if (!formData.platform || !formData.api_base_url) {
+                showAlert('请填写平台和API基础地址', 'warning');
+                return;
+            }
+
+            const btn = document.getElementById('saveConfigBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 保存中...';
+
+            fetch('/api/admin/third-party-groupon/config', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(formData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-save"></i> 保存配置';
+                if (data.success) {
+                    showAlert('配置保存成功', 'success');
+                    bootstrap.Modal.getInstance(document.getElementById('thirdPartyGrouponConfigModal')).hide();
+                } else {
+                    showAlert('保存失败: ' + data.message, 'danger');
+                }
+            })
+            .catch(error => {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-save"></i> 保存配置';
+                console.error('Error:', error);
+                showAlert('保存失败', 'danger');
+            });
+        }
+
+        // 测试第三方API连接
+        function testThirdPartyAPI() {
+            const apiBaseUrl = document.getElementById('apiBaseUrl').value;
+            if (!apiBaseUrl) {
+                showAlert('请先填写API基础地址', 'warning');
+                return;
+            }
+
+            const btn = document.getElementById('testApiBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 测试中...';
+
+            fetch('/api/admin/third-party-groupon/test', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    api_base_url: apiBaseUrl
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-vial"></i> 测试连接';
+                if (data.success) {
+                    showAlert('API连接测试成功', 'success');
+                } else {
+                    showAlert('测试失败: ' + data.message, 'danger');
+                }
+            })
+            .catch(error => {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-vial"></i> 测试连接';
+                console.error('Error:', error);
+                showAlert('测试失败', 'danger');
+            });
+        }
+
+        // 重置第三方配置表单
+        function resetThirdPartyConfigForm() {
+            document.getElementById('thirdPartyGrouponConfigForm').reset();
+            document.getElementById('verifyEndpoint').value = '/api/v1/verify';
+            document.getElementById('redeemEndpoint').value = '/api/v1/redeem';
+            document.getElementById('queryEndpoint').value = '/api/v1/query';
+            document.getElementById('configStatus').value = 'active';
+        }
+
+        // 页面加载时绑定事件
+        document.addEventListener('DOMContentLoaded', function() {
+            // 当打开配置模态框时加载配置
+            const configModal = document.getElementById('thirdPartyGrouponConfigModal');
+            if (configModal) {
+                configModal.addEventListener('show.bs.modal', function() {
+                    loadThirdPartyConfig();
+                });
+            }
+        });
+
+        // 创建优惠券
+        function createCoupon() {
+            const formData = {
+                name: document.getElementById('couponName').value,
+                type: document.getElementById('couponType').value,
+                value: parseFloat(document.getElementById('couponValue').value),
+                min_amount: parseFloat(document.getElementById('minAmount').value) || 0,
+                max_discount: document.getElementById('maxDiscount').value ? parseFloat(document.getElementById('maxDiscount').value) : null,
+                total_count: parseInt(document.getElementById('totalCount').value),
+                per_user_limit: parseInt(document.getElementById('perUserLimit').value) || 1,
+                status: document.getElementById('couponStatus').value,
+                start_time: document.getElementById('startTime').value,
+                end_time: document.getElementById('endTime').value,
+                description: document.getElementById('couponDescription').value
+            };
+            
+            fetch('/api/admin/coupons/create', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(formData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showAlert('优惠券创建成功', 'success');
+                    bootstrap.Modal.getInstance(document.getElementById('createCouponModal')).hide();
+                    document.getElementById('createCouponForm').reset();
+                    loadCoupons();
+                } else {
+                    showAlert('创建失败: ' + data.message, 'danger');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showAlert('创建失败', 'danger');
+            });
+        }
+
+        // 编辑优惠券
+        function editCoupon(couponId) {
+            // 这里应该先获取优惠券详情，然后填充表单
+            // 为了简化，我们直接显示模态框
+            document.getElementById('editCouponId').value = couponId;
+            bootstrap.Modal.getInstance(document.getElementById('editCouponModal')).show();
+        }
+
+        // 更新优惠券
+        function updateCoupon() {
+            const couponId = document.getElementById('editCouponId').value;
+            const formData = {
+                name: document.getElementById('editCouponName').value,
+                type: document.getElementById('editCouponType').value,
+                value: parseFloat(document.getElementById('editCouponValue').value),
+                min_amount: parseFloat(document.getElementById('editMinAmount').value) || 0,
+                max_discount: document.getElementById('editMaxDiscount').value ? parseFloat(document.getElementById('editMaxDiscount').value) : null,
+                total_count: parseInt(document.getElementById('editTotalCount').value),
+                per_user_limit: parseInt(document.getElementById('editPerUserLimit').value) || 1,
+                status: document.getElementById('editCouponStatus').value,
+                start_time: document.getElementById('editStartTime').value,
+                end_time: document.getElementById('editEndTime').value,
+                description: document.getElementById('editCouponDescription').value
+            };
+            
+            fetch(`/api/admin/coupons/${couponId}/update`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(formData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showAlert('优惠券更新成功', 'success');
+                    bootstrap.Modal.getInstance(document.getElementById('editCouponModal')).hide();
+                    loadCoupons();
+                } else {
+                    showAlert('更新失败: ' + data.message, 'danger');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showAlert('更新失败', 'danger');
+            });
+        }
+
+        // 删除优惠券
+        function deleteCoupon(couponId) {
+            if (confirm('确定要删除这个优惠券吗？')) {
+                fetch(`/api/admin/coupons/${couponId}/delete`, {
+                    method: 'DELETE'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showAlert('优惠券删除成功', 'success');
+                        loadCoupons();
+                    } else {
+                        showAlert('删除失败: ' + data.message, 'danger');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showAlert('删除失败', 'danger');
+                });
+            }
+        }
+
+        // 显示提示信息
+        function showAlert(message, type) {
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+            alertDiv.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            
+            const container = document.querySelector('.container');
+            container.insertBefore(alertDiv, container.firstChild);
+            
+            // 3秒后自动消失
+            setTimeout(() => {
+                if (alertDiv.parentNode) {
+                    alertDiv.parentNode.removeChild(alertDiv);
+                }
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
+
+
+
+
+
+
+
+

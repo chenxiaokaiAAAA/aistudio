@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>首页配置管理 - {{ brand_name }}后台</title>
+    <link href="/static/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            color: #ffffff;
+            min-height: 100vh;
+        }
+        
+        .navbar-custom {
+            background: #0a0a0a !important;
+            border-bottom: 1px solid #1a1a1a;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        }
+        .navbar-brand, .nav-link {
+            color: #e0e0e0 !important;
+        }
+        .nav-link:hover {
+            color: #ffffff !important;
+        }
+        .nav-link.active {
+            color: #ffffff !important;
+            font-weight: 600;
+        }
+        
+        .main-content {
+            margin-top: 100px;
+            padding: 20px;
+        }
+        
+        .card {
+            background: rgba(255,255,255,0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 15px;
+        }
+        
+        .card-header {
+            background: rgba(255,255,255,0.1);
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            border-radius: 15px 15px 0 0 !important;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            border: none;
+        }
+        
+        .btn-primary:hover {
+            background: linear-gradient(45deg, #ff5252, #26a69a);
+        }
+        
+        .form-control {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            color: white;
+        }
+        
+        .form-control:focus {
+            background: rgba(255,255,255,0.15);
+            border-color: #4ecdc4;
+            color: white;
+            box-shadow: 0 0 0 0.2rem rgba(78, 205, 196, 0.25);
+        }
+        
+        .form-control::placeholder {
+            color: rgba(255,255,255,0.6);
+        }
+        
+        .modal-content {
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            color: white;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .modal-header {
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .modal-footer {
+            border-top: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .close {
+            color: white;
+            opacity: 0.8;
+        }
+        
+        .close:hover {
+            color: #ff6b6b;
+            opacity: 1;
+        }
+        
+        .upload-area {
+            border: 2px dashed rgba(255,255,255,0.3);
+            border-radius: 10px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .upload-area:hover {
+            border-color: #4ecdc4;
+            background: rgba(78, 205, 196, 0.1);
+        }
+        
+        .upload-area.dragover {
+            border-color: #4ecdc4;
+            background: rgba(78, 205, 196, 0.2);
+        }
+        
+        .preview-image {
+            max-width: 200px;
+            max-height: 200px;
+            border-radius: 8px;
+            margin-top: 10px;
+        }
+        
+        .banner-item {
+            background: rgba(255,255,255,0.05);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .banner-preview {
+            width: 100%;
+            height: 120px;
+            object-fit: cover;
+            border-radius: 8px;
+        }
+        
+        .sortable-handle {
+            cursor: move;
+            color: #4ecdc4;
+        }
+        
+        .sortable-handle:hover {
+            color: #ff6b6b;
+        }
+    </style>
+</head>
+<body>
+    <!-- 导航栏 -->
+    {% include 'admin/_navbar.html' %}
+
+    <div class="main-content">
+        <div class="container">
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h4 class="mb-0">🏠 首页配置管理</h4>
+                            <p class="mb-0 text-muted">管理首页轮播图和相关配置，小程序和网页版将同步更新</p>
+                        </div>
+                        <div class="card-body">
+                            <!-- 轮播图管理 -->
+                            <div class="row mb-4">
+                                <div class="col-12">
+                                    <h5>轮播图管理</h5>
+                                    <button class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#bannerModal">
+                                        + 添加轮播图
+                                    </button>
+                                    <div id="bannerList">
+                                        <!-- 轮播图列表将通过JavaScript动态加载 -->
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- 其他配置 -->
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h5>首页配置</h5>
+                                    <div class="card">
+                                        <div class="card-body">
+                                            <div class="mb-3">
+                                                <label for="homepageTitle" class="form-label">首页标题</label>
+                                                <input type="text" class="form-control" id="homepageTitle" placeholder="如：{{ brand_name }} - 专属定制">
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="homepageSubtitle" class="form-label">首页副标题</label>
+                                                <input type="text" class="form-control" id="homepageSubtitle" placeholder="如：为您的宠物打造专属艺术品">
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="homepageDescription" class="form-label">首页描述</label>
+                                                <textarea class="form-control" id="homepageDescription" rows="3" placeholder="首页描述文字"></textarea>
+                                            </div>
+                                            <button class="btn btn-primary" onclick="saveHomepageConfig()">保存配置</button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <h5>功能配置</h5>
+                                    <div class="card">
+                                        <div class="card-body">
+                                            <div class="mb-3">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" id="enableCustomOrder">
+                                                    <label class="form-check-label" for="enableCustomOrder">
+                                                        启用定制功能
+                                                    </label>
+                                                </div>
+                                            </div>
+                                            <div class="mb-3">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" id="enableStyleLibrary">
+                                                    <label class="form-check-label" for="enableStyleLibrary">
+                                                        启用风格库
+                                                    </label>
+                                                </div>
+                                            </div>
+                                            <div class="mb-3">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" id="enableProductGallery">
+                                                    <label class="form-check-label" for="enableProductGallery">
+                                                        启用产品馆
+                                                    </label>
+                                                </div>
+                                            </div>
+                                            <div class="mb-3">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" id="enableWorksGallery">
+                                                    <label class="form-check-label" for="enableWorksGallery">
+                                                        启用作品展示
+                                                    </label>
+                                                </div>
+                                            </div>
+                                            <button class="btn btn-primary" onclick="saveFeatureConfig()">保存配置</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 轮播图编辑模态框 -->
+    <div class="modal fade" id="bannerModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="bannerModalTitle">添加轮播图</h5>
+                    <button type="button" class="close" data-bs-dismiss="modal">
+                        <span>&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form id="bannerForm">
+                        <input type="hidden" id="bannerId" name="id">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="bannerTitle" class="form-label">标题</label>
+                                    <input type="text" class="form-control" id="bannerTitle" name="title" placeholder="如：新品上市">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="bannerSubtitle" class="form-label">副标题</label>
+                                    <input type="text" class="form-control" id="bannerSubtitle" name="subtitle" placeholder="如：限时优惠">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="bannerLink" class="form-label">链接地址</label>
+                                    <input type="text" class="form-control" id="bannerLink" name="link" placeholder="如：/pages/product/product">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="bannerSortOrder" class="form-label">排序</label>
+                                    <input type="number" class="form-control" id="bannerSortOrder" name="sort_order" value="0">
+                                </div>
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="bannerIsActive" name="is_active" checked>
+                                        <label class="form-check-label" for="bannerIsActive">
+                                            启用
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="bannerUpload" class="form-label">轮播图片</label>
+                                    <div class="upload-area" onclick="document.getElementById('bannerFile').click()">
+                                        <div id="bannerUploadArea">
+                                            <i class="fas fa-cloud-upload-alt fa-2x mb-2"></i>
+                                            <p>点击上传轮播图片</p>
+                                            <small class="text-muted">建议尺寸：750x400px</small>
+                                        </div>
+                                        <img id="bannerPreview" class="preview-image" style="display: none;">
+                                    </div>
+                                    <input type="file" id="bannerFile" accept="image/*" style="display: none;" onchange="uploadBannerImage(this)">
+                                    <input type="hidden" id="bannerImageUrl" name="image_url">
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" onclick="saveBanner()">保存</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // 全局变量
+        let banners = [];
+        let homepageConfig = {};
+
+        // 页面加载时初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            loadBanners();
+            loadHomepageConfig();
+        });
+
+        // 加载轮播图数据
+        async function loadBanners() {
+            try {
+                const response = await fetch('/api/admin/homepage/banners');
+                const data = await response.json();
+                if (data.status === 'success') {
+                    banners = data.data;
+                    renderBanners();
+                }
+            } catch (error) {
+                console.error('加载轮播图失败:', error);
+            }
+        }
+
+        // 加载首页配置
+        async function loadHomepageConfig() {
+            try {
+                const response = await fetch('/api/admin/homepage/config');
+                const data = await response.json();
+                if (data.status === 'success') {
+                    homepageConfig = data.data;
+                    updateHomepageConfigForm();
+                }
+            } catch (error) {
+                console.error('加载首页配置失败:', error);
+            }
+        }
+
+        // 渲染轮播图列表
+        function renderBanners() {
+            const container = document.getElementById('bannerList');
+            container.innerHTML = '';
+            
+            banners.forEach(banner => {
+                const div = document.createElement('div');
+                div.className = 'banner-item';
+                div.innerHTML = `
+                    <div class="row align-items-center">
+                        <div class="col-md-1">
+                            <i class="fas fa-grip-vertical sortable-handle"></i>
+                        </div>
+                        <div class="col-md-3">
+                            <img src="${banner.image_url}" class="banner-preview" alt="${banner.title}" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjEyMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMzAwIiBoZWlnaHQ9IjEyMCIgZmlsbD0iI2NjYyIvPjx0ZXh0IHg9IjE1MCIgeT0iNjAiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzY2NiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPuWbvuWJjzwvdGV4dD48L3N2Zz4='">
+                        </div>
+                        <div class="col-md-5">
+                            <h6 class="mb-1">${banner.title || '无标题'}</h6>
+                            <small class="text-muted">${banner.subtitle || ''}</small>
+                            <br>
+                            <small class="text-info">链接: ${banner.link || '无'}</small>
+                        </div>
+                        <div class="col-md-3 text-end">
+                            <button class="btn btn-sm btn-outline-primary me-2" onclick="editBanner(${banner.id})">编辑</button>
+                            <button class="btn btn-sm btn-outline-danger" onclick="deleteBanner(${banner.id})">删除</button>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        // 更新首页配置表单
+        function updateHomepageConfigForm() {
+            document.getElementById('homepageTitle').value = homepageConfig.title || '';
+            document.getElementById('homepageSubtitle').value = homepageConfig.subtitle || '';
+            document.getElementById('homepageDescription').value = homepageConfig.description || '';
+            document.getElementById('enableCustomOrder').checked = homepageConfig.enable_custom_order || false;
+            document.getElementById('enableStyleLibrary').checked = homepageConfig.enable_style_library || false;
+            document.getElementById('enableProductGallery').checked = homepageConfig.enable_product_gallery || false;
+            document.getElementById('enableWorksGallery').checked = homepageConfig.enable_works_gallery || false;
+        }
+
+        // 上传轮播图片
+        async function uploadBannerImage(input) {
+            const file = input.files[0];
+            if (!file) return;
+            
+            const formData = new FormData();
+            formData.append('image', file);
+            
+            try {
+                const response = await fetch('/api/admin/upload-image', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                // 检查HTTP状态码
+                if (!response.ok) {
+                    throw new Error(`HTTP错误: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                console.log('上传结果:', result);
+                
+                // 兼容两种返回格式：status === 'success' 或 success === true
+                // 优先使用 image_url，如果没有则使用 url
+                const imageUrl = result.image_url || result.url;
+                
+                if ((result.status === 'success' || result.success === true) && imageUrl) {
+                    // 上传成功
+                    document.getElementById('bannerImageUrl').value = imageUrl;
+                    document.getElementById('bannerPreview').src = imageUrl;
+                    document.getElementById('bannerPreview').style.display = 'block';
+                    document.getElementById('bannerUploadArea').style.display = 'none';
+                    console.log('图片上传成功:', imageUrl);
+                    // 不显示alert，避免干扰用户操作，图片预览已足够说明成功
+                } else {
+                    // 上传失败
+                    const errorMsg = result.message || '未知错误';
+                    console.error('上传失败:', errorMsg, result);
+                    alert('上传失败: ' + errorMsg);
+                }
+            } catch (error) {
+                console.error('上传失败:', error);
+                alert('上传失败: ' + (error.message || '请重试'));
+            }
+        }
+
+        // 编辑轮播图
+        function editBanner(id) {
+            const banner = banners.find(b => b.id === id);
+            if (banner) {
+                document.getElementById('bannerModalTitle').textContent = '编辑轮播图';
+                document.getElementById('bannerId').value = banner.id;
+                document.getElementById('bannerTitle').value = banner.title || '';
+                document.getElementById('bannerSubtitle').value = banner.subtitle || '';
+                document.getElementById('bannerLink').value = banner.link || '';
+                document.getElementById('bannerImageUrl').value = banner.image_url || '';
+                document.getElementById('bannerSortOrder').value = banner.sort_order || 0;
+                document.getElementById('bannerIsActive').checked = banner.is_active;
+                
+                // 显示图片预览
+                if (banner.image_url) {
+                    document.getElementById('bannerPreview').src = banner.image_url;
+                    document.getElementById('bannerPreview').style.display = 'block';
+                    document.getElementById('bannerUploadArea').style.display = 'none';
+                } else {
+                    document.getElementById('bannerPreview').style.display = 'none';
+                    document.getElementById('bannerUploadArea').style.display = 'block';
+                }
+                
+                const modal = new bootstrap.Modal(document.getElementById('bannerModal'));
+                modal.show();
+            }
+        }
+
+        // 保存轮播图
+        async function saveBanner() {
+            const form = document.getElementById('bannerForm');
+            const formData = new FormData(form);
+            const data = Object.fromEntries(formData.entries());
+            
+            // 处理复选框
+            data.is_active = document.getElementById('bannerIsActive').checked;
+            
+            try {
+                const url = data.id ? `/api/admin/homepage/banners/${data.id}` : '/api/admin/homepage/banners';
+                const method = data.id ? 'PUT' : 'POST';
+                
+                const response = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                if (result.status === 'success') {
+                    bootstrap.Modal.getInstance(document.getElementById('bannerModal')).hide();
+                    loadBanners();
+                } else {
+                    alert('保存失败: ' + result.message);
+                }
+            } catch (error) {
+                console.error('保存轮播图失败:', error);
+                alert('保存失败，请重试');
+            }
+        }
+
+        // 删除轮播图
+        async function deleteBanner(id) {
+            if (confirm('确定要删除这个轮播图吗？')) {
+                try {
+                    const response = await fetch(`/api/admin/homepage/banners/${id}`, {
+                        method: 'DELETE'
+                    });
+                    
+                    const result = await response.json();
+                    if (result.status === 'success') {
+                        loadBanners();
+                    } else {
+                        alert('删除失败: ' + result.message);
+                    }
+                } catch (error) {
+                    console.error('删除轮播图失败:', error);
+                    alert('删除失败，请重试');
+                }
+            }
+        }
+
+        // 保存首页配置
+        async function saveHomepageConfig() {
+            const data = {
+                title: document.getElementById('homepageTitle').value,
+                subtitle: document.getElementById('homepageSubtitle').value,
+                description: document.getElementById('homepageDescription').value
+            };
+            
+            try {
+                const response = await fetch('/api/admin/homepage/config', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                if (result.status === 'success') {
+                    alert('保存成功');
+                } else {
+                    alert('保存失败: ' + result.message);
+                }
+            } catch (error) {
+                console.error('保存首页配置失败:', error);
+                alert('保存失败，请重试');
+            }
+        }
+
+        // 保存功能配置
+        async function saveFeatureConfig() {
+            const data = {
+                enable_custom_order: document.getElementById('enableCustomOrder').checked,
+                enable_style_library: document.getElementById('enableStyleLibrary').checked,
+                enable_product_gallery: document.getElementById('enableProductGallery').checked,
+                enable_works_gallery: document.getElementById('enableWorksGallery').checked
+            };
+            
+            try {
+                const response = await fetch('/api/admin/homepage/features', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                if (result.status === 'success') {
+                    alert('保存成功');
+                } else {
+                    alert('保存失败: ' + result.message);
+                }
+            } catch (error) {
+                console.error('保存功能配置失败:', error);
+                alert('保存失败，请重试');
+            }
+        }
+
+        // 重置表单
+        document.getElementById('bannerModal').addEventListener('hidden.bs.modal', function() {
+            document.getElementById('bannerForm').reset();
+            document.getElementById('bannerModalTitle').textContent = '添加轮播图';
+            document.getElementById('bannerPreview').style.display = 'none';
+            document.getElementById('bannerUploadArea').style.display = 'block';
+        });
+    </script>
+</body>
+</html>
+
+

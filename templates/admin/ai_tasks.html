@@ -1,0 +1,1078 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI任务管理 - {{ brand_name }}后台</title>
+    <link href="/static/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body {
+            background: #000000;
+            color: #e0e0e0;
+            min-height: 100vh;
+        }
+        
+        .navbar-custom {
+            background: #0a0a0a !important;
+            border-bottom: 1px solid #1a1a1a;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        }
+        
+        .navbar-brand, .nav-link {
+            color: #e0e0e0 !important;
+        }
+        
+        .nav-link:hover {
+            color: #ffffff !important;
+        }
+        
+        .nav-link.active {
+            color: #ffffff !important;
+            font-weight: 600;
+        }
+        
+        .main-content {
+            margin-top: 80px;
+            padding: 20px;
+        }
+        
+        .card {
+            background: #0a0a0a;
+            border: 1px solid #1a1a1a;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+        }
+        
+        .card-header {
+            background: #050505;
+            border-bottom: 1px solid #1a1a1a;
+            border-radius: 8px 8px 0 0 !important;
+            color: #e0e0e0;
+            padding: 0.75rem 1rem;
+        }
+        .card-header h5 {
+            font-size: 1rem;
+            margin: 0;
+        }
+        
+        .btn-primary {
+            background: #1a1a1a;
+            border: 1px solid #2a2a2a;
+            color: #ffffff;
+        }
+        
+        .btn-primary:hover {
+            background: #2a2a2a;
+            border-color: #3a3a3a;
+        }
+        
+        .btn-outline-primary {
+            border-color: #2a2a2a;
+            color: #b0b0b0;
+        }
+        
+        .btn-outline-primary:hover {
+            background: #1a1a1a;
+            border-color: #2a2a2a;
+            color: #ffffff;
+        }
+        
+        .btn-outline-danger {
+            border-color: #2a2a2a;
+            color: #b0b0b0;
+        }
+        
+        .btn-outline-danger:hover {
+            background: #2a2a2a;
+            border-color: #3a3a3a;
+            color: #ffffff;
+        }
+        
+        .form-control {
+            background: #0a0a0a;
+            border: 1px solid #1a1a1a;
+            color: #e0e0e0;
+        }
+        
+        .form-control:focus {
+            background: #0a0a0a;
+            border-color: #3a3a3a;
+            color: #ffffff;
+            box-shadow: 0 0 0 0.2rem rgba(255, 255, 255, 0.05);
+        }
+        
+        .form-control::placeholder {
+            color: #666666;
+        }
+        
+        .form-select {
+            background-color: #0a0a0a !important;
+            color: #e0e0e0 !important;
+            border-color: #1a1a1a !important;
+        }
+        
+        .table {
+            color: #e0e0e0;
+        }
+        
+        .table thead {
+            background: #050505;
+        }
+        
+        .table thead th {
+            border-bottom: 2px solid #1a1a1a;
+            color: #b0b0b0;
+            padding: 0.5rem;
+            font-size: 0.85rem;
+            white-space: nowrap;
+        }
+        
+        .table tbody tr {
+            border-bottom: 1px solid #1a1a1a;
+        }
+        
+        .table tbody td {
+            padding: 0.5rem;
+            font-size: 0.85rem;
+            vertical-align: middle;
+        }
+        
+        .table tbody tr:hover {
+            background: #0f0f0f;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .status-pending {
+            background: #0a0a0a;
+            color: #b0b0b0;
+            border: 1px solid #1a1a1a;
+        }
+        
+        .status-processing {
+            background: #0a1a1a;
+            color: #7ab8d9;
+            border: 1px solid #1a2a2a;
+        }
+        
+        .status-completed {
+            background: #0a1a0a;
+            color: #7ab99a;
+            border: 1px solid #1a2a1a;
+        }
+        
+        .status-success {
+            background: #0a1a0a;
+            color: #7ab99a;
+            border: 1px solid #1a2a1a;
+        }
+        
+        .status-failed {
+            background: #1a0a0a;
+            color: #d97a7a;
+            border: 1px solid #2a1a1a;
+        }
+        
+        .status-timeout {
+            background: #1a1a0a;
+            color: #d9b87a;
+            border: 1px solid #2a2a1a;
+        }
+        
+        .status-cancelled {
+            background: #0a0a0a;
+            color: #666666;
+            border: 1px solid #1a1a1a;
+        }
+        
+        .image-thumbnail {
+            width: 60px;
+            height: 60px;
+            object-fit: cover;
+            border-radius: 4px;
+            cursor: pointer;
+            border: 1px solid #1a1a1a;
+        }
+        
+        .image-thumbnail:hover {
+            border-color: #3a3a3a;
+            opacity: 0.8;
+        }
+        
+        .modal-content {
+            background: #0a0a0a;
+            color: #e0e0e0;
+            border: 1px solid #1a1a1a;
+        }
+        
+        .modal-header {
+            border-bottom: 1px solid #1a1a1a;
+            background: #050505;
+        }
+        
+        .modal-footer {
+            border-top: 1px solid #1a1a1a;
+            background: #050505;
+        }
+        
+        .close {
+            color: #b0b0b0;
+            opacity: 0.8;
+        }
+        
+        .close:hover {
+            color: #ffffff;
+            opacity: 1;
+        }
+        
+        .pagination .page-link {
+            background: #0a0a0a;
+            border-color: #1a1a1a;
+            color: #e0e0e0;
+        }
+        
+        .pagination .page-link:hover {
+            background: #1a1a1a;
+            border-color: #2a2a2a;
+            color: #ffffff;
+        }
+        
+        .pagination .page-item.active .page-link {
+            background: #1a1a1a;
+            border-color: #2a2a2a;
+        }
+        
+        .filter-section {
+            background: #050505;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            border: 1px solid #1a1a1a;
+        }
+        .filter-section .row {
+            margin-bottom: 0;
+        }
+        .filter-section .form-label {
+            font-size: 0.85rem;
+            margin-bottom: 0.3rem;
+        }
+        .filter-section .form-select,
+        .filter-section .form-control {
+            font-size: 0.9rem;
+            padding: 0.4rem 0.75rem;
+        }
+        
+        .text-muted {
+            color: #666666 !important;
+        }
+        
+        .alert-danger {
+            background: #1a0a0a;
+            border-color: #2a1a1a;
+            color: #d97a7a;
+        }
+    </style>
+</head>
+<body>
+    <!-- 导航栏 -->
+    {% include 'admin/_navbar.html' %}
+
+    <div class="main-content">
+        <div class="container-fluid">
+            <!-- 页面标题 -->
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <h5 class="mb-0">🤖 AI任务管理</h5>
+                <button class="btn btn-primary btn-sm" onclick="refreshTasks()">
+                    <i class="fas fa-sync-alt"></i> 刷新
+                </button>
+            </div>
+
+            <!-- 筛选区域 -->
+            <div class="filter-section">
+                <div class="row g-2">
+                    <div class="col-md-2">
+                        <label class="form-label">状态筛选</label>
+                        <select class="form-select" id="statusFilter" onchange="filterTasks()">
+                            <option value="">全部状态</option>
+                            <option value="pending">待处理</option>
+                            <option value="processing">处理中</option>
+                            <option value="completed">已完成</option>
+                            <option value="failed">失败</option>
+                            <option value="cancelled">已取消</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">订单号</label>
+                        <input type="text" class="form-control" id="orderNumberFilter" placeholder="输入订单号" onkeyup="filterTasks()">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">图片来源</label>
+                        <select class="form-select" id="imageTypeFilter" onchange="filterTasks()">
+                            <option value="">全部</option>
+                            <option value="original">原图</option>
+                            <option value="retouched">美颜后</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">开始时间</label>
+                        <input type="datetime-local" class="form-control" id="startDateFilter" onchange="filterTasks()">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">结束时间</label>
+                        <input type="datetime-local" class="form-control" id="endDateFilter" onchange="filterTasks()">
+                    </div>
+                </div>
+            </div>
+
+            <!-- 任务列表 -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">任务列表</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>任务ID</th>
+                                    <th>订单号</th>
+                                    <th>工作流</th>
+                                    <th>API服务商</th>
+                                    <th>输入图片</th>
+                                    <th>输出图片</th>
+                                    <th>状态</th>
+                                    <th>备注</th>
+                                    <th>完成耗时（秒）</th>
+                                    <th>请求参数</th>
+                                    <th>结果数据</th>
+                                    <th>创建时间</th>
+                                    <th>完成时间</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tasksTableBody">
+                                <tr>
+                                    <td colspan="14" class="text-center text-muted py-4">
+                                        <i class="fas fa-spinner fa-spin"></i> 加载中...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- 分页 -->
+                    <nav aria-label="任务列表分页" class="mt-3">
+                        <ul class="pagination justify-content-center mb-0" id="pagination">
+                        </ul>
+                    </nav>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 图片预览模态框 -->
+    <div class="modal fade" id="imagePreviewModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">图片预览</h5>
+                    <button type="button" class="close" data-bs-dismiss="modal">
+                        <span>&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body text-center">
+                    <img id="previewImage" src="" alt="预览图片" class="img-fluid">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 任务详情模态框 -->
+    <!-- 数据查看模态框 -->
+    <div class="modal fade" id="dataModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content" style="background: #0a0a0a; border: 1px solid #1a1a1a;">
+                <div class="modal-header" style="border-bottom: 1px solid #1a1a1a;">
+                    <h5 class="modal-title" id="dataModalTitle" style="color: #e0e0e0;">数据详情</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="dataModalContent" style="color: #e0e0e0;">
+                </div>
+                <div class="modal-footer" style="border-top: 1px solid #1a1a1a;">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="taskDetailModal" tabindex="-1">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">任务详情</h5>
+                    <button type="button" class="close" data-bs-dismiss="modal">
+                        <span>&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body" id="taskDetailContent">
+                    <div class="text-center py-4">
+                        <i class="fas fa-spinner fa-spin"></i> 加载中...
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let currentPage = 1;
+        let currentFilters = {};
+
+        // 页面加载时初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            loadTasks();
+            // 后台已有自动轮询服务，前端不再自动刷新
+            // setInterval(loadTasks, 30000);
+        });
+
+        // 加载任务列表
+        async function loadTasks(page = 1) {
+            currentPage = page;
+            const filters = getFilters();
+            currentFilters = filters;
+            
+            const params = new URLSearchParams({
+                page: page,
+                per_page: 10,
+                ...filters
+            });
+            
+            try {
+                const response = await fetch(`/admin/ai/api/tasks?${params}`);
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    renderTasks(data.data.tasks || data.data);
+                    const total = data.data.total || data.total || 0;
+                    const pages = data.data.pages || data.pages || 1;
+                    const page = data.data.page || data.page || 1;
+                    renderPagination(total, pages, page);
+                } else {
+                    showError('加载任务列表失败: ' + data.message);
+                }
+            } catch (error) {
+                console.error('加载任务失败:', error);
+                showError('加载任务列表失败，请重试');
+            }
+        }
+
+        // 获取筛选条件
+        function getFilters() {
+            const filters = {};
+            const status = document.getElementById('statusFilter').value;
+            const orderNumber = document.getElementById('orderNumberFilter').value;
+            const imageType = document.getElementById('imageTypeFilter').value;
+            const startDate = document.getElementById('startDateFilter').value;
+            const endDate = document.getElementById('endDateFilter').value;
+            
+            if (status) filters.status = status;
+            if (orderNumber) filters.order_number = orderNumber;
+            if (imageType) filters.image_type = imageType;
+            if (startDate) filters.start_date = startDate;
+            if (endDate) filters.end_date = endDate;
+            
+            return filters;
+        }
+
+        // 筛选任务
+        function filterTasks() {
+            loadTasks(1);
+        }
+
+        // 刷新任务
+        function refreshTasks() {
+            loadTasks(currentPage);
+        }
+
+        // 渲染任务列表
+        // 保存当前任务列表（用于查看详情）
+        let currentTasks = [];
+        
+        function renderTasks(tasks) {
+            const tbody = document.getElementById('tasksTableBody');
+            
+            // 保存当前任务列表
+            currentTasks = tasks;
+            
+            if (tasks.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="14" class="text-center text-muted py-4">
+                            暂无任务数据
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            tbody.innerHTML = tasks.map(task => {
+                const statusClass = `status-${task.status}`;
+                const statusText = {
+                    'pending': '待处理',
+                    'processing': '处理中',
+                    'completed': '已完成',
+                    'success': '成功',
+                    'failed': '失败',
+                    'timeout': '超时',
+                    'cancelled': '已取消'
+                }[task.status] || task.status;
+                
+                // 处理输入图片路径（支持多种格式：URL、相对路径、绝对路径）
+                let inputImageUrl = '';
+                if (task.input_image_path) {
+                    if (task.input_image_path.startsWith('http://') || task.input_image_path.startsWith('https://')) {
+                        inputImageUrl = task.input_image_path;
+                    } else if (task.input_image_path.startsWith('/')) {
+                        inputImageUrl = task.input_image_path;
+                    } else if (task.input_image_path.includes('/uploads/') || task.input_image_path.includes('/media/')) {
+                        inputImageUrl = task.input_image_path.startsWith('/') ? task.input_image_path : '/' + task.input_image_path;
+                    } else {
+                        inputImageUrl = `/media/original/${task.input_image_path.split('/').pop()}`;
+                    }
+                }
+                const inputImage = inputImageUrl ? 
+                    `<img src="${inputImageUrl}" class="image-thumbnail" onclick="previewImage(this.src)" onerror="this.style.display='none'">` : 
+                    '<span class="text-muted">-</span>';
+                
+                // 处理输出图片路径（支持多种格式）
+                let outputImageUrl = '';
+                if (task.output_image_path) {
+                    if (task.output_image_path.startsWith('http://') || task.output_image_path.startsWith('https://')) {
+                        outputImageUrl = task.output_image_path;
+                    } else if (task.output_image_path.startsWith('/')) {
+                        outputImageUrl = task.output_image_path;
+                    } else if (task.output_image_path.includes('/uploads/') || task.output_image_path.includes('/media/')) {
+                        outputImageUrl = task.output_image_path.startsWith('/') ? task.output_image_path : '/' + task.output_image_path;
+                    } else {
+                        outputImageUrl = `/media/final_works/${task.output_image_path.split('/').pop()}`;
+                    }
+                }
+                const outputImage = outputImageUrl ? 
+                    `<img src="${outputImageUrl}" class="image-thumbnail" onclick="previewImage(this.src)" onerror="this.style.display='none'">` : 
+                    '<span class="text-muted">-</span>';
+                
+                // 完成时间（使用completed_at）
+                const completedTime = task.completed_at ? 
+                    new Date(task.completed_at).toLocaleString('zh-CN') : 
+                    '-';
+                
+                const createdTime = task.created_at ? 
+                    new Date(task.created_at).toLocaleString('zh-CN') : 
+                    '-';
+                
+                // 备注（显示错误信息和重试信息）
+                let remarkText = '';
+                if (task.notes && task.notes.includes('【自动重试')) {
+                    // 提取重试信息（支持多行）
+                    const retryLines = task.notes.split('\n').filter(line => line.includes('【自动重试'));
+                    if (retryLines.length > 0) {
+                        // 显示所有重试记录
+                        remarkText = retryLines.join('; ');
+                    }
+                }
+                if (task.error_message) {
+                    if (remarkText) {
+                        remarkText = `${remarkText} | ${task.error_message}`;
+                    } else {
+                        remarkText = task.error_message;
+                    }
+                }
+                const remark = remarkText ? 
+                    `<span class="text-danger" title="${remarkText}">${remarkText.length > 50 ? remarkText.substring(0, 50) + '...' : remarkText}</span>` : 
+                    '-';
+                
+                let actionButtons = '';
+                if (task.status === 'failed') {
+                    // 失败状态：如果有task_id，显示"重新获取"（可修复失败状态的任务）；否则显示"重试"
+                    actionButtons = `
+                        <button class="btn btn-sm btn-outline-primary me-1" onclick="viewTaskDetail(${task.id})">
+                            <i class="fas fa-info-circle"></i> 详情
+                        </button>
+                        ${task.task_id ? `
+                        <button class="btn btn-sm btn-outline-success" onclick="recheckTaskResult('${task.task_id}')" title="重新获取结果（可修复失败状态）">
+                            <i class="fas fa-sync"></i> 重新获取
+                        </button>
+                        ` : `
+                        <button class="btn btn-sm btn-outline-primary" onclick="retryTask(${task.id})">
+                            <i class="fas fa-redo"></i> 重试
+                        </button>
+                        `}
+                    `;
+                } else if (task.status === 'pending' && !task.input_image_path && !task.task_id) {
+                    // 只有在pending状态、没有输入图片、且没有task_id（API任务ID）的情况下，才显示"上传"按钮
+                    // 如果有task_id，说明是API任务，应该显示"重新获取"按钮
+                    actionButtons = `
+                        <button class="btn btn-sm btn-outline-primary me-1" onclick="viewTaskDetail(${task.id})">
+                            <i class="fas fa-info-circle"></i> 详情
+                        </button>
+                        <button class="btn btn-sm btn-outline-primary" onclick="uploadTaskImage(${task.id})">
+                            <i class="fas fa-upload"></i> 上传
+                        </button>
+                    `;
+                } else {
+                    // 其他情况：显示"详情"和"重新获取"（如果有task_id且未完成）
+                    actionButtons = `
+                        <button class="btn btn-sm btn-outline-primary" onclick="viewTaskDetail(${task.id})">
+                            <i class="fas fa-info-circle"></i> 详情
+                        </button>
+                        ${task.task_id && task.status !== 'completed' ? `
+                        <button class="btn btn-sm btn-outline-success ms-1" onclick="recheckTaskResult('${task.task_id}')" title="重新获取结果">
+                            <i class="fas fa-sync"></i> 重新获取
+                        </button>
+                        ` : ''}
+                    `;
+                }
+                
+                // 处理订单链接（测试订单order_id=0时显示特殊链接）
+                const orderLink = task.order_id && task.order_id !== 0
+                    ? `<a href="/admin/order/${task.order_id}" class="text-decoration-none" style="color: #b0b0b0;">${task.order_number}</a>`
+                    : `<span class="text-muted">${task.order_number || '测试任务'}</span>`;
+                
+                // API服务商（只显示前10个字符）
+                const apiProviderFull = task.api_provider_name || '-';
+                const apiProvider = apiProviderFull !== '-' && apiProviderFull.length > 10 ? 
+                    `<span title="${apiProviderFull}">${apiProviderFull.substring(0, 10)}...</span>` : 
+                    apiProviderFull;
+                
+                // 任务ID（只显示前10个字符）
+                const taskIdFull = task.task_id || task.id;
+                const taskIdDisplay = taskIdFull.toString().length > 10 ? 
+                    `<code style="color: #b0b0b0; font-size: 0.85em;" title="${taskIdFull}">${taskIdFull.toString().substring(0, 10)}...</code>` : 
+                    `<code style="color: #b0b0b0; font-size: 0.85em;">${taskIdFull}</code>`;
+                
+                // 完成耗时
+                const duration = task.duration_seconds !== null && task.duration_seconds !== undefined
+                    ? `${task.duration_seconds}秒`
+                    : '-';
+                
+                // 请求参数（显示为可点击的按钮，点击查看详情）
+                const requestParamsBtn = task.request_params
+                    ? `<button class="btn btn-sm btn-outline-info" onclick="showRequestParams(${task.id})" title="查看请求参数">
+                        <i class="fas fa-code"></i> 查看
+                    </button>`
+                    : '<span class="text-muted">-</span>';
+                
+                // 结果数据（显示为可点击的按钮，点击查看详情）
+                const responseDataBtn = task.response_data
+                    ? `<button class="btn btn-sm btn-outline-success" onclick="showResponseData(${task.id})" title="查看结果数据">
+                        <i class="fas fa-database"></i> 查看
+                    </button>`
+                    : '<span class="text-muted">-</span>';
+                
+                return `
+                    <tr>
+                        <td>${taskIdDisplay}</td>
+                        <td>${orderLink}</td>
+                        <td>${task.workflow_name || '-'}</td>
+                        <td>${apiProvider}</td>
+                        <td>${inputImage}</td>
+                        <td>${outputImage}</td>
+                        <td><span class="status-badge ${statusClass}">${statusText}</span></td>
+                        <td>${remark}</td>
+                        <td>${duration}</td>
+                        <td>${requestParamsBtn}</td>
+                        <td>${responseDataBtn}</td>
+                        <td>${createdTime}</td>
+                        <td>${completedTime}</td>
+                        <td>${actionButtons}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // 渲染分页
+        function renderPagination(total, pages, current) {
+            const pagination = document.getElementById('pagination');
+            
+            if (pages <= 1) {
+                pagination.innerHTML = '';
+                return;
+            }
+            
+            let html = '';
+            
+            // 上一页
+            html += `
+                <li class="page-item ${current === 1 ? 'disabled' : ''}">
+                    <a class="page-link" href="#" onclick="loadTasks(${current - 1}); return false;">上一页</a>
+                </li>
+            `;
+            
+            // 页码
+            for (let i = 1; i <= pages; i++) {
+                if (i === 1 || i === pages || (i >= current - 2 && i <= current + 2)) {
+                    html += `
+                        <li class="page-item ${i === current ? 'active' : ''}">
+                            <a class="page-link" href="#" onclick="loadTasks(${i}); return false;">${i}</a>
+                        </li>
+                    `;
+                } else if (i === current - 3 || i === current + 3) {
+                    html += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+                }
+            }
+            
+            // 下一页
+            html += `
+                <li class="page-item ${current === pages ? 'disabled' : ''}">
+                    <a class="page-link" href="#" onclick="loadTasks(${current + 1}); return false;">下一页</a>
+                </li>
+            `;
+            
+            pagination.innerHTML = html;
+        }
+
+        // 预览图片
+        function previewImage(src) {
+            document.getElementById('previewImage').src = src;
+            const modal = new bootstrap.Modal(document.getElementById('imagePreviewModal'));
+            modal.show();
+        }
+        
+        // 预览图片（用于任务详情页面）
+        function previewImageModal(imageUrl) {
+            previewImage(imageUrl);
+        }
+
+        // 查看任务详情
+        async function viewTaskDetail(taskId) {
+            const modal = new bootstrap.Modal(document.getElementById('taskDetailModal'));
+            const content = document.getElementById('taskDetailContent');
+            content.innerHTML = '<div class="text-center py-4"><i class="fas fa-spinner fa-spin"></i> 加载中...</div>';
+            modal.show();
+            
+            try {
+                const response = await fetch(`/admin/ai/api/tasks/${taskId}`);
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    const task = data.data;
+                    renderTaskDetail(task);
+                } else {
+                    content.innerHTML = `<div class="alert alert-danger">加载失败: ${data.message}</div>`;
+                }
+            } catch (error) {
+                console.error('加载任务详情失败:', error);
+                content.innerHTML = '<div class="alert alert-danger">加载失败，请重试</div>';
+            }
+        }
+
+        // 渲染任务详情
+        function renderTaskDetail(task) {
+            const content = document.getElementById('taskDetailContent');
+            
+            const statusText = {
+                'pending': '待处理',
+                'processing': '处理中',
+                'completed': '已完成',
+                'success': '成功',
+                'failed': '失败',
+                'timeout': '超时',
+                'cancelled': '已取消'
+            }[task.status] || task.status;
+            
+            const statusClass = `status-${task.status}`;
+            
+            content.innerHTML = `
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>基本信息</h6>
+                        <table class="table table-sm">
+                            <tr>
+                                <td style="width: 120px; color: #888888;">订单号</td>
+                                <td><a href="/admin/order/${task.order_id}" style="color: #b0b0b0;">${task.order_number}</a></td>
+                            </tr>
+                            <tr>
+                                <td style="color: #888888;">工作流名称</td>
+                                <td>${task.workflow_name || '-'}</td>
+                            </tr>
+                            <tr>
+                                <td style="color: #888888;">工作流文件</td>
+                                <td>${task.workflow_file || '-'}</td>
+                            </tr>
+                            <tr>
+                                <td style="color: #888888;">风格分类</td>
+                                <td>${task.style_category_name || '-'}</td>
+                            </tr>
+                            <tr>
+                                <td style="color: #888888;">风格图片</td>
+                                <td>${task.style_image_name || '-'}</td>
+                            </tr>
+                            <tr>
+                                <td style="color: #888888;">状态</td>
+                                <td><span class="status-badge ${statusClass}">${statusText}</span></td>
+                            </tr>
+                            <tr>
+                                <td style="color: #888888;">创建时间</td>
+                                <td>${task.created_at ? new Date(task.created_at).toLocaleString('zh-CN') : '-'}</td>
+                            </tr>
+                            <tr>
+                                <td style="color: #888888;">开始时间</td>
+                                <td>${task.started_at ? new Date(task.started_at).toLocaleString('zh-CN') : '-'}</td>
+                            </tr>
+                            <tr>
+                                <td style="color: #888888;">完成时间</td>
+                                <td>${task.completed_at ? new Date(task.completed_at).toLocaleString('zh-CN') : '-'}</td>
+                            </tr>
+                            <tr>
+                                <td style="color: #888888;">完成时间</td>
+                                <td>${task.completed_at ? new Date(task.completed_at).toLocaleString('zh-CN') : '-'}</td>
+                            </tr>
+                            <tr>
+                                <td style="color: #888888;">重试次数</td>
+                                <td>${task.retry_count || 0}</td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>图片信息</h6>
+                        <div class="mb-3">
+                            <label class="form-label" style="color: #888888;">输入图片</label>
+                            ${(() => {
+                                if (!task.input_image_path) {
+                                    return '<div class="text-muted">未上传</div>';
+                                }
+                                // 处理输入图片路径
+                                let inputImageUrl = '';
+                                const inputPath = task.input_image_path;
+                                if (inputPath.startsWith('http://') || inputPath.startsWith('https://')) {
+                                    inputImageUrl = inputPath;
+                                } else if (inputPath.startsWith('/')) {
+                                    inputImageUrl = inputPath;
+                                } else if (inputPath.includes('uploads/')) {
+                                    // 从完整路径中提取文件名
+                                    const filename = inputPath.split('/').pop();
+                                    inputImageUrl = `/media/original/${filename}`;
+                                } else {
+                                    // 直接使用文件名
+                                    const filename = inputPath.split('/').pop();
+                                    inputImageUrl = `/media/original/${filename}`;
+                                }
+                                return `
+                                    <div>
+                                        <img src="${inputImageUrl}" 
+                                             class="img-fluid rounded mb-2" 
+                                             style="max-height: 200px; cursor: pointer; border: 1px solid #333;" 
+                                             onclick="previewImageModal('${inputImageUrl}')"
+                                             onerror="this.onerror=null; this.src='/static/img/placeholder.png'; this.style.cursor='default';">
+                                        <div><small class="text-muted">${task.input_image_path}</small></div>
+                                    </div>
+                                `;
+                            })()}
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" style="color: #888888;">输出图片</label>
+                            ${(() => {
+                                if (!task.output_image_path) {
+                                    return '<div class="text-muted">未生成</div>';
+                                }
+                                // 处理输出图片路径
+                                let outputImageUrl = '';
+                                const outputPath = task.output_image_path;
+                                if (outputPath.startsWith('http://') || outputPath.startsWith('https://')) {
+                                    outputImageUrl = outputPath;
+                                } else if (outputPath.startsWith('/')) {
+                                    outputImageUrl = outputPath;
+                                } else if (outputPath.includes('final_works/')) {
+                                    // 从完整路径中提取文件名
+                                    const filename = outputPath.split('/').pop();
+                                    outputImageUrl = `/media/final/${filename}`;
+                                } else {
+                                    // 直接使用文件名
+                                    const filename = outputPath.split('/').pop();
+                                    outputImageUrl = `/media/final/${filename}`;
+                                }
+                                return `
+                                    <div>
+                                        <img src="${outputImageUrl}" 
+                                             class="img-fluid rounded mb-2" 
+                                             style="max-height: 200px; cursor: pointer; border: 1px solid #333;" 
+                                             onclick="previewImageModal('${outputImageUrl}')"
+                                             onerror="this.onerror=null; this.src='/static/img/placeholder.png'; this.style.cursor='default';">
+                                        <div><small class="text-muted">${task.output_image_path}</small></div>
+                                    </div>
+                                `;
+                            })()}
+                        </div>
+                    </div>
+                </div>
+                ${task.error_message ? `
+                    <div class="alert alert-danger mt-3">
+                        <h6>错误信息</h6>
+                        <pre style="background: #050505; color: #d97a7a; padding: 10px; border-radius: 4px; border: 1px solid #2a1a1a;">${task.error_message}</pre>
+                    </div>
+                ` : ''}
+                ${task.status === 'failed' ? `
+                    <div class="mt-3 text-end">
+                        <button class="btn btn-primary" onclick="retryTask(${task.id}); bootstrap.Modal.getInstance(document.getElementById('taskDetailModal')).hide();">
+                            <i class="fas fa-redo"></i> 重新处理
+                        </button>
+                    </div>
+                ` : ''}
+            `;
+        }
+
+        // 重新处理任务
+        async function retryTask(taskId) {
+            if (!confirm('确定要重新处理这个任务吗？')) return;
+            
+            try {
+                const response = await fetch(`/admin/ai/api/tasks/${taskId}/retry`, {
+                    method: 'POST'
+                });
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    alert('任务已重新提交处理');
+                    loadTasks(currentPage);
+                } else {
+                    alert('重新处理失败: ' + data.message);
+                }
+            } catch (error) {
+                console.error('重新处理失败:', error);
+                alert('重新处理失败，请重试');
+            }
+        }
+
+        // 上传任务图片
+        function uploadTaskImage(taskId) {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'image/*';
+            input.onchange = async function(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+                
+                const formData = new FormData();
+                formData.append('file', file);
+                
+                try {
+                    const response = await fetch(`/admin/ai/api/tasks/${taskId}/upload-image`, {
+                        method: 'POST',
+                        body: formData
+                    });
+                    const data = await response.json();
+                    
+                    if (data.status === 'success') {
+                        alert('图片上传成功');
+                        loadTasks(currentPage);
+                    } else {
+                        alert('上传失败: ' + data.message);
+                    }
+                } catch (error) {
+                    console.error('上传失败:', error);
+                    alert('上传失败，请重试');
+                }
+            };
+            input.click();
+        }
+
+        // 重新获取任务结果
+        async function recheckTaskResult(taskId) {
+            if (!confirm('确定要重新获取该任务的结果吗？')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/admin/ai/api/tasks/recheck/${taskId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    alert('重新获取成功！' + (data.message || ''));
+                    // 刷新任务列表
+                    loadTasks(currentPage);
+                } else {
+                    alert('重新获取失败：' + (data.message || '未知错误'));
+                }
+            } catch (error) {
+                console.error('重新获取任务结果失败:', error);
+                alert('重新获取失败，请重试');
+            }
+        }
+        
+        // 显示错误
+        function showError(message) {
+            const tbody = document.getElementById('tasksTableBody');
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="13" class="text-center text-danger py-4">
+                        ${message}
+                    </td>
+                </tr>
+            `;
+        }
+        
+        // 显示请求参数
+        function showRequestParams(taskId) {
+            // 从任务列表中获取数据
+            const task = currentTasks.find(t => t.id === taskId);
+            if (!task || !task.request_params) {
+                alert('没有请求参数数据');
+                return;
+            }
+            
+            const modal = new bootstrap.Modal(document.getElementById('dataModal'));
+            const title = document.getElementById('dataModalTitle');
+            const content = document.getElementById('dataModalContent');
+            
+            title.textContent = '请求参数';
+            content.innerHTML = `
+                <pre style="background: #0a0a0a; color: #e0e0e0; padding: 15px; border-radius: 4px; overflow-x: auto; max-height: 500px; font-size: 12px;">${JSON.stringify(task.request_params, null, 2)}</pre>
+            `;
+            modal.show();
+        }
+        
+        // 显示结果数据
+        function showResponseData(taskId) {
+            // 从任务列表中获取数据
+            const task = currentTasks.find(t => t.id === taskId);
+            if (!task || !task.response_data) {
+                alert('没有结果数据');
+                return;
+            }
+            
+            const modal = new bootstrap.Modal(document.getElementById('dataModal'));
+            const title = document.getElementById('dataModalTitle');
+            const content = document.getElementById('dataModalContent');
+            
+            title.textContent = '结果数据';
+            // 尝试格式化JSON，如果不是JSON则直接显示
+            let formattedData = task.response_data;
+            try {
+                const parsed = typeof task.response_data === 'string' ? JSON.parse(task.response_data) : task.response_data;
+                formattedData = JSON.stringify(parsed, null, 2);
+            } catch (e) {
+                // 不是JSON格式，直接显示
+            }
+            
+            content.innerHTML = `
+                <pre style="background: #0a0a0a; color: #e0e0e0; padding: 15px; border-radius: 4px; overflow-x: auto; max-height: 500px; font-size: 12px;">${formattedData}</pre>
+            `;
+            modal.show();
+        }
+        
+    </script>
+</body>
+</html>

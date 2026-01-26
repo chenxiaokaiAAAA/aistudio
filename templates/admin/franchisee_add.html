@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>添加加盟商 - AI拍照管理系统</title>
+    <link href="/static/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            padding-top: 80px;
+        }
+        .navbar-custom {
+            background: #0a0a0a !important;
+            border-bottom: 1px solid #1a1a1a;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        }
+        .navbar-brand, .nav-link {
+            color: #e0e0e0 !important;
+        }
+        .nav-link:hover {
+            color: #ffffff !important;
+        }
+        .nav-link.active {
+            color: #ffffff !important;
+            font-weight: 600;
+        }
+        .form-container { max-width: 800px; margin: 0 auto; }
+        .required { color: red; }
+    </style>
+</head>
+<body>
+    <!-- 导航栏 -->
+    {% include 'admin/_navbar.html' %}
+
+    <div class="container mt-4">
+        <div class="form-container">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>🏢 添加加盟商账户</h2>
+                <a href="/franchisee/admin/accounts" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> 返回列表
+                </a>
+            </div>
+
+            <!-- 消息提示 -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">基本信息</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="username" class="form-label">用户名 <span class="required">*</span></label>
+                                    <input type="text" class="form-control" id="username" name="username" required>
+                                    <div class="form-text">用于登录的用户名，建议使用公司简称</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="password" class="form-label">密码 <span class="required">*</span></label>
+                                    <input type="password" class="form-control" id="password" name="password" required>
+                                    <div class="form-text">建议使用8位以上包含字母和数字的密码</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="company_name" class="form-label">公司名称 <span class="required">*</span></label>
+                                    <input type="text" class="form-control" id="company_name" name="company_name" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="contact_person" class="form-label">联系人 <span class="required">*</span></label>
+                                    <input type="text" class="form-control" id="contact_person" name="contact_person" required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="contact_phone" class="form-label">联系电话 <span class="required">*</span></label>
+                                    <input type="tel" class="form-control" id="contact_phone" name="contact_phone" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="contact_email" class="form-label">联系邮箱</label>
+                                    <input type="email" class="form-control" id="contact_email" name="contact_email">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="address" class="form-label">公司地址</label>
+                            <textarea class="form-control" id="address" name="address" rows="3"></textarea>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="initial_quota" class="form-label">初始充值额度</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">¥</span>
+                                        <input type="number" class="form-control" id="initial_quota" name="initial_quota" 
+                                               value="0" min="0" step="0.01">
+                                    </div>
+                                    <div class="form-text">为加盟商账户设置初始可用额度</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <hr>
+
+                        <!-- 门店信息 -->
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i> 
+                            <strong>门店信息</strong><br>
+                            填写门店名称，该信息将用于订单记录和统计。自拍机设备请在创建账户后，在详情页面进行管理。
+                        </div>
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="mb-3">
+                                    <label for="store_name" class="form-label">门店名称 <span class="required">*</span></label>
+                                    <input type="text" class="form-control" id="store_name" name="store_name" 
+                                           placeholder="如: 北京朝阳店" required>
+                                    <div class="form-text">该加盟商的门店名称，将显示在订单列表中</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <hr>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="/franchisee/admin/accounts" class="btn btn-secondary me-md-2">取消</a>
+                            <button type="submit" class="btn btn-primary">创建账户</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- 说明信息 -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h6 class="mb-0">📋 说明</h6>
+                </div>
+                <div class="card-body">
+                    <ul class="mb-0">
+                        <li>创建成功后，系统会自动生成唯一的二维码标识</li>
+                        <li>加盟商可以通过二维码或用户名进行订单关联</li>
+                        <li>初始充值额度会立即生效，加盟商可以立即使用</li>
+                        <li>账户状态默认为"正常"，可以随时修改</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
+
+
+
+
+
+

@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>冲印系统配置 - {{ brand_name }}管理系统</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .config-section {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        .status-enabled {
+            background-color: #28a745;
+        }
+        .status-disabled {
+            background-color: #dc3545;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-md-12">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h2>冲印系统配置</h2>
+                    <a href="{{ url_for('admin_dashboard') }}" class="btn btn-outline-secondary">返回管理面板</a>
+                </div>
+
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ 'danger' if category == 'error' else 'success' }} alert-dismissible fade show">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+
+                <div class="config-section">
+                    <h4>基本配置</h4>
+                    <form method="POST">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="api_url" class="form-label">冲印系统API地址</label>
+                                    <input type="url" class="form-control" id="api_url" name="api_url" 
+                                           value="{{ config.api_url or 'http://服务器IP:5995/api/ODSGate/NewOrder' }}" required>
+                                    <div class="form-text">冲印系统接收订单的接口地址</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="source_app_id" class="form-label">来源系统代号</label>
+                                    <input type="text" class="form-control" id="source_app_id" name="source_app_id" 
+                                           value="{{ config.source_app_id or 'YT' }}" required>
+                                    <div class="form-text">您的系统在冲印系统中的标识</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="shop_id" class="form-label">影楼编号</label>
+                                    <input type="text" class="form-control" id="shop_id" name="shop_id" 
+                                           value="{{ config.shop_id or 'YOUR_SHOP_ID' }}" required>
+                                    <div class="form-text">冲印系统分配给您的影楼编号</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="shop_name" class="form-label">影楼名称</label>
+                                    <input type="text" class="form-control" id="shop_name" name="shop_name" 
+                                           value="{{ config.shop_name or '您的影楼名称' }}" required>
+                                    <div class="form-text">您的影楼或店铺名称</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="enabled" name="enabled" 
+                                       {{ 'checked' if config.enabled else '' }}>
+                                <label class="form-check-label" for="enabled">
+                                    启用自动传片功能
+                                </label>
+                                <div class="form-text">当订单状态变为"待发货"时，自动发送到冲印系统</div>
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">保存配置</button>
+                            <button type="button" class="btn btn-outline-info" onclick="testConnection()">测试连接</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="config-section">
+                    <h4>配置说明</h4>
+                    <div class="alert alert-info">
+                        <h6>配置步骤：</h6>
+                        <ol>
+                            <li>联系冲印系统提供商获取您的影楼编号和API地址</li>
+                            <li>填写上述配置信息</li>
+                            <li>点击"测试连接"验证配置是否正确</li>
+                            <li>启用自动传片功能</li>
+                        </ol>
+                        
+                        <h6>工作流程：</h6>
+                        <ul>
+                            <li>用户确认制作 → 订单状态变为"待发货"</li>
+                            <li>系统自动将成品图片发送到冲印系统</li>
+                            <li>冲印系统处理订单并安排发货</li>
+                            <li>冲印系统通过回调接口通知发货信息</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="config-section">
+                    <h4>状态监控</h4>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h6 class="card-title">
+                                        <span class="status-indicator {{ 'status-enabled' if config.enabled else 'status-disabled' }}"></span>
+                                        自动传片状态
+                                    </h6>
+                                    <p class="card-text">
+                                        {{ '已启用' if config.enabled else '已禁用' }}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h6 class="card-title">配置状态</h6>
+                                    <p class="card-text">
+                                        {% if config.api_url and config.shop_id %}
+                                            配置完整
+                                        {% else %}
+                                            配置不完整
+                                        {% endif %}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function testConnection() {
+            const btn = event.target;
+            const originalText = btn.textContent;
+            btn.textContent = '测试中...';
+            btn.disabled = true;
+            
+            fetch('{{ url_for("printer_config.test_printer_config") }}')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        alert('连接测试成功！');
+                    } else {
+                        alert('连接测试失败：' + data.message);
+                    }
+                })
+                .catch(error => {
+                    alert('连接测试失败：' + error.message);
+                })
+                .finally(() => {
+                    btn.textContent = originalText;
+                    btn.disabled = false;
+                });
+        }
+    </script>
+</body>
+</html>
+

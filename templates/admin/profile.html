@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>个人中心 - {{ brand_name }}系统</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        body {
+            background: #f5f5f5;
+            padding-top: 80px;
+        }
+        .navbar-custom {
+            background: #0a0a0a !important;
+            border-bottom: 1px solid #1a1a1a;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        }
+        .main-content {
+            padding: 20px;
+        }
+        .profile-card {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <!-- 导航栏 -->
+    {% include 'admin/_navbar.html' %}
+
+    <div class="container-fluid main-content">
+        <div class="row">
+            <main class="col-12">
+                <h2 class="mb-4">个人中心</h2>
+                
+                <!-- 个人信息 -->
+                <div class="card profile-card">
+                    <div class="card-header">
+                        <h5 class="mb-0">个人信息</h5>
+                    </div>
+                    <div class="card-body">
+                        <form id="profileForm">
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">用户名</label>
+                                    <input type="text" class="form-control" id="username" readonly>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">角色</label>
+                                    <input type="text" class="form-control" id="role" readonly>
+                                </div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">联系人</label>
+                                    <input type="text" class="form-control" id="contactPerson">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">联系电话</label>
+                                    <input type="text" class="form-control" id="contactPhone">
+                                </div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">微信号</label>
+                                    <input type="text" class="form-control" id="wechatId">
+                                </div>
+                            </div>
+                            <button type="button" class="btn btn-primary" onclick="updateProfile()">
+                                <i class="bi bi-save"></i> 保存修改
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- 修改密码 -->
+                <div class="card profile-card">
+                    <div class="card-header">
+                        <h5 class="mb-0">修改密码</h5>
+                    </div>
+                    <div class="card-body">
+                        <form id="passwordForm">
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">原密码</label>
+                                    <input type="password" class="form-control" id="oldPassword" required>
+                                </div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">新密码</label>
+                                    <input type="password" class="form-control" id="newPassword" required minlength="6">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">确认新密码</label>
+                                    <input type="password" class="form-control" id="confirmPassword" required minlength="6">
+                                </div>
+                            </div>
+                            <button type="button" class="btn btn-warning" onclick="changePassword()">
+                                <i class="bi bi-key"></i> 修改密码
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- 操作日志 -->
+                <div class="card profile-card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">操作日志</h5>
+                        <button class="btn btn-sm btn-outline-secondary" onclick="loadLogs()">
+                            <i class="bi bi-arrow-clockwise"></i> 刷新
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>操作时间</th>
+                                        <th>操作类型</th>
+                                        <th>操作内容</th>
+                                        <th>IP地址</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="logsTableBody">
+                                    <tr>
+                                        <td colspan="4" class="text-center text-muted">
+                                            <i class="bi bi-hourglass-split"></i> 正在加载日志...
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // 页面加载时获取用户信息
+        document.addEventListener('DOMContentLoaded', function() {
+            loadProfile();
+            loadLogs();
+        });
+
+        // 加载个人信息
+        function loadProfile() {
+            fetch('/api/admin/profile', {
+                credentials: 'same-origin'
+            })
+            .then(function(response) {
+                return response.json();
+            })
+            .then(function(data) {
+                if (data.success && data.user) {
+                    var user = data.user;
+                    document.getElementById('username').value = user.username || '';
+                    document.getElementById('role').value = user.role === 'admin' ? '管理员' : (user.role === 'operator' ? '操作员' : user.role);
+                    document.getElementById('contactPerson').value = user.contact_person || '';
+                    document.getElementById('contactPhone').value = user.contact_phone || '';
+                    document.getElementById('wechatId').value = user.wechat_id || '';
+                }
+            })
+            .catch(function(error) {
+                console.error('加载个人信息失败:', error);
+            });
+        }
+
+        // 更新个人信息
+        function updateProfile() {
+            var data = {
+                contact_person: document.getElementById('contactPerson').value,
+                contact_phone: document.getElementById('contactPhone').value,
+                wechat_id: document.getElementById('wechatId').value
+            };
+
+            fetch('/api/admin/profile', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                credentials: 'same-origin',
+                body: JSON.stringify(data)
+            })
+            .then(function(response) {
+                return response.json();
+            })
+            .then(function(data) {
+                if (data.success) {
+                    alert('信息更新成功');
+                } else {
+                    alert('更新失败: ' + (data.message || '未知错误'));
+                }
+            })
+            .catch(function(error) {
+                console.error('更新个人信息失败:', error);
+                alert('更新失败，请重试');
+            });
+        }
+
+        // 修改密码
+        function changePassword() {
+            var oldPassword = document.getElementById('oldPassword').value;
+            var newPassword = document.getElementById('newPassword').value;
+            var confirmPassword = document.getElementById('confirmPassword').value;
+
+            if (!oldPassword || !newPassword || !confirmPassword) {
+                alert('请填写所有密码字段');
+                return;
+            }
+
+            if (newPassword.length < 6) {
+                alert('新密码长度至少6位');
+                return;
+            }
+
+            if (newPassword !== confirmPassword) {
+                alert('两次输入的新密码不一致');
+                return;
+            }
+
+            fetch('/api/admin/profile/password', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                credentials: 'same-origin',
+                body: JSON.stringify({
+                    old_password: oldPassword,
+                    new_password: newPassword
+                })
+            })
+            .then(function(response) {
+                return response.json();
+            })
+            .then(function(data) {
+                if (data.success) {
+                    alert('密码修改成功，请重新登录');
+                    document.getElementById('passwordForm').reset();
+                } else {
+                    alert('修改失败: ' + (data.message || '未知错误'));
+                }
+            })
+            .catch(function(error) {
+                console.error('修改密码失败:', error);
+                alert('修改失败，请重试');
+            });
+        }
+
+        // 加载操作日志
+        function loadLogs() {
+            var tbody = document.getElementById('logsTableBody');
+            tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted"><i class="bi bi-hourglass-split"></i> 正在加载日志...</td></tr>';
+
+            fetch('/api/admin/profile/logs', {
+                credentials: 'same-origin'
+            })
+            .then(function(response) {
+                return response.json();
+            })
+            .then(function(data) {
+                if (data.success && data.logs) {
+                    if (data.logs.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">暂无操作日志</td></tr>';
+                    } else {
+                        var html = '';
+                        for (var i = 0; i < data.logs.length; i++) {
+                            var log = data.logs[i];
+                            html += '<tr>';
+                            html += '<td>' + (log.operation_time || '未知') + '</td>';
+                            html += '<td>' + (log.operation_type || '未知') + '</td>';
+                            html += '<td>' + (log.operation_content || '未知') + '</td>';
+                            html += '<td>' + (log.ip_address || '未知') + '</td>';
+                            html += '</tr>';
+                        }
+                        tbody.innerHTML = html;
+                    }
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">暂无操作日志（功能开发中）</td></tr>';
+                }
+            })
+            .catch(function(error) {
+                console.error('加载日志失败:', error);
+                tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">暂无操作日志（功能开发中）</td></tr>';
+            });
+        }
+    </script>
+</body>
+</html>

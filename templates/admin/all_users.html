@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>所有用户访问统计 - {{ brand_name }}管理系统</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        .visit-stats {
+            font-size: 0.85rem;
+        }
+        .visit-stats .badge {
+            font-size: 0.75rem;
+        }
+        .frequency-badge {
+            font-size: 0.8rem;
+        }
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+        }
+        .status-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 5px;
+        }
+        .status-active { background-color: #28a745; }
+        .status-inactive { background-color: #6c757d; }
+        .status-pending { background-color: #ffc107; }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/admin">
+                <i class="bi bi-house-door"></i> {{ brand_name }}管理系统
+            </a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="/admin/promotion">推广管理</a>
+                <a class="nav-link active" href="/admin/users">所有用户</a>
+                <a class="nav-link" href="/logout">退出登录</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid mt-4">
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <i class="bi bi-people"></i> 所有用户访问统计
+                        </h5>
+                        <div class="d-flex gap-2">
+                            <input type="text" id="searchInput" class="form-control form-control-sm" 
+                                   placeholder="搜索OpenID或推广码..." style="width: 250px;">
+                            <button class="btn btn-outline-primary btn-sm" onclick="searchUsers()">
+                                <i class="bi bi-search"></i> 搜索
+                            </button>
+                            <button class="btn btn-outline-secondary btn-sm" onclick="refreshData()">
+                                <i class="bi bi-arrow-clockwise"></i> 刷新
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <!-- 统计概览 -->
+                        <div class="row mb-4">
+                            <div class="col-md-3">
+                                <div class="card bg-primary text-white">
+                                    <div class="card-body text-center">
+                                        <h4 id="totalUsers">-</h4>
+                                        <small>总用户数</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card bg-success text-white">
+                                    <div class="card-body text-center">
+                                        <h4 id="totalVisits">-</h4>
+                                        <small>总访问次数</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card bg-warning text-white">
+                                    <div class="card-body text-center">
+                                        <h4 id="authorizedUsers">-</h4>
+                                        <small>已授权用户</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card bg-info text-white">
+                                    <div class="card-body text-center">
+                                        <h4 id="orderedUsers">-</h4>
+                                        <small>已下单用户</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 用户列表 -->
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>OpenID</th>
+                                        <th>推广码</th>
+                                        <th>访问统计</th>
+                                        <th>访问频率</th>
+                                        <th>状态</th>
+                                        <th>首次访问</th>
+                                        <th>最后访问</th>
+                                        <th>操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="userTableBody">
+                                    <tr>
+                                        <td colspan="8" class="text-center">
+                                            <div class="spinner-border text-primary" role="status">
+                                                <span class="visually-hidden">加载中...</span>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- 分页 -->
+                        <nav aria-label="用户分页">
+                            <ul class="pagination justify-content-center" id="pagination">
+                            </ul>
+                        </nav>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 用户详情模态框 -->
+    <div class="modal fade" id="userDetailModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">用户访问详情</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="userDetailContent">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let currentPage = 1;
+        let currentSearch = '';
+
+        // 页面加载时初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            loadUserData();
+        });
+
+        // 加载用户数据
+        function loadUserData(page = 1, search = '') {
+            currentPage = page;
+            currentSearch = search;
+            
+            const url = `/api/admin/users/all?page=${page}&per_page=20&search=${encodeURIComponent(search)}`;
+            
+            fetch(url, {
+                credentials: 'same-origin'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    renderUserTable(data.users);
+                    renderPagination(data.pagination);
+                    updateStatistics(data.users);
+                } else {
+                    console.error('加载用户数据失败:', data.message);
+                    showError('加载用户数据失败: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error loading user data:', error);
+                showError('加载用户数据失败');
+            });
+        }
+
+        // 渲染用户表格
+        function renderUserTable(users) {
+            const tbody = document.getElementById('userTableBody');
+            
+            if (users.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="8" class="text-center text-muted">
+                            <i class="bi bi-inbox"></i> 暂无用户数据
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = users.map(user => `
+                <tr>
+                    <td>
+                        <code class="text-muted">${user.openid.substring(0, 20)}...</code>
+                    </td>
+                    <td>
+                        <div class="d-flex flex-column gap-1">
+                            ${user.temp_promotion_code ? 
+                                `<span class="badge bg-secondary">${user.temp_promotion_code}</span>` : 
+                                '<span class="text-muted">无</span>'
+                            }
+                            ${user.final_promotion_code ? 
+                                `<span class="badge bg-primary">${user.final_promotion_code}</span>` : 
+                                '<span class="text-muted">未获得</span>'
+                            }
+                        </div>
+                    </td>
+                    <td>
+                        <div class="visit-stats">
+                            <div class="small text-muted">总访问: <span class="fw-bold text-primary">${user.total_visits}</span></div>
+                            <div class="small text-muted">授权: <span class="fw-bold text-success">${user.authorized_visits}</span></div>
+                            <div class="small text-muted">注册: <span class="fw-bold text-info">${user.registered_visits}</span></div>
+                            <div class="small text-muted">下单: <span class="fw-bold text-warning">${user.ordered_visits}</span></div>
+                        </div>
+                    </td>
+                    <td>
+                        <span class="badge bg-light text-dark frequency-badge">
+                            ${user.visit_frequency}
+                        </span>
+                    </td>
+                    <td>
+                        <div class="d-flex align-items-center">
+                            <span class="status-indicator ${getStatusClass(user)}"></span>
+                            <span class="small">${getStatusText(user)}</span>
+                        </div>
+                    </td>
+                    <td class="text-muted small">${formatDateTime(user.first_visit)}</td>
+                    <td class="text-muted small">${formatDateTime(user.last_visit)}</td>
+                    <td>
+                        <button class="btn btn-outline-primary btn-sm" onclick="showUserDetail('${user.openid}')">
+                            <i class="bi bi-eye"></i> 详情
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // 获取状态样式
+        function getStatusClass(user) {
+            if (user.has_ordered) return 'status-active';
+            if (user.authorized_visits > 0) return 'status-pending';
+            return 'status-inactive';
+        }
+
+        // 获取状态文本
+        function getStatusText(user) {
+            if (user.has_ordered) return '已下单';
+            if (user.authorized_visits > 0) return '已授权';
+            return '未授权';
+        }
+
+        // 更新统计信息
+        function updateStatistics(users) {
+            const totalUsers = users.length;
+            const totalVisits = users.reduce((sum, user) => sum + user.total_visits, 0);
+            const authorizedUsers = users.filter(user => user.authorized_visits > 0).length;
+            const orderedUsers = users.filter(user => user.has_ordered).length;
+
+            document.getElementById('totalUsers').textContent = totalUsers;
+            document.getElementById('totalVisits').textContent = totalVisits;
+            document.getElementById('authorizedUsers').textContent = authorizedUsers;
+            document.getElementById('orderedUsers').textContent = orderedUsers;
+        }
+
+        // 渲染分页
+        function renderPagination(pagination) {
+            const paginationEl = document.getElementById('pagination');
+            const { page, pages, total } = pagination;
+            
+            let paginationHTML = '';
+            
+            // 上一页
+            if (page > 1) {
+                paginationHTML += `
+                    <li class="page-item">
+                        <a class="page-link" href="#" onclick="loadUserData(${page - 1}, '${currentSearch}')">上一页</a>
+                    </li>
+                `;
+            }
+            
+            // 页码
+            const startPage = Math.max(1, page - 2);
+            const endPage = Math.min(pages, page + 2);
+            
+            for (let i = startPage; i <= endPage; i++) {
+                paginationHTML += `
+                    <li class="page-item ${i === page ? 'active' : ''}">
+                        <a class="page-link" href="#" onclick="loadUserData(${i}, '${currentSearch}')">${i}</a>
+                    </li>
+                `;
+            }
+            
+            // 下一页
+            if (page < pages) {
+                paginationHTML += `
+                    <li class="page-item">
+                        <a class="page-link" href="#" onclick="loadUserData(${page + 1}, '${currentSearch}')">下一页</a>
+                    </li>
+                `;
+            }
+            
+            paginationEl.innerHTML = paginationHTML;
+        }
+
+        // 搜索用户
+        function searchUsers() {
+            const searchTerm = document.getElementById('searchInput').value.trim();
+            loadUserData(1, searchTerm);
+        }
+
+        // 刷新数据
+        function refreshData() {
+            loadUserData(currentPage, currentSearch);
+        }
+
+        // 显示用户详情
+        function showUserDetail(openid) {
+            // 这里可以添加获取用户详细访问记录的API调用
+            const modal = new bootstrap.Modal(document.getElementById('userDetailModal'));
+            document.getElementById('userDetailContent').innerHTML = `
+                <div class="text-center">
+                    <h6>用户: ${openid}</h6>
+                    <p class="text-muted">详细访问记录功能开发中...</p>
+                </div>
+            `;
+            modal.show();
+        }
+
+        // 格式化日期时间
+        function formatDateTime(dateTimeStr) {
+            if (!dateTimeStr) return '-';
+            try {
+                const date = new Date(dateTimeStr);
+                return date.toLocaleString('zh-CN');
+            } catch (e) {
+                return dateTimeStr;
+            }
+        }
+
+        // 显示错误信息
+        function showError(message) {
+            const tbody = document.getElementById('userTableBody');
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="8" class="text-center text-danger">
+                        <i class="bi bi-exclamation-triangle"></i> ${message}
+                    </td>
+                </tr>
+            `;
+        }
+
+        // 回车搜索
+        document.getElementById('searchInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                searchUsers();
+            }
+        });
+    </script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+

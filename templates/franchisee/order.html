@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>加盟商下单 - {{ franchisee.company_name }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Microsoft YaHei', sans-serif;
+        }
+        .order-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            margin: 20px auto;
+            max-width: 800px;
+        }
+        .header-section {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 20px 20px 0 0;
+            text-align: center;
+        }
+        .form-section {
+            padding: 40px;
+        }
+        .product-selection {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 25px;
+            margin: 20px 0;
+        }
+        .product-card {
+            border: 2px solid #e9ecef;
+            border-radius: 15px;
+            padding: 20px;
+            margin: 10px 0;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .product-card:hover {
+            border-color: #4facfe;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(79, 172, 254, 0.2);
+        }
+        .product-card.selected {
+            border-color: #4facfe;
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+        }
+        .form-control {
+            border-radius: 10px;
+            border: 2px solid #e9ecef;
+            padding: 12px 15px;
+            transition: all 0.3s ease;
+        }
+        .form-control:focus {
+            border-color: #4facfe;
+            box-shadow: 0 0 0 0.2rem rgba(79, 172, 254, 0.25);
+        }
+        .btn-submit {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            border: none;
+            border-radius: 15px;
+            padding: 15px 40px;
+            font-size: 18px;
+            font-weight: bold;
+            color: white;
+            transition: all 0.3s ease;
+        }
+        .btn-submit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(79, 172, 254, 0.3);
+        }
+        .quota-info {
+            background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+            border-radius: 15px;
+            padding: 20px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        .quota-info h5 {
+            color: #8b4513;
+            margin-bottom: 10px;
+        }
+        .quota-amount {
+            font-size: 24px;
+            font-weight: bold;
+            color: #d2691e;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="order-container">
+            <!-- 头部信息 -->
+            <div class="header-section">
+                <h2><i class="fas fa-store"></i> {{ franchisee.company_name }}</h2>
+                <p class="mb-0">专业AI拍照机定制服务</p>
+            </div>
+
+            <!-- 额度信息 -->
+            <div class="quota-info">
+                <h5><i class="fas fa-wallet"></i> 账户信息</h5>
+                <div class="quota-amount">剩余额度：¥{{ "%.2f"|format(franchisee.remaining_quota) }}</div>
+                <small class="text-muted">已使用：¥{{ "%.2f"|format(franchisee.used_quota) }} | 总额度：¥{{ "%.2f"|format(franchisee.total_quota) }}</small>
+            </div>
+
+            <!-- 表单区域 -->
+            <div class="form-section">
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ 'danger' if category == 'error' else 'success' }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+
+                <form method="POST" enctype="multipart/form-data">
+                    <!-- 客户信息 -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <label for="name" class="form-label"><i class="fas fa-user"></i> 客户姓名</label>
+                            <input type="text" class="form-control" id="name" name="name" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="phone" class="form-label"><i class="fas fa-phone"></i> 联系电话</label>
+                            <input type="tel" class="form-control" id="phone" name="phone" required>
+                        </div>
+                    </div>
+
+                    <!-- 产品选择 -->
+                    <div class="product-selection">
+                        <h5 class="mb-3"><i class="fas fa-gift"></i> 选择产品类型</h5>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="product-card" data-product="standard" data-price="299">
+                                    <h6><i class="fas fa-star"></i> 标准版</h6>
+                                    <div class="price">¥299</div>
+                                    <small>基础AI拍照机定制</small>
+                                    <input type="radio" name="product_type" value="standard" checked style="display: none;">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="product-card" data-product="premium" data-price="399">
+                                    <h6><i class="fas fa-star"></i> 高级版</h6>
+                                    <div class="price">¥399</div>
+                                    <small>精美AI拍照机定制</small>
+                                    <input type="radio" name="product_type" value="premium" style="display: none;">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="product-card" data-product="luxury" data-price="599">
+                                    <h6><i class="fas fa-crown"></i> 豪华版</h6>
+                                    <div class="price">¥599</div>
+                                    <small>顶级AI拍照机定制</small>
+                                    <input type="radio" name="product_type" value="luxury" style="display: none;">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 图片上传 -->
+                    <div class="mb-4">
+                        <label for="image" class="form-label"><i class="fas fa-image"></i> 上传宠物照片</label>
+                        <input type="file" class="form-control" id="image" name="image" accept="image/*" required>
+                        <div class="form-text">支持 JPG、PNG 格式，建议上传高清照片</div>
+                    </div>
+
+                    <!-- 提交按钮 -->
+                    <div class="text-center">
+                        <button type="submit" class="btn btn-submit">
+                            <i class="fas fa-paper-plane"></i> 提交订单
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // 产品选择交互
+        document.querySelectorAll('.product-card').forEach(card => {
+            card.addEventListener('click', function() {
+                // 移除所有选中状态
+                document.querySelectorAll('.product-card').forEach(c => c.classList.remove('selected'));
+                
+                // 添加选中状态
+                this.classList.add('selected');
+                
+                // 选中对应的radio按钮
+                const radio = this.querySelector('input[type="radio"]');
+                radio.checked = true;
+            });
+        });
+
+        // 默认选中第一个产品
+        document.querySelector('.product-card').click();
+
+        // 表单验证
+        document.querySelector('form').addEventListener('submit', function(e) {
+            const name = document.getElementById('name').value.trim();
+            const phone = document.getElementById('phone').value.trim();
+            const image = document.getElementById('image').files[0];
+            
+            if (!name) {
+                alert('请输入客户姓名');
+                e.preventDefault();
+                return;
+            }
+            
+            if (!phone) {
+                alert('请输入联系电话');
+                e.preventDefault();
+                return;
+            }
+            
+            if (!image) {
+                alert('请选择宠物照片');
+                e.preventDefault();
+                return;
+            }
+            
+            // 检查文件类型
+            const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png'];
+            if (!allowedTypes.includes(image.type)) {
+                alert('请选择 JPG 或 PNG 格式的图片');
+                e.preventDefault();
+                return;
+            }
+        });
+    </script>
+</body>
+</html>
+
+
+
+

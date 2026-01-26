@@ -1,0 +1,1281 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ brand_name }} - 专业手绘定制服务</title>
+    <link href="/static/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            color: #ffffff;
+            min-height: 100vh;
+        }
+        
+        /* 导航栏 */
+        .navbar-custom {
+            background: rgba(0,0,0,0.3) !important;
+            backdrop-filter: blur(10px);
+        }
+        
+
+        
+        /* Hero区域 - 已隐藏 */
+        .hero-section {
+            display: none; /* 隐藏首页banner区域 */
+        }
+        
+        /* 区域导航条 - 手机端优化 */
+        .section-nav {
+            position: relative;
+            top: 0;
+            z-index: 1000;
+            background: transparent;
+            padding: 10px 0;
+            margin-bottom: 0;
+            width: 100%;
+            margin-top: 80px;
+        }
+        .section-nav .nav-link {
+            color: rgba(255,255,255,0.8);
+            font-weight: 500;
+            padding: 8px 20px;
+            margin: 0 8px;
+            border-radius: 25px;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255,255,255,0.1);
+            background: rgba(255,255,255,0.05);
+            font-size: 0.9rem;
+        }
+        .section-nav .nav-link:hover,
+        .section-nav .nav-link.active {
+            color: white;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            border-color: rgba(255,255,255,0.3);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+        
+        /* 通用卡片样式 - 移动端优化 */
+        .section-card {
+            background: rgba(255,255,255,0.05);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 25px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        /* 主题风格区域 - 移动端优化 */
+        .style-section {
+            padding: 40px 0 40px;
+        }
+        
+        /* 分类导航样式 - 手机端优化 */
+        .category-nav {
+            background: rgba(255,255,255,0.05);
+            border-radius: 15px;
+            padding: 20px 15px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .category-nav h4 {
+            color: #4ecdc4;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+        .category-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        .category-item {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 1px solid transparent;
+            background: rgba(255,255,255,0.03);
+        }
+        
+        /* 移动端分类项目优化 */
+        @media (max-width: 768px) {
+            .category-item {
+                flex-direction: column;
+                align-items: center;
+                padding: 10px 8px;
+                text-align: center;
+            }
+            .category-icon {
+                margin-right: 0;
+                margin-bottom: 5px;
+            }
+        }
+        .category-item:hover {
+            background: rgba(255,255,255,0.08);
+            border-color: rgba(255,255,255,0.2);
+            transform: translateX(5px);
+        }
+        .category-item.active {
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            border-color: rgba(255,255,255,0.3);
+            transform: translateX(5px);
+        }
+        .category-icon {
+            font-size: 2rem;
+            margin-right: 15px;
+        }
+        .category-text h6 {
+            color: white;
+            margin: 0 0 5px 0;
+            font-weight: 600;
+        }
+        .category-text small {
+            color: rgba(255,255,255,0.7);
+            font-size: 0.85rem;
+        }
+        
+        .style-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 25px;
+            margin-top: 0;
+        }
+        .style-item {
+            position: relative;
+            overflow: hidden;
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.3);
+            transition: all 0.4s ease;
+            background: rgba(255,255,255,0.05);
+            cursor: pointer;
+        }
+        .style-item:hover {
+            transform: translateY(-15px) scale(1.02);
+            box-shadow: 0 25px 50px rgba(0,0,0,0.4);
+        }
+        .style-item img {
+            width: 100%;
+            height: auto;
+            object-fit: cover;
+            transition: all 0.4s ease;
+            display: block;
+        }
+        .style-item:hover img {
+            transform: scale(1.05);
+        }
+        .style-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(transparent, rgba(0,0,0,0.8));
+            padding: 20px 15px 15px;
+            transform: translateY(0);
+            transition: all 0.3s ease;
+        }
+        .style-item:hover .style-overlay {
+            background: linear-gradient(transparent, rgba(0,0,0,0.9));
+            padding: 25px 20px 20px;
+        }
+        .style-overlay h5 {
+            color: white;
+            font-weight: 600;
+            margin-bottom: 5px;
+            font-size: 1.1rem;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+        }
+        .style-overlay p {
+            color: rgba(255,255,255,0.9);
+            font-size: 0.9rem;
+            margin: 0;
+            display: none; /* 隐藏描述文字 */
+        }
+        
+        /* 产品效果图区域 - 移动端优化 */
+        .product-section {
+            padding: 40px 0;
+        }
+        
+        /* 产品效果图标题样式 */
+        .product-section h3 {
+            font-size: 1.1rem; /* 进一步缩小，确保手机端不跨行 */
+            font-weight: 500;
+            margin-bottom: 0.8rem;
+        }
+        
+        /* 产品信息标题样式 */
+        .product-item .product-info h5 {
+            font-size: 0.9rem; /* 缩小产品卡片内的标题 */
+            font-weight: 500;
+            line-height: 1.3;
+            text-align: center;
+            padding: 0 8px;
+        }
+        .product-item {
+            position: relative;
+            overflow: hidden;
+            border-radius: 20px;
+            margin-bottom: 30px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: rgba(255,255,255,0.05);
+        }
+        .product-item:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+        }
+        .product-item img {
+            width: 100%;
+            height: 320px; /* 调整为更符合3:4比例的竖版尺寸 */
+            object-fit: cover;
+            transition: all 0.3s ease;
+            /* 图片比例调整 */
+            aspect-ratio: 3/4; /* 强制3:4比例 */
+            /* 图片加载优化 */
+            image-rendering: -webkit-optimize-contrast;
+        }
+        .product-item:hover img {
+            transform: scale(1.05);
+        }
+        
+        /* 手机端滑动轮播样式 */
+        .swipe-carousel {
+            position: relative;
+            overflow: hidden;
+            border-radius: 10px;
+        }
+        .carousel-container {
+            position: relative;
+            width: 100%;
+        }
+        .carousel-slide {
+            display: none;
+            width: 100%;
+        }
+        .carousel-slide.active {
+            display: block;
+        }
+        .carousel-slide img {
+            width: 100%;
+            height: auto;
+            max-height: 500px;
+            object-fit: cover;
+        }
+        .carousel-indicators {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 15px;
+        }
+        .indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.5);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .indicator.active {
+            background: rgba(255,255,255,1);
+            transform: scale(1.2);
+        }
+        .product-info {
+            padding: 20px;
+            text-align: center;
+        }
+        .product-info h5 {
+            color: #4ecdc4;
+            margin-bottom: 10px;
+        }
+        .product-info p {
+            color: rgba(255,255,255,0.8);
+            font-size: 0.9rem;
+            margin: 0;
+        }
+        
+        
+        /* 客户案例区域 */
+        .case-section {
+            padding: 100px 0;
+        }
+        .case-item {
+            position: relative;
+            overflow: hidden;
+            border-radius: 20px;
+            margin-bottom: 30px;
+            transition: all 0.3s ease;
+            background: rgba(255,255,255,0.05);
+        }
+        .case-item:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.3);
+        }
+        .case-item img {
+            width: 100%;
+            height: 320px;
+            object-fit: cover;
+            transition: all 0.3s ease;
+        }
+        .case-item:hover img {
+            transform: scale(1.08);
+        }
+        .case-badge {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            color: white;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        .case-info {
+            padding: 20px;
+        }
+        .case-info h6 {
+            color: #4ecdc4;
+            margin-bottom: 8px;
+        }
+        .case-info p {
+            color: rgba(255,255,255,0.8);
+            font-size: 0.9rem;
+            margin: 0;
+        }
+        
+        /* 按钮样式 */
+        .btn-custom {
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.2rem;
+            font-weight: 600;
+            border-radius: 50px;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 30px rgba(255,107,107,0.3);
+        }
+        .btn-custom:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(255,107,107,0.4);
+        }
+        
+        /* 模态框样式 */
+        .modal-content {
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            color: white;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .modal-header {
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .modal-footer {
+            border-top: 1px solid rgba(255,255,255,0.1);
+        }
+        .close {
+            color: white;
+            opacity: 0.8;
+        }
+        .close:hover {
+            color: #ff6b6b;
+            opacity: 1;
+        }
+        
+        /* 返回顶部按钮 */
+        .back-to-top {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            border-radius: 50%;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            z-index: 1001;
+        }
+        .back-to-top:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+        }
+        .back-to-top.show {
+            display: flex;
+        }
+        .back-to-top i {
+            color: white;
+            font-size: 20px;
+        }
+        
+        
+        /* 移动端分类导航优化 */
+        @media (max-width: 768px) {
+            .category-nav {
+                margin-bottom: 15px;
+                padding: 15px 10px;
+            }
+            .category-list {
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 8px;
+                padding-bottom: 0;
+            }
+            .category-item {
+                min-width: auto;
+                flex-shrink: 1;
+                padding: 8px;
+                text-align: center;
+            }
+            .category-icon {
+                font-size: 1.5rem;
+                margin-right: 5px;
+            }
+            .category-text h6 {
+                font-size: 0.8rem;
+                margin-bottom: 2px;
+            }
+            .category-text small {
+                font-size: 0.7rem;
+            }
+        }
+        
+        /* 响应式调整 */
+        @media (max-width: 768px) {
+            /* 导航栏调整 */
+            .navbar-brand {
+                font-size: 1rem;
+            }
+            .navbar-nav {
+                justify-content: center;
+                flex: 1;
+                margin: 0 auto;
+            }
+            .navbar-nav .nav-link {
+                font-size: 0.8rem;
+                padding: 6px 8px;
+            }
+            
+            /* 区域导航条调整 */
+            .section-nav {
+                margin-top: 60px;
+                padding: 15px 0;
+            }
+            .section-nav .nav {
+                justify-content: center !important;
+                flex-wrap: nowrap;
+            }
+            .section-nav .nav-link {
+                padding: 6px 12px;
+                margin: 0 3px;
+                font-size: 0.8rem;
+                flex-shrink: 1;
+            }
+            
+            /* 卡片调整 */
+            .section-card {
+                padding: 20px 15px;
+                margin-bottom: 20px;
+            }
+            
+            /* 主题风格区域调整 */
+            .style-section {
+                padding: 25px 0 30px;
+            }
+            
+            /* 分类导航调整 */
+            .category-nav {
+                padding: 15px;
+                margin-bottom: 15px;
+            }
+            .category-nav h4 {
+                font-size: 1.1rem;
+                margin-bottom: 15px;
+            }
+            .category-item {
+                padding: 10px;
+            }
+            .category-icon {
+                font-size: 1.2rem;
+                margin-right: 10px;
+            }
+            .category-text h6 {
+                font-size: 0.9rem;
+                margin-bottom: 3px;
+            }
+            .category-text small {
+                font-size: 0.75rem;
+            }
+            
+            /* 图片网格调整 */
+            .style-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 15px;
+                margin-top: 0;
+            }
+            
+            /* 产品效果图调整 */
+            .product-section {
+                padding: 30px 0;
+            }
+            .product-section h3 {
+                font-size: 1.1rem; /* 手机端更易读 */
+                margin-bottom: 0.6rem;
+            }
+            .product-item {
+                margin-bottom: 15px;
+            }
+            .product-item img {
+                height: 160px;
+            }
+            .product-item .product-info h5 {
+                font-size: 0.95rem; /* 手机端产品标题更易读 */
+                padding: 0 5px;
+                text-align: center;
+                line-height: 1.3;
+            }
+            
+            /* 客户案例调整 */
+            .case-section {
+                padding: 30px 0;
+            }
+            .case-item {
+                margin-bottom: 15px;
+            }
+            .case-item img {
+                height: 200px;
+            }
+            
+            /* 返回顶部按钮调整 */
+            .back-to-top {
+                bottom: 20px;
+                right: 20px;
+                width: 40px;
+                height: 40px;
+            }
+        }
+        
+        /* 超小屏幕调整 */
+        @media (max-width: 576px) {
+            .container {
+                padding-left: 10px;
+                padding-right: 10px;
+            }
+            
+            .navbar-nav .nav-link {
+                font-size: 0.75rem;
+                padding: 5px 6px;
+            }
+            
+            .section-nav .nav-link {
+                padding: 4px 8px;
+                margin: 0 2px;
+                font-size: 0.7rem;
+            }
+            
+            .category-nav {
+                padding: 10px 8px;
+            }
+            .category-nav h4 {
+                font-size: 0.9rem;
+                margin-bottom: 10px;
+                text-align: center;
+            }
+            .category-item {
+                padding: 6px 4px;
+            }
+            .category-icon {
+                font-size: 1.2rem;
+                margin-right: 4px;
+            }
+            .category-text h6 {
+                font-size: 0.75rem;
+            }
+            .category-text small {
+                font-size: 0.65rem;
+                display: block;
+                margin-top: 2px;
+            }
+            
+            .style-grid {
+                gap: 12px;
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .product-item img {
+                height: 140px;
+            }
+            .product-section h3 {
+                font-size: 1.0rem; /* 超小屏幕更易读 */
+                margin-bottom: 0.5rem;
+            }
+            .product-item .product-info h5 {
+                font-size: 0.85rem; /* 超小屏幕产品标题更易读 */
+                text-align: center;
+                line-height: 1.3;
+                padding: 0 3px;
+            }
+            
+            .case-item img {
+                height: 180px;
+            }
+            
+            .section-card {
+                padding: 12px;
+            }
+        }
+        
+        
+        /* 手机端产品图片专用样式 */
+        @media (max-width: 768px) {
+            .product-item img {
+                width: 100% !important;
+                height: 220px !important;
+                aspect-ratio: 3/4 !important;
+                object-fit: cover !important;
+                object-position: center !important;
+            }
+            
+            .product-card-container {
+                position: relative;
+                width: 100%;
+                padding-top: 133.33%; /* 4/3 * 100% = 3:4比例 */
+                overflow: hidden;
+            }
+            .product-card-container img {
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+                aspect-ratio: unset !important; /* 重置aspect-ratio */
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar navbar-expand-lg navbar-dark navbar-custom fixed-top">
+        <div class="container">
+            <a class="navbar-brand" href="/">{{ brand_name }}</a>
+            <div class="collapse navbar-collapse">
+                <ul class="navbar-nav ms-auto">
+                    <!-- 暂时隐藏传图入口和立即下单按钮 -->
+                    <!--
+                    <li class="nav-item">
+                        <a class="nav-link" href="/order">传图入口</a>
+                    </li>
+                    -->
+                    <li class="nav-item">
+                        <a class="nav-link" href="/order/status">查询订单</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/login">商家入口</a>
+                    </li>
+                    <!--
+                    <li class="nav-item">
+                        <a class="nav-link" href="https://v.douyin.com/Z1mixXI0C54/" target="_blank">
+                        立即下单
+                        </a>
+                    </li>
+                    -->
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero区域 - 已隐藏 -->
+    <div class="hero-section">
+        <div class="container">
+            <h1 class="hero-title">{{ brand_name }}</h1>
+            <p class="hero-subtitle">将您珍贵的照片转化为永恒的艺术作品</p>
+            <a href="/order" class="btn btn-custom btn-lg">立即定制</a>
+        </div>
+    </div>
+
+    <!-- 区域导航条 -->
+    <div class="section-nav">
+        <div class="container">
+            <ul class="nav justify-content-center">
+                <li class="nav-item">
+                    <a class="nav-link active" href="#style-section">🎨 主题风格</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#product-section">🛍️ 产品效果图</a>
+                </li>
+                <!-- 暂时隐藏客户案例导航项 -->
+                <!--
+                <li class="nav-item">
+                    <a class="nav-link" href="#case-section">🌟 客户案例</a>
+                </li>
+                -->
+            </ul>
+        </div>
+    </div>
+
+        <!-- 第一区域：主题风格 -->
+    <div id="style-section" class="style-section">
+        <div class="container">
+            <div class="section-card">
+                <div class="row">
+                    <!-- 左侧分类导航 -->
+                    <div class="col-lg-3 col-md-4 col-12">
+                        <div class="category-nav">
+                            <h4 class="mb-4">主题风格</h4>
+                            <div class="category-list">
+                                <div class="category-item active" data-category="oil-painting">
+                                    <div class="category-icon">🎨</div>
+                                    <div class="category-text">
+                                        <h6>油画风格</h6>
+                                        <small>写实、印象派、水彩等艺术风格</small>
+                                    </div>
+                                </div>
+                                <div class="category-item" data-category="anthropomorphic">
+                                    <div class="category-icon">👑</div>
+                                    <div class="category-text">
+                                        <h6>拟人风格</h6>
+                                        <small>伯爵公主、皇家大臣、铠甲战士等</small>
+                                    </div>
+                                </div>
+                                <div class="category-item" data-category="transform">
+                                    <div class="category-icon">✨</div>
+                                    <div class="category-text">
+                                        <h6>转绘风格</h6>
+                                        <small>卡通、动漫、Q版等可爱风格</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 右侧图片展示区 -->
+                    <div class="col-lg-9 col-md-8 col-12">
+                        <div class="style-grid" id="styleGrid">
+                            {% if style_data %}
+                                {% for category_code, category_data in style_data.items() %}
+                                    {% for image in category_data.images %}
+                                    <div class="style-item" data-category="{{ category_code }}">
+                                        <!-- 优化动态图片：尝试压缩版本，降级到原图 -->
+                                        {% set optimized_url = image.image_url.replace('/static/images/', '/static/images/mobile_optimized/') if '/static/images/' in image.image_url else image.image_url %}
+                                        <img src="{{ optimized_url }}" alt="{{ image.name }}" loading="lazy"
+                                             onerror="this.src='{{ image.image_url }}'">
+                                        <div class="style-overlay">
+                                            <h5>{{ image.name }}</h5>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                {% endfor %}
+                            {% else %}
+                                <!-- 默认风格图片（当数据库为空时显示） -->
+                                <div class="style-item" data-category="oil-painting">
+                                    <img src="{{ url_for('static', filename='images/mobile_optimized/油画风格-梵高.jpg') }}" alt="梵高风格" loading="lazy"
+                                         onerror="this.src='{{ url_for('static', filename='images/油画风格-梵高.jpg') }}'">
+                                    <div class="style-overlay">
+
+                                        <h5>梵高风格</h5>
+                                    </div>
+                                </div>
+                                <div class="style-item" data-category="oil-painting">
+                                    <img src="{{ url_for('static', filename='images/mobile_optimized/油画风格-夜景.jpg') }}" alt="夜景风格" loading="lazy"
+                                         onerror="this.src='{{ url_for('static', filename='images/油画风格-夜景.jpg') }}'">
+                                    <div class="style-overlay">
+                                        <h5>夜景风格</h5>
+                                    </div>
+                                </div>
+                                <div class="style-item" data-category="anthropomorphic">
+                                    <img src="{{ url_for('static', filename='images/mobile_optimized/8-威廉国王.jpg') }}" alt="威廉国王" loading="lazy"
+                                         onerror="this.src='{{ url_for('static', filename='images/8-威廉国王.jpg') }}'">
+                                    <div class="style-overlay">
+                                        <h5>威廉国王</h5>
+                                    </div>
+                                </div>
+                                <div class="style-item" data-category="anthropomorphic">
+                                    <img src="{{ url_for('static', filename='images/mobile_optimized/4-巴洛克绅士-012.jpg') }}" alt="巴洛克绅士" loading="lazy"
+                                         onerror="this.src='{{ url_for('static', filename='images/4-巴洛克绅士-012.jpg') }}'">
+                                    <div class="style-overlay">
+                                        <h5>巴洛克绅士</h5>
+                                    </div>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 第二区域：产品效果图 -->
+    <div id="product-section" class="product-section">
+        <div class="container">
+            <div class="section-card">
+                <h3 class="text-center mb-4">🛍️ 产品效果图</h3>
+                <p class="text-center mb-4" style="font-size: 1rem; opacity: 0.9;">多种产品形式，让您的宠物作品以不同方式陪伴您</p>
+                {% if product_data %}
+                    <div class="row">
+                        {% for product in product_data %}
+                        <div class="col-lg-3 col-md-4 col-sm-6 col-6">
+                            <div class="product-item" data-bs-toggle="modal" data-bs-target="#productModal{{ product.id }}">
+                                <!-- 多图显示 - 3:4竖版比例 -->
+                                {% if product.images %}
+                                    <div class="product-card-image" style="padding-top:133.33%;position:relative;overflow:hidden;">
+                                        <img src="{{ product.images[0].url }}" alt="{{ product.name }}" loading="lazy" style="position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;">
+                                    </div>
+                                {% elif product.image_url %}
+                                    <div class="product-card-image" style="padding-top:133.33%;position:relative;overflow:hidden;">
+                                        <img src="{{ product.image_url }}" alt="{{ product.name }}" loading="lazy" style="position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;">
+                                    </div>
+                                {% else %}
+                                    <div class="product-card-image" style="padding-top:133.33%;position:relative;overflow:hidden;">
+                                        <img src="https://images.unsplash.com/photo-1552053831-71594a27632d?w=200&h=200&fit=crop" alt="{{ product.name }}" loading="lazy" style="position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;">
+                                    </div>
+                                {% endif %}
+                                <div class="product-info">
+                                    <h5>{{ product.name }}</h5>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <!-- 默认产品展示（当数据库为空时显示） -->
+                    <div class="row">
+                        <div class="col-lg-3 col-md-4 col-sm-6 col-6">
+                            <div class="product-item" data-bs-toggle="modal" data-bs-target="#productModal1">
+                                <img src="https://images.unsplash.com/photo-1552053831-71594a27632d?w=200&h=200&fit=crop" alt="钥匙扣" loading="lazy">
+                                <div class="product-info">
+                                    <h5>钥匙扣</h5>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-3 col-md-4 col-sm-6 col-6">
+                            <div class="product-item" data-bs-toggle="modal" data-bs-target="#productModal2">
+                                <img src="https://images.unsplash.com/photo-1551717743-49959800b1f6?w=200&h=200&fit=crop" alt="手机壳" loading="lazy">
+                                <div class="product-info">
+                                    <h5>手机壳</h5>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-3 col-md-4 col-sm-6 col-6">
+                            <div class="product-item" data-bs-toggle="modal" data-bs-target="#productModal3">
+                                <img src="https://images.unsplash.com/photo-1583337130417-3346a1be7dee?w=200&h=200&fit=crop" alt="抱枕" loading="lazy">
+                                <div class="product-info">
+                                    <h5>抱枕</h5>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-3 col-md-4 col-sm-6 col-6">
+                            <div class="product-item" data-bs-toggle="modal" data-bs-target="#productModal4">
+                                <img src="https://images.unsplash.com/photo-1574158622682-e40e69881006?w=200&h=200&fit=crop" alt="挂画" loading="lazy">
+                                <div class="product-info">
+                                    <h5>挂画</h5>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- 第三区域：客户案例 - 暂时隐藏 -->
+    <!--
+    <div id="case-section" class="case-section">
+        <div class="container">
+            <div class="section-card">
+                <h2 class="text-center mb-5">🌟 客户案例</h2>
+                <p class="text-center mb-5" style="font-size: 1.1rem; opacity: 0.9;">来自不同平台的真实客户反馈和作品展示</p>
+        <div class="row">
+                    // ... 客户案例内容已隐藏 ...
+                </div>
+            </div>
+        </div>
+    </div>
+    -->
+
+    <!-- 底部CTA - 暂时隐藏 -->
+    <!--
+    <div class="cta-section" style="padding: 60px 0;">
+        <div class="container text-center">
+            <h2 class="mb-4">开始您的定制之旅</h2>
+            <p class="mb-4">上传您最爱的宠物照片，我们将为您创作独一无二的艺术作品</p>
+            <a href="/order" class="btn btn-custom btn-lg">传图入口</a>
+   </div>
+    </div>
+    -->
+
+    <!-- 产品详情模态框 -->
+    {% if product_data %}
+        {% for product in product_data %}
+        <!-- {{ product.name }}详情 -->
+        <div class="modal fade" id="productModal{{ product.id }}" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">{{ product.name }}详情</h5>
+                    <button type="button" class="close" data-bs-dismiss="modal">
+                        <span>&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            {% if product.images %}
+                                <!-- 手机端滑动轮播 -->
+                                <div class="swipe-carousel" data-product-id="{{ product.id }}">
+                                    <div class="carousel-container">
+                                        {% for image in product.images %}
+                                            <div class="carousel-slide {% if loop.first %}active{% endif %}">
+                                                <img src="{{ image.url }}" class="img-fluid rounded" alt="{{ product.name }}">
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                    <!-- 指示器 -->
+                                    {% if product.images|length > 1 %}
+                                        <div class="carousel-indicators">
+                                            {% for image in product.images %}
+                                                <span class="indicator {% if loop.first %}active{% endif %}" data-slide="{{ loop.index0 }}"></span>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            {% elif product.image_url %}
+                                <div class="single-image">
+                                    <img src="{{ product.image_url }}" class="img-fluid rounded" alt="{{ product.name }}">
+                                </div>
+                            {% else %}
+                                <div class="single-image">
+                                    <img src="https://images.unsplash.com/photo-1552053831-71594a27632d?w=200&h=200&fit=crop" class="img-fluid rounded" alt="{{ product.name }}">
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            {% if product.sizes %}
+                            <h6>可选尺寸：</h6>
+                            <ul>
+                                {% for size in product.sizes %}
+                                <li>{{ size.name }} - ¥{{ size.price }}</li>
+                                {% endfor %}
+                            </ul>
+                            {% endif %}
+                            <h6>产品描述：</h6>
+                            <p>{{ product.description if product.description else '专业的AI拍照机定制服务，为您创作独一无二的艺术作品。' }}</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                    <a href="/order" class="btn btn-custom">立即定制</a>
+                </div>
+            </div>
+        </div>
+    </div>
+        {% endfor %}
+    {% else %}
+        <!-- 默认产品模态框（当数据库为空时显示） -->
+        <!-- 钥匙扣详情 -->
+        <div class="modal fade" id="productModal1" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">钥匙扣详情</h5>
+                    <button type="button" class="close" data-bs-dismiss="modal">
+                        <span>&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <img src="https://images.unsplash.com/photo-1552053831-71594a27632d?w=400&h=400&fit=crop" class="img-fluid rounded" alt="钥匙扣">
+                        </div>
+                        <div class="col-md-6">
+                            <h6>适用场景：</h6>
+                            <p>日常携带、礼品赠送、纪念收藏</p>
+                            <h6>价格：</h6>
+                            <p class="text-warning">¥15-25/个</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                    <a href="/order" class="btn btn-custom">立即定制</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 手机壳详情 -->
+    <div class="modal fade" id="productModal2" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">手机壳详情</h5>
+                    <button type="button" class="close" data-bs-dismiss="modal">
+                        <span>&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <img src="https://images.unsplash.com/photo-1551717743-49959800b1f6?w=400&h=400&fit=crop" class="img-fluid rounded" alt="手机壳">
+                        </div>
+                        <div class="col-md-6">
+                            <h6>适用场景：</h6>
+                            <p>手机保护、个性化装饰、日常使用</p>
+                            <h6>价格：</h6>
+                            <p class="text-warning">¥35-55/个</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                    <a href="/order" class="btn btn-custom">立即定制</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 抱枕详情 -->
+    <div class="modal fade" id="productModal3" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">抱枕详情</h5>
+                    <button type="button" class="close" data-bs-dismiss="modal">
+                        <span>&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <img src="https://images.unsplash.com/photo-1583337130417-3346a1be7dee?w=400&h=400&fit=crop" class="img-fluid rounded" alt="抱枕">
+                        </div>
+                        <div class="col-md-6">
+                            <h6>适用场景：</h6>
+                            <p>居家装饰、沙发靠垫、床上用品</p>
+                            <h6>价格：</h6>
+                            <p class="text-warning">¥68-128/个</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                    <a href="/order" class="btn btn-custom">立即定制</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 挂画详情 -->
+    <div class="modal fade" id="productModal4" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">挂画详情</h5>
+                    <button type="button" class="close" data-bs-dismiss="modal">
+                        <span>&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <img src="https://images.unsplash.com/photo-1574158622682-e40e69881006?w=400&h=400&fit=crop" class="img-fluid rounded" alt="挂画">
+                        </div>
+                        <div class="col-md-6">
+                            <h6>适用场景：</h6>
+                            <p>墙面装饰、客厅挂画、书房摆设</p>
+                            <h6>价格：</h6>
+                            <p class="text-warning">¥128-388/幅</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                    <a href="/order" class="btn btn-custom">立即定制</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- 返回顶部按钮 -->
+    <div class="back-to-top" id="backToTop">
+        <i>↑</i>
+    </div>
+
+    <script src="/static/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // 平滑滚动到对应区域
+        document.querySelectorAll('.section-nav .nav-link').forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                const targetId = this.getAttribute('href');
+                const targetSection = document.querySelector(targetId);
+                if (targetSection) {
+                    targetSection.scrollIntoView({ behavior: 'smooth' });
+                }
+            });
+        });
+        
+        // 滚动时高亮当前区域
+        window.addEventListener('scroll', function() {
+            const sections = document.querySelectorAll('.style-section, .product-section');
+            const navLinks = document.querySelectorAll('.section-nav .nav-link');
+            
+            let current = '';
+            sections.forEach(section => {
+                const sectionTop = section.offsetTop;
+                const sectionHeight = section.clientHeight;
+                if (window.pageYOffset >= sectionTop - 200) {
+                    current = section.getAttribute('id');
+                }
+            });
+            
+            navLinks.forEach(link => {
+                link.classList.remove('active');
+                if (link.getAttribute('href') === '#' + current) {
+                    link.classList.add('active');
+                }
+            });
+            
+            // 显示/隐藏返回顶部按钮
+            const backToTop = document.getElementById('backToTop');
+            if (window.pageYOffset > 300) {
+                backToTop.classList.add('show');
+            } else {
+                backToTop.classList.remove('show');
+            }
+        });
+        
+        // 返回顶部功能
+        document.getElementById('backToTop').addEventListener('click', function() {
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
+        });
+        
+        // 分类切换功能
+        document.querySelectorAll('.category-item').forEach(item => {
+            item.addEventListener('click', function() {
+                // 移除所有active类
+                document.querySelectorAll('.category-item').forEach(cat => {
+                    cat.classList.remove('active');
+                });
+                
+                // 添加active类到当前点击的项
+                this.classList.add('active');
+                
+                // 获取分类
+                const category = this.getAttribute('data-category');
+                
+                // 显示/隐藏对应的图片
+                document.querySelectorAll('.style-item').forEach(img => {
+                    if (category === 'all' || img.getAttribute('data-category') === category) {
+                        img.style.display = 'block';
+                    } else {
+                        img.style.display = 'none';
+                    }
+                });
+            });
+        });
+        
+        // 页面加载完成后，默认显示拟人风格的图片
+        document.addEventListener('DOMContentLoaded', function() {
+            // 隐藏所有图片
+            document.querySelectorAll('.style-item').forEach(img => {
+                img.style.display = 'none';
+            });
+            
+            // 默认显示油画风格的图片
+            document.querySelectorAll('.style-item[data-category="oil-painting"]').forEach(img => {
+                img.style.display = 'block';
+            });
+            
+            // 产品卡片图片已设置为3:4比例，无需额外处理
+            
+            // 简化的手机端滑动轮播功能
+            function initSwipeCarousel(carousel) {
+                const container = carousel.querySelector('.carousel-container');
+                const slides = carousel.querySelectorAll('.carousel-slide');
+                const indicators = carousel.querySelectorAll('.indicator');
+                let currentSlide = 0;
+                
+                if (!slides || slides.length === 0) return;
+                
+                // 更新显示的图片
+                function updateSlide(index) {
+                    slides.forEach((slide, i) => {
+                        if (i === index) {
+                            slide.classList.add('active');
+                        } else {
+                            slide.classList.remove('active');
+                        }
+                    });
+                    
+                    indicators.forEach((indicator, i) => {
+                        if (i === index) {
+                            indicator.classList.add('active');
+                        } else {
+                            indicator.classList.remove('active');
+                        }
+                    });
+                    
+                    currentSlide = index;
+                }
+                
+                // 初始化显示第一张
+                updateSlide(0);
+                
+                // 指示器点击事件
+                indicators.forEach((indicator, index) => {
+                    indicator.addEventListener('click', () => {
+                        updateSlide(index);
+                    });
+                });
+                
+                // 触摸滑动支持
+                container.addEventListener('touchstart', (e) => {
+                    startX = e.touches[0].clientX;
+                });
+                
+                container.addEventListener('touchend', (e) => {
+                    const endX = e.changedTouches[0].clientX;
+                    const diff = startX - endX;
+                    
+                    if (Math.abs(diff) > 50) {
+                        if (diff > 0) {
+                            // 左滑下一张
+                            updateSlide((currentSlide + 1) % slides.length);
+                        } else {
+                            // 右滑上一张
+                            updateSlide((currentSlide - 1 + slides.length) % slides.length);
+                        }
+                    }
+                });
+            }
+            
+            // 初始化轮播
+            function initializeCarousels() {
+                document.querySelectorAll('.swipe-carousel').forEach(carousel => {
+                    initSwipeCarousel(carousel);
+                });
+            }
+            
+            initializeCarousels();
+            
+            // 模态框打开时重新初始化
+            document.addEventListener('shown.bs.modal', function(event) {
+                const carousel = event.target.querySelector('.swipe-carousel');
+                if (carousel) {
+                    initSwipeCarousel(carousel);
+                }
+            });
+        });
+    </script>
+</body>
+</html>

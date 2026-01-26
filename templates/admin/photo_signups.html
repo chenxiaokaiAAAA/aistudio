@@ -1,0 +1,913 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>摄影报名管理 - {{ brand_name }}后台</title>
+    <link href="/static/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            color: #ffffff;
+            min-height: 100vh;
+        }
+        
+        .navbar-custom {
+            background: rgba(0,0,0,0.3) !important;
+            backdrop-filter: blur(10px);
+        }
+        
+        .main-content {
+            margin-top: 100px;
+            padding: 20px;
+        }
+        
+        .card {
+            background: rgba(255,255,255,0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 15px;
+        }
+        
+        .card-header {
+            background: rgba(255,255,255,0.1);
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            border-radius: 15px 15px 0 0 !important;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            border: none;
+        }
+        
+        .btn-primary:hover {
+            background: linear-gradient(45deg, #ff5252, #26a69a);
+        }
+        
+        .btn-success {
+            background: linear-gradient(45deg, #28a745, #20c997);
+            border: none;
+        }
+        
+        .btn-warning {
+            background: linear-gradient(45deg, #ffc107, #fd7e14);
+            border: none;
+        }
+        
+        .btn-danger {
+            background: linear-gradient(45deg, #dc3545, #e74c3c);
+            border: none;
+        }
+        
+        .form-control {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            color: white;
+        }
+        
+        .form-control:focus {
+            background: rgba(255,255,255,0.15);
+            border-color: #4ecdc4;
+            color: white;
+            box-shadow: 0 0 0 0.2rem rgba(78, 205, 196, 0.25);
+        }
+        
+        .form-control::placeholder {
+            color: rgba(255,255,255,0.6);
+        }
+        
+        /* Select下拉菜单样式优化 */
+        select.form-control {
+            background: rgba(30,30,30,0.9) !important;
+            color: white !important;
+            border: 1px solid rgba(255,255,255,0.3) !important;
+        }
+        
+        select.form-control option {
+            background: rgba(30,30,30,0.95) !important;
+            color: white !important;
+            padding: 8px 12px;
+        }
+        
+        select.form-control:focus {
+            background: rgba(30,30,30,0.9) !important;
+            border-color: #4ecdc4 !important;
+            color: white !important;
+        }
+        
+        /* 悬停效果 */
+        select.form-control option:hover {
+            background: rgba(78, 205, 196, 0.2) !important;
+            color: white !important;
+        }
+        
+        .modal-content {
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            color: white;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .modal-header {
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .modal-footer {
+            border-top: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        /* 详情模态框内容样式 - 黑底白字 */
+        #detailModal .modal-content {
+            background: #000000 !important;
+            color: #ffffff !important;
+        }
+        
+        #detailModal .modal-header {
+            background: #000000 !important;
+            color: #ffffff !important;
+            border-bottom: 1px solid rgba(255,255,255,0.2) !important;
+        }
+        
+        #detailModal .modal-body {
+            background: #000000 !important;
+            color: #ffffff !important;
+        }
+        
+        #detailModal .modal-footer {
+            background: #000000 !important;
+            color: #ffffff !important;
+            border-top: 1px solid rgba(255,255,255,0.2) !important;
+        }
+        
+        #detailModal .modal-title {
+            color: #ffffff !important;
+        }
+        
+        #detailModal .close {
+            color: #ffffff !important;
+        }
+        
+        #detailModal .close:hover {
+            color: #ffffff !important;
+            opacity: 0.8;
+        }
+        
+        #detailModal h6 {
+            color: #ffffff !important;
+        }
+        
+        #detailModal p {
+            color: #ffffff !important;
+        }
+        
+        #detailModal table {
+            color: #ffffff !important;
+            background: #000000 !important;
+        }
+        
+        #detailModal table td {
+            color: #ffffff !important;
+            background: #000000 !important;
+            border-color: rgba(255,255,255,0.2) !important;
+        }
+        
+        #detailModal table strong {
+            color: #ffffff !important;
+        }
+        
+        /* 确保状态标签在详情模态框中正确显示 */
+        #detailModal .status-badge {
+            color: #ffffff !important;
+        }
+        
+        /* 确保宠物图片容器在详情模态框中正确显示 */
+        #detailModal .pet-images {
+            background: #000000 !important;
+        }
+        
+        #detailModal .pet-image {
+            border: 2px solid rgba(255,255,255,0.3) !important;
+        }
+        
+        #detailModal .pet-image:hover {
+            border-color: #ffffff !important;
+        }
+        
+        .table-custom {
+            color: white;
+            background: rgba(255,255,255,0.05);
+        }
+        
+        .table-custom th {
+            background: rgba(255,255,255,0.1);
+            border-color: rgba(255,255,255,0.1);
+        }
+        
+        .table-custom td {
+            border-color: rgba(255,255,255,0.1);
+        }
+        
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 15px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        
+        .status-pending {
+            background: #ffc107;
+            color: #000;
+        }
+        
+        .status-contacted {
+            background: #17a2b8;
+            color: #000;
+        }
+        
+        .status-contact-failed {
+            background: #ff9800;
+            color: #fff;
+        }
+        
+        .status-scheduled {
+            background: #28a745;
+            color: #fff;
+        }
+        
+        .status-completed {
+            background: #6c757d;
+            color: #fff;
+        }
+        
+        .status-cancelled {
+            background: #dc3545;
+            color: #fff;
+        }
+        
+        .pet-images {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .pet-image {
+            width: 60px;
+            height: 60px;
+            object-fit: cover;
+        border-radius: 8px;
+            cursor: pointer;
+            border: 2px solid rgba(255,255,255,0.3);
+        }
+        
+        .pet-image:hover {
+            border-color: #4ecdc4;
+        }
+        
+        .stats-card {
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .stats-number {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #4ecdc4;
+        }
+        
+        .stats-label {
+            font-size: 0.9rem;
+            color: rgba(255,255,255,0.7);
+            margin-top: 10px;
+        }
+        
+        .loading-spinner {
+            display: none;
+        }
+        
+        .page-link {
+            background: rgba(255,255,255,0.1);
+            color: white;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        
+        .page-link:hover {
+            background: rgba(255,255,255,0.2);
+            color: white;
+        }
+        
+        .pagination .page-item.active .page-link {
+            background: #4ecdc4;
+            border-color: #4ecdc4;
+        }
+    </style>
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar navbar-expand-lg navbar-dark navbar-custom fixed-top">
+        <div class="container">
+            <a class="navbar-brand" href="/admin/dashboard">{{ brand_name }}后台</a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="/admin/dashboard">管理首页</a>
+                <a class="nav-link" href="/admin/homepage">首页配置</a>
+                <a class="nav-link" href="/admin/styles">风格管理</a>
+                <a class="nav-link active" href="/admin/photo-signups">📷 摄影报名</a>
+                <a class="nav-link" href="/logout">退出登录</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="main-content">
+        <div class="container">
+            <!-- 页面标题 -->
+            <div class="row mb-4">
+                <div class="col-12 d-flex justify-content-between align-items-center">
+                    <div>
+                        <h2>📷 宠物摄影报名管理</h2>
+                        <p class="text-muted">查看和管理用户的宠物摄影报名信息</p>
+                    </div>
+                    <div>
+                        <button type="button" class="btn btn-success" onclick="exportSignups()">
+                            📥 导出数据
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 统计卡片 -->
+            <div class="row mb-4" id="statsRow">
+                <div class="col-md-3">
+                    <div class="card stats-card">
+                        <div class="stats-number" id="totalApplications">-</div>
+                        <div class="stats-label">总报名数</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card stats-card">
+                        <div class="stats-number" id="pendingApplications">-</div>
+                        <div class="stats-label">待处理</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card stats-card">
+                        <div class="stats-number" id="completedApplications">-</div>
+                        <div class="stats-label">已完成</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card stats-card">
+                        <div class="stats-number" id="thisMonthApplications">-</div>
+                        <div class="stats-label">本月新增</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 筛选和搜索 -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5>筛选条件</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <select class="form-control" id="statusFilter">
+                                        <option value="">全部状态</option>
+                                        <option value="pending">待联系</option>
+                                        <option value="contacted">已联系</option>
+                                        <option value="contact_failed">电话未打通</option>
+                                        <option value="scheduled">已预约</option>
+                                        <option value="completed">已完成</option>
+                                        <option value="cancelled">已取消</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <input type="text" class="form-control" id="nameFilter" placeholder="搜索姓名">
+                                </div>
+                                <div class="col-md-4">
+                                    <button class="btn btn-primary w-100" onclick="loadSignups()">
+                                        🔍 搜索
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 报名列表 -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5>报名列表</h5>
+                            <div class="loading-spinner spinner-border text-light" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-custom">
+                                    <thead>
+                                        <tr>
+                                            <th>ID</th>
+                                            <th>姓名</th>
+                                            <th>手机号</th>
+                                            <th>宠物信息</th>
+                                            <th>预约时间</th>
+                                            <th>状态</th>
+                                            <th>到店时间</th>
+                                            <th>报名时间</th>
+                                            <th>操作</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="signupsTableBody">
+                                        <tr>
+                                            <td colspan="8" class="text-center text-muted">加载中...</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            
+                            <!-- 分页 -->
+                            <nav aria-label="报名列表分页">
+                                <ul class="pagination justify-content-center" id="pagination">
+                                    <li class="page-item disabled">
+                                        <span class="page-link">上一页</span>
+                                    </li>
+                                    <li class="page-item active">
+                                        <span class="page-link">1</span>
+                                    </li>
+                                    <li class="page-item disabled">
+                                        <span class="page-link">下一页</span>
+                                    </li>
+                                </ul>
+                            </nav>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 详情模态框 -->
+    <div class="modal fade" id="detailModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">报名详情</h5>
+                    <button type="button" class="close" data-bs-dismiss="modal">
+                        <span>&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body" id="detailModalBody">
+                    <!-- 详情内容将通过JavaScript填充 -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 状态更新模态框 -->
+    <div class="modal fade" id="statusModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">更新状态</h5>
+                    <button type="button" class="close" data-bs-dismiss="modal">
+                        <span>&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form id="statusForm">
+                                        <input type="hidden" id="signupId">
+                        <div class="mb-3">
+                            <label for="newStatus" class="form-label">状态</label>
+                            <select class="form-control" id="newStatus" required>
+                                <option value="">请选择状态</option>
+                                <option value="pending">待联系</option>
+                                <option value="contacted">已联系</option>
+                                <option value="contact_failed">电话未打通</option>
+                                <option value="scheduled">已预约</option>
+                                <option value="completed">已完成</option>
+                                <option value="cancelled">已取消</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="storeVisitTime" class="form-label">到店时间 <span class="text-muted small">(可选)</span></label>
+                            <input type="datetime-local" class="form-control" id="storeVisitTime" 
+                                   placeholder="选择客户到店时间">
+                            <small class="form-text text-muted">用于记录客户实际到店的具体时间</small>
+                        </div>
+                        <div class="mb-3">
+                            <label for="notes" class="form-label">备注</label>
+                            <textarea class="form-control" id="notes" rows="3" placeholder="输入备注信息"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" onclick="updateStatus()">更新状态</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 删除确认模态框 -->
+    <div class="modal fade" id="deleteModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title text-danger">⚠️ 确认删除</h5>
+                    <button type="button" class="close" data-bs-dismiss="modal">
+                        <span>&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-danger">
+                        <strong>⚠️ 警告：此操作不可撤销！</strong>
+                    </div>
+                    <p>您确定要删除以下报名记录吗？</p>
+                    <div class="card bg-dark border-danger">
+                        <div class="card-body">
+                            <div id="deleteConfirmInfo">
+                                <!-- 删除信息将通过JavaScript填充 -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-danger" onclick="deleteSignup()">
+                        🗑️ 确认删除
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let currentPage = 1;
+        let totalPages = 1;
+
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            loadSignups();
+            updateStats();
+        });
+
+        // 加载报名列表
+        function loadSignups(page = 1) {
+            const status = document.getElementById('statusFilter').value;
+            
+            let url = `/api/photo-signup/list?page=${page}&per_page=20`;
+            if (status) url += `&status=${status}`;
+            
+            document.querySelector('.loading-spinner').style.display = 'inline-block';
+            
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    document.querySelector('.loading-spinner').style.display = 'none';
+                    
+                    if (data.success) {
+                        renderSignupsTable(data.data);
+                        updatePagination(data.current_page, data.pages);
+                        currentPage = data.current_page;
+                        totalPages = data.pages;
+                        updateStats();
+                    } else {
+                        document.getElementById('signupsTableBody').innerHTML = 
+                            '<tr><td colspan="9" class="text-center text-danger">加载失败：' + data.message + '</td></tr>';
+                    }
+                })
+                .catch(error => {
+                    document.querySelector('.loading-spinner').style.display = 'none';
+                    console.error('Error:', error);
+                    document.getElementById('signupsTableBody').innerHTML = 
+                        '<tr><td colspan="9" class="text-center text-danger">网络错误，请重试</td></tr>';
+                });
+        }
+
+        // 渲染报名表格
+        function renderSignupsTable(signups) {
+            const tbody = document.getElementById('signupsTableBody');
+            
+            if (signups.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="9" class="text-center text-muted">暂无数据</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = signups.map(signup => `
+                <tr>
+                    <td>${signup.id}</td>
+                    <td>${signup.name}</td>
+                    <td>
+                        <a href="tel:${signup.phone}" class="text-decoration-none">
+                            ${signup.phone}
+                        </a>
+                    </td>
+                    <td>
+                        <div class="small">
+                            品种：${signup.petBreed}<br>
+                            体重：${signup.petWeight}<br>
+                            年龄：${signup.petAge}
+                        </div>
+                    </td>
+                    <td>${signup.availableDate || '-'}</td>
+                    <td>
+                        <span class="status-badge status-${signup.status}">
+                            ${signup.statusText}
+                        </span>
+                    </td>
+                    <td>${signup.storeVisitTime || '-'}</td>
+                    <td>${formatDate(signup.submitTime)}</td>
+                    <td>
+                        <button class="btn btn-primary btn-sm me-1" onclick="viewDetails(${signup.id})">
+                            查看
+                        </button>
+                        <button class="btn btn-warning btn-sm me-1" onclick="updateStatusModal(${signup.id})">
+                            更新
+                        </button>
+                        <button class="btn btn-danger btn-sm" onclick="confirmDelete(${signup.id}, '${signup.name}', '${signup.phone}')">
+                            删除
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // 查看详情
+        function viewDetails(signupId) {
+            fetch(`/api/photo-signup/list?per_page=100`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const signup = data.data.find(s => s.id === signupId);
+                        if (signup) {
+                            showDetailModal(signup);
+                        }
+                    }
+                });
+        }
+
+        // 显示详情模态框
+        function showDetailModal(signup) {
+            const modalBody = document.getElementById('detailModalBody');
+            modalBody.innerHTML = `
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>基本信息</h6>
+                        <table class="table table-sm">
+                            <tr><td><strong>姓名：</strong></td><td>${signup.name}</td></tr>
+                            <tr><td><strong>手机号：</strong></td><td>${signup.phone}</td></tr>
+                            <tr><td><strong>报名状态：</strong></td><td>
+                                <span class="status-badge status-${signup.status}">${signup.statusText}</span>
+                            </td></tr>
+                            <tr><td><strong>报名时间：</strong></td><td>${formatDate(signup.submitTime)}</td></tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>宠物信息</h6>
+                        <table class="table table-sm">
+                            <tr><td><strong>品种：</strong></td><td>${signup.petBreed}</td></tr>
+                            <tr><td><strong>体重：</strong></td><td>${signup.petWeight}</td></tr>
+                            <tr><td><strong>年龄：</strong></td><td>${signup.petAge}</td></tr>
+                            <tr><td><strong>性格：</strong></td><td>${signup.petCharacter || '未填写'}</td></tr>
+                            <tr><td><strong>预约时间：</strong></td><td>${signup.availableDate || '未选择'}</td></tr>
+                        </table>
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <h6>备注信息</h6>
+                        <p>${signup.additionalNotes || '无备注'}</p>
+                    </div>
+                </div>
+                ${signup.petImages && signup.petImages.length > 0 ? `
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <h6>宠物图片</h6>
+                            <div class="pet-images">
+                                ${renderPetImages(signup.petImages)}
+                            </div>
+                        </div>
+                    </div>
+                ` : ''}
+            `;
+            
+            new bootstrap.Modal(document.getElementById('detailModal')).show();
+        }
+
+        // 渲染宠物图片
+        function renderPetImages(images) {
+            if (!images || images.length === 0) {
+                return '<span class="text-muted">无图片</span>';
+            }
+            
+            return images.map((image, index) => `
+                <img src="${image}" alt="宠物图片${index + 1}" class="pet-image" 
+                     onclick="previewImage('${image}')" title="点击查看大图">
+            `).join('');
+        }
+
+        // 预览图片
+        function previewImage(imageUrl) {
+            window.open(imageUrl, '_blank');
+        }
+
+        // 打开状态更新模态框
+        function updateStatusModal(signupId) {
+            document.getElementById('signupId').value = signupId;
+            document.getElementById('newStatus').value = '';
+            document.getElementById('storeVisitTime').value = '';
+            document.getElementById('notes').value = '';
+            new bootstrap.Modal(document.getElementById('statusModal')).show();
+        }
+
+        // 提交状态更新
+        function updateStatus() {
+            const id = document.getElementById('signupId').value;
+            const status = document.getElementById('newStatus').value;
+            const storeVisitTime = document.getElementById('storeVisitTime').value;
+            const notes = document.getElementById('notes').value;
+            
+            if (!status) {
+                alert('请选择状态');
+                return;
+            }
+            
+            const updateData = {
+                status: status,
+                notes: notes
+            };
+            
+            if (storeVisitTime) {
+                updateData.store_visit_time = storeVisitTime;
+            }
+            
+            fetch(`/api/photo-signup/${id}/update-status`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(updateData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('状态更新成功！');
+                    bootstrap.Modal.getInstance(document.getElementById('statusModal')).hide();
+                    loadSignups(currentPage);
+                } else {
+                    alert('更新失败：' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('网络错误，请重试');
+            });
+        }
+
+        // 更新统计数据
+        function updateStats() {
+            fetch('/api/photo-signup/list?per_page=1')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        document.getElementById('totalApplications').textContent = data.total || 0;
+                        
+                        // 这里可以添加更详细的统计计算
+                        document.getElementById('pendingApplications').textContent = '统计中';
+                        document.getElementById('completedApplications').textContent = '统计中';
+                        document.getElementById('thisMonthApplications').textContent = '统计中';
+                    }
+                });
+        }
+
+        // 更新分页
+        function updatePagination(currentPage, totalPages) {
+            const pagination = document.getElementById('pagination');
+            let html = '';
+            
+            // 上一页
+            html += `
+                <li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
+                    <a class="page-link" href="#" onclick="loadSignups(${currentPage - 1})">上一页</a>
+                </li>
+            `;
+            
+            // 页码
+            for (let i = Math.max(1, currentPage - 2); i <= Math.min(totalPages, currentPage + 2); i++) {
+                html += `
+                    <li class="page-item ${i === currentPage ? 'active' : ''}">
+                        <a class="page-link" href="#" onclick="loadSignups(${i})">${i}</a>
+                    </li>
+                `;
+            }
+            
+            // 下一页
+            html += `
+                <li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
+                    <a class="page-link" href="#" onclick="loadSignups(${currentPage + 1})">下一页</a>
+                </li>
+            `;
+            
+            pagination.innerHTML = html;
+        }
+
+        // 格式化日期
+        function formatDate(dateString) {
+            if (!dateString) return '-';
+            return new Date(dateString).toLocaleString('zh-CN');
+        }
+
+        // 确认删除
+        function confirmDelete(signupId, name, phone) {
+            document.getElementById('deleteConfirmInfo').innerHTML = `
+                <p><strong>报名ID：</strong>${signupId}</p>
+                <p><strong>姓名：</strong>${name}</p>
+                <p><strong>手机号：</strong>${phone}</p>
+                <p class="text-danger mt-3"><strong>⚠️ 删除后将无法恢复，请谨慎操作！</strong></p>
+            `;
+            
+            // 设置全局变量存储要删除的记录ID
+            window.deleteSignupId = signupId;
+            
+            // 显示确认对话框
+            new bootstrap.Modal(document.getElementById('deleteModal')).show();
+        }
+
+        // 执行删除操作
+        function deleteSignup() {
+            const signupId = window.deleteSignupId;
+            
+            if (!signupId) {
+                alert('删除失败：未找到记录ID');
+                return;
+            }
+
+            // 显示加载状态
+            const deleteBtn = document.querySelector('#deleteModal .btn-danger');
+            const originalText = deleteBtn.innerHTML;
+            deleteBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>删除中...';
+            deleteBtn.disabled = true;
+
+            // 发送删除请求
+            fetch(`/api/photo-signup/${signupId}/delete`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                // 恢复按钮状态
+                deleteBtn.innerHTML = originalText;
+                deleteBtn.disabled = false;
+                
+                if (data.success) {
+                    // 关闭模态框
+                    bootstrap.Modal.getInstance(document.getElementById('deleteModal')).hide();
+                    
+                    // 显示成功消息
+                    alert('✅ 报名记录删除成功！');
+                    
+                    // 重新加载当前页面数据
+                    loadSignups(currentPage);
+                    updateStats();
+                } else {
+                    alert('❌ 删除失败：' + data.message);
+                }
+            })
+            .catch(error => {
+                // 恢复按钮状态
+                deleteBtn.innerHTML = originalText;
+                deleteBtn.disabled = false;
+                
+                console.error('Error:', error);
+                alert('❌ 网络错误，请重试');
+            });
+        }
+
+        // 导出报名数据
+        function exportSignups() {
+            // 显示加载提示
+            if (confirm('确定要导出所有报名数据吗？')) {
+                // 创建一个隐藏的链接来触发下载
+                const link = document.createElement('a');
+                link.href = '/api/photo-signup/export';
+                link.download = 'photo_signups_export.csv';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
+        }
+
+        // 搜索按钮点击事件
+        document.getElementById('statusFilter').addEventListener('change', () => loadSignups(1));
+    </script>
+</body>
+</html>

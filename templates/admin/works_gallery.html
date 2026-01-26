@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>作品展示管理 - {{ brand_name }}后台</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Microsoft YaHei', sans-serif;
+        }
+        
+        .navbar-custom {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
+        }
+        
+        .navbar-brand {
+            font-weight: bold;
+            color: #333 !important;
+        }
+        
+        .nav-link {
+            color: #666 !important;
+            font-weight: 500;
+        }
+        
+        .nav-link.active {
+            color: #007bff !important;
+        }
+        
+        .main-content {
+            margin-top: 80px;
+        }
+        
+        .card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+        }
+        
+        .card-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 15px 15px 0 0 !important;
+            border: none;
+        }
+        
+        .work-item {
+            border: 1px solid #e9ecef;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+            background: white;
+            transition: all 0.3s ease;
+        }
+        
+        .work-item:hover {
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .work-image {
+            width: 120px;
+            height: 120px;
+            object-fit: cover;
+            border-radius: 8px;
+        }
+        
+        .sortable-handle {
+            cursor: move;
+            color: #666;
+            font-size: 18px;
+        }
+        
+        .sortable-handle:hover {
+            color: #007bff;
+        }
+        
+        .upload-area {
+            border: 2px dashed #dee2e6;
+            border-radius: 10px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .upload-area:hover {
+            border-color: #007bff;
+            background-color: #f8f9fa;
+        }
+        
+        .upload-area.dragover {
+            border-color: #007bff;
+            background-color: #e3f2fd;
+        }
+        
+        .preview-image {
+            max-width: 300px;
+            max-height: 300px;
+            border-radius: 8px;
+            margin-top: 10px;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #666;
+        }
+        
+        .empty-state i {
+            font-size: 64px;
+            color: #ccc;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar navbar-expand-lg navbar-light navbar-custom fixed-top">
+        <div class="container">
+            <a class="navbar-brand" href="/">{{ brand_name }}后台</a>
+            <div class="collapse navbar-collapse">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/admin/dashboard">订单管理</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/admin/styles">风格管理</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/admin/sizes">产品管理</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/admin/homepage">首页配置</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/admin/works-gallery">作品展示</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/admin/photo-signups">📷 摄影报名</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/logout">退出登录</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="main-content">
+        <div class="container">
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h4 class="mb-0">🖼️ 作品展示管理</h4>
+                            <p class="mb-0">上传图片作品，拖拽调整顺序</p>
+                        </div>
+                        <div class="card-body">
+                            <!-- 操作按钮 -->
+                            <div class="row mb-4">
+                                <div class="col-md-6">
+                                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#workModal">
+                                        <i class="fas fa-plus"></i> 新增图片
+                                    </button>
+                                    <a href="/works-gallery" target="_blank" class="btn btn-success">
+                                        <i class="fas fa-eye"></i> 预览展示页面
+                                    </a>
+                                </div>
+                                <div class="col-md-6 text-end">
+                                    <button class="btn btn-outline-secondary" onclick="loadWorks()">
+                                        <i class="fas fa-sync-alt"></i> 刷新
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- 作品列表 -->
+                            <div id="worksList">
+                                <div class="loading">
+                                    <div class="spinner-border text-primary" role="status">
+                                        <span class="visually-hidden">加载中...</span>
+                                    </div>
+                                    <p class="mt-2">正在加载作品数据...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 新增图片模态框 -->
+    <div class="modal fade" id="workModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">新增图片</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="workForm">
+                        <input type="hidden" id="workId" name="id">
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="mb-3">
+                                    <label class="form-label">上传图片 *</label>
+                                    <div class="upload-area" onclick="document.getElementById('workImageFile').click()">
+                                        <div id="workUploadArea">
+                                            <i class="fas fa-cloud-upload-alt fa-3x mb-3"></i>
+                                            <h5>点击上传图片</h5>
+                                            <p class="text-muted">支持 JPG、PNG 格式，建议尺寸 800x600px</p>
+                                        </div>
+                                        <img id="workPreview" class="preview-image" style="display: none;">
+                                    </div>
+                                    <input type="file" id="workImageFile" accept="image/*" style="display: none;" onchange="uploadWorkImage(this)">
+                                    <input type="hidden" id="workImageUrl" name="image_url">
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" onclick="saveWork()">保存</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+    <script>
+        let allWorks = [];
+        let isEditing = false;
+
+        // 页面加载时初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            loadWorks();
+        });
+
+        // 加载作品数据
+        async function loadWorks() {
+            try {
+                const response = await fetch('/api/admin/works-gallery');
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    allWorks = data.data;
+                    renderWorks();
+                } else {
+                    showError('加载作品数据失败: ' + data.message);
+                }
+            } catch (error) {
+                console.error('加载作品失败:', error);
+                showError('加载作品数据失败，请检查网络连接');
+            }
+        }
+
+        // 渲染作品列表
+        function renderWorks() {
+            const container = document.getElementById('worksList');
+
+            if (allWorks.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-image"></i>
+                        <h3>暂无作品数据</h3>
+                        <p>点击"新增图片"开始添加作品展示</p>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = '<div id="sortableWorks">';
+            allWorks.forEach(work => {
+                html += `
+                    <div class="work-item" data-id="${work.id}">
+                        <div class="row align-items-center">
+                            <div class="col-md-1">
+                                <i class="fas fa-grip-vertical sortable-handle"></i>
+                            </div>
+                            <div class="col-md-3">
+                                <img src="${work.image_url}" 
+                                     class="work-image" 
+                                     alt="作品图片"
+                                     onerror="this.src='/static/images/placeholder.jpg'">
+                            </div>
+                            <div class="col-md-4">
+                                <p class="text-muted small mb-1">
+                                    <i class="fas fa-sort-numeric-up"></i> 排序: ${work.sort_order}
+                                </p>
+                                <p class="text-muted small mb-1">
+                                    <i class="fas fa-calendar"></i> 创建时间: ${work.created_at}
+                                </p>
+                            </div>
+                            <div class="col-md-2">
+                                <span class="badge ${work.is_active ? 'bg-success' : 'bg-secondary'}">
+                                    ${work.is_active ? '启用' : '禁用'}
+                                </span>
+                            </div>
+                            <div class="col-md-2 text-end">
+                                <button class="btn btn-sm btn-outline-danger" onclick="deleteWork(${work.id})">
+                                    <i class="fas fa-trash"></i> 删除
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            container.innerHTML = html;
+
+            // 初始化排序功能
+            const sortable = new Sortable(document.getElementById('sortableWorks'), {
+                handle: '.sortable-handle',
+                animation: 150,
+                onEnd: function(evt) {
+                    updateSortOrder();
+                }
+            });
+        }
+
+        // 更新排序
+        async function updateSortOrder() {
+            const works = [];
+            document.querySelectorAll('#sortableWorks .work-item').forEach((item, index) => {
+                works.push({
+                    id: parseInt(item.dataset.id),
+                    sort_order: index + 1
+                });
+            });
+
+            try {
+                const response = await fetch('/api/admin/works-gallery/reorder', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ works })
+                });
+
+                const data = await response.json();
+                if (data.status === 'success') {
+                    showSuccess('排序更新成功');
+                    loadWorks(); // 重新加载以更新数据
+                } else {
+                    showError(data.message);
+                }
+            } catch (error) {
+                console.error('更新排序失败:', error);
+                showError('更新排序失败');
+            }
+        }
+
+        // 新增作品
+        function addWork() {
+            isEditing = false;
+            document.getElementById('workForm').reset();
+            document.getElementById('workId').value = '';
+            document.getElementById('workPreview').style.display = 'none';
+            document.getElementById('workUploadArea').style.display = 'block';
+        }
+
+        // 保存作品
+        async function saveWork() {
+            const imageUrl = document.getElementById('workImageUrl').value;
+
+            if (!imageUrl) {
+                showError('请先上传图片');
+                return;
+            }
+
+            const formData = {
+                image_url: imageUrl,
+                sort_order: allWorks.length + 1,
+                is_active: true
+            };
+
+            try {
+                const response = await fetch('/api/admin/works-gallery', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                const data = await response.json();
+                if (data.status === 'success') {
+                    showSuccess('图片添加成功');
+                    bootstrap.Modal.getInstance(document.getElementById('workModal')).hide();
+                    loadWorks();
+                } else {
+                    showError(data.message);
+                }
+            } catch (error) {
+                console.error('保存作品失败:', error);
+                showError('保存作品失败');
+            }
+        }
+
+        // 删除作品
+        async function deleteWork(workId) {
+            if (!confirm('确定要删除这个图片吗？')) return;
+
+            try {
+                const response = await fetch(`/api/admin/works-gallery/${workId}`, {
+                    method: 'DELETE'
+                });
+
+                const data = await response.json();
+                if (data.status === 'success') {
+                    showSuccess('图片删除成功');
+                    loadWorks();
+                } else {
+                    showError(data.message);
+                }
+            } catch (error) {
+                console.error('删除作品失败:', error);
+                showError('删除作品失败');
+            }
+        }
+
+        // 上传图片
+        async function uploadWorkImage(input) {
+            const file = input.files[0];
+            if (!file) return;
+
+            const formData = new FormData();
+            formData.append('image', file);
+
+            try {
+                const response = await fetch('/api/admin/upload-image', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+                if (data.status === 'success') {
+                    document.getElementById('workImageUrl').value = data.image_url;
+                    document.getElementById('workPreview').src = data.image_url;
+                    document.getElementById('workPreview').style.display = 'block';
+                    document.getElementById('workUploadArea').style.display = 'none';
+                } else {
+                    showError('图片上传失败: ' + data.message);
+                }
+            } catch (error) {
+                console.error('图片上传失败:', error);
+                showError('图片上传失败');
+            }
+        }
+
+        // 显示成功消息
+        function showSuccess(message) {
+            alert('成功: ' + message);
+        }
+
+        // 显示错误消息
+        function showError(message) {
+            alert('错误: ' + message);
+        }
+
+        // 模态框事件
+        document.getElementById('workModal').addEventListener('show.bs.modal', function() {
+            addWork();
+        });
+    </script>
+</body>
+</html>

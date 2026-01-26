@@ -1,0 +1,853 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理后台仪表盘 - {{ brand_name }}</title>
+    <link href="/static/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body {
+            background: #f5f7fa;
+            min-height: 100vh;
+            padding-top: 70px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+        }
+        .navbar-custom {
+            background: #0a0a0a !important;
+            border-bottom: 1px solid #1a1a1a;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        }
+        .navbar-brand, .nav-link {
+            color: #e0e0e0 !important;
+        }
+        .nav-link:hover {
+            color: #ffffff !important;
+        }
+        .nav-link.active {
+            color: #ffffff !important;
+            font-weight: 600;
+        }
+        .dashboard-container {
+            padding: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        .section-title {
+            color: #333;
+            font-size: 1.2rem;
+            font-weight: 500;
+            margin-bottom: 20px;
+        }
+        .stat-card {
+            background: #ffffff;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 16px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e8e8e8;
+            transition: box-shadow 0.2s;
+        }
+        .stat-card:hover {
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+        }
+        .stat-card .icon {
+            font-size: 1.8rem;
+            opacity: 0.7;
+            margin-bottom: 8px;
+        }
+        .stat-card .value {
+            font-size: 1.8rem;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 4px;
+        }
+        .stat-card .label {
+            font-size: 0.85rem;
+            color: #666;
+            font-weight: 400;
+        }
+        .stat-card .trend {
+            font-size: 0.75rem;
+            margin-top: 6px;
+            color: #999;
+        }
+        .stat-card.primary { border-left: 3px solid #007bff; }
+        .stat-card.success { border-left: 3px solid #28a745; }
+        .stat-card.warning { border-left: 3px solid #ffc107; }
+        .stat-card.info { border-left: 3px solid #17a2b8; }
+        .stat-card.danger { border-left: 3px solid #dc3545; }
+        .stat-card.purple { border-left: 3px solid #6f42c1; }
+        .stat-card.danger { border-left: 3px solid #dc3545; }
+        .clickable-card {
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .clickable-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+        .linear-progress-container {
+            position: relative;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            min-height: 40px;
+        }
+        .linear-progress-track {
+            display: flex;
+            align-items: center;
+            position: relative;
+            width: 100%;
+            height: 30px;
+        }
+        .linear-progress-node {
+            position: relative;
+            z-index: 2;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex: 1;
+        }
+        .linear-progress-node-circle {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            border: 2px solid #ddd;
+            background: #fff;
+            transition: all 0.3s;
+            position: relative;
+        }
+        .linear-progress-node.completed .linear-progress-node-circle {
+            background: #28a745;
+            border-color: #28a745;
+        }
+        .linear-progress-node.active .linear-progress-node-circle {
+            background: #007bff;
+            border-color: #007bff;
+            animation: pulse-dot 2s infinite;
+        }
+        .linear-progress-node.retrying .linear-progress-node-circle {
+            background: #ffc107;
+            border-color: #ffc107;
+            animation: pulse-dot 1.5s infinite;
+        }
+        .linear-progress-node.failed .linear-progress-node-circle {
+            background: #dc3545;
+            border-color: #dc3545;
+        }
+        .linear-progress-node.pending .linear-progress-node-circle {
+            background: #fff;
+            border-color: #ddd;
+        }
+        .linear-progress-node-label {
+            margin-top: 4px;
+            font-size: 0.65rem;
+            color: #666;
+            text-align: center;
+            white-space: nowrap;
+            line-height: 1.2;
+        }
+        .linear-progress-node.completed .linear-progress-node-label {
+            color: #28a745;
+            font-weight: 500;
+        }
+        .linear-progress-node.active .linear-progress-node-label {
+            color: #007bff;
+            font-weight: 500;
+        }
+        .linear-progress-node.retrying .linear-progress-node-label {
+            color: #ffc107;
+            font-weight: 500;
+        }
+        .linear-progress-node.failed .linear-progress-node-label {
+            color: #dc3545;
+            font-weight: 500;
+        }
+        .linear-progress-node.pending .linear-progress-node-label {
+            color: #999;
+        }
+        .linear-progress-line {
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: #e0e0e0;
+            z-index: 1;
+            transform: translateY(-50%);
+        }
+        .linear-progress-line-fill {
+            height: 100%;
+            background: #28a745;
+            transition: width 0.3s;
+        }
+        .linear-progress-node:not(:last-child)::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 100%;
+            height: 2px;
+            background: #e0e0e0;
+            z-index: 1;
+            transform: translateY(-50%);
+        }
+        .linear-progress-node.completed:not(:last-child)::after {
+            background: #28a745;
+        }
+        .linear-progress-node.active:not(:last-child)::after {
+            background: linear-gradient(to right, #28a745 0%, #007bff 50%, #e0e0e0 50%);
+        }
+        .linear-progress-node.retrying:not(:last-child)::after {
+            background: linear-gradient(to right, #28a745 0%, #ffc107 50%, #e0e0e0 50%);
+        }
+        .linear-progress-node.failed:not(:last-child)::after {
+            background: linear-gradient(to right, #28a745 0%, #dc3545 50%, #e0e0e0 50%);
+        }
+        /* 如果前一个节点已完成，当前节点之间的连接线应该是绿色 */
+        .linear-progress-node.completed ~ .linear-progress-node:not(:last-child)::after {
+            background: linear-gradient(to right, #28a745 0%, #e0e0e0 50%);
+        }
+        .linear-progress-node.completed ~ .linear-progress-node.active:not(:last-child)::after {
+            background: linear-gradient(to right, #28a745 0%, #007bff 50%, #e0e0e0 50%);
+        }
+        .linear-progress-node.completed ~ .linear-progress-node.retrying:not(:last-child)::after {
+            background: linear-gradient(to right, #28a745 0%, #ffc107 50%, #e0e0e0 50%);
+        }
+        .linear-progress-node.completed ~ .linear-progress-node.failed:not(:last-child)::after {
+            background: linear-gradient(to right, #28a745 0%, #dc3545 50%, #e0e0e0 50%);
+        }
+        @keyframes pulse-dot {
+            0%, 100% { 
+                transform: scale(1);
+                box-shadow: 0 0 0 0 rgba(0, 123, 255, 0.7);
+            }
+            50% { 
+                transform: scale(1.1);
+                box-shadow: 0 0 0 4px rgba(0, 123, 255, 0);
+            }
+        }
+        .linear-progress-node.retrying .linear-progress-node-circle {
+            animation: pulse-dot-yellow 1.5s infinite;
+        }
+        @keyframes pulse-dot-yellow {
+            0%, 100% { 
+                transform: scale(1);
+                box-shadow: 0 0 0 0 rgba(255, 193, 7, 0.7);
+            }
+            50% { 
+                transform: scale(1.1);
+                box-shadow: 0 0 0 4px rgba(255, 193, 7, 0);
+            }
+        }
+        .linear-progress-retry-info {
+            font-size: 0.55rem;
+            color: #ffc107;
+            margin-top: 2px;
+        }
+        .linear-progress-error-info {
+            font-size: 0.55rem;
+            color: #dc3545;
+            margin-top: 2px;
+        }
+        .quick-actions {
+            background: #ffffff;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 20px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e8e8e8;
+        }
+        .quick-actions h5 {
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: #333;
+            margin-bottom: 12px;
+        }
+        .quick-action-btn {
+            display: block;
+            width: 100%;
+            padding: 10px 12px;
+            margin-bottom: 8px;
+            background: #f8f9fa;
+            color: #333;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            text-align: left;
+            text-decoration: none;
+            transition: all 0.2s;
+            font-size: 0.9rem;
+        }
+        .quick-action-btn:hover {
+            background: #007bff;
+            color: white;
+            border-color: #007bff;
+            text-decoration: none;
+        }
+        .quick-action-btn i {
+            margin-right: 8px;
+            width: 16px;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <!-- 导航栏 -->
+    {% include 'admin/_navbar.html' %}
+
+    <div class="container-fluid dashboard-container">
+        <h2 class="section-title">
+            <i class="fas fa-chart-line"></i> 数据概览
+        </h2>
+
+        <!-- 业绩统计 -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="stat-card success clickable-card" onclick="showRevenueModal('yesterday')" style="cursor: pointer;">
+                    <div class="icon text-success">
+                        <i class="fas fa-yen-sign"></i>
+                    </div>
+                    <div class="value text-success">¥{{ '%.2f'|format(yesterday_revenue) }}</div>
+                    <div class="label">昨日业绩</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card success clickable-card" onclick="showRevenueModal('today')" style="cursor: pointer;">
+                    <div class="icon text-success">
+                        <i class="fas fa-yen-sign"></i>
+                    </div>
+                    <div class="value text-success">¥{{ '%.2f'|format(daily_revenue) }}</div>
+                    <div class="label">今日业绩</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card warning clickable-card" onclick="showRevenueModal('week')" style="cursor: pointer;">
+                    <div class="icon text-warning">
+                        <i class="fas fa-yen-sign"></i>
+                    </div>
+                    <div class="value text-warning">¥{{ '%.2f'|format(week_revenue) }}</div>
+                    <div class="label">本周业绩</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card info clickable-card" onclick="showRevenueModal('month')" style="cursor: pointer;">
+                    <div class="icon text-info">
+                        <i class="fas fa-yen-sign"></i>
+                    </div>
+                    <div class="value text-info">¥{{ '%.2f'|format(month_revenue) }}</div>
+                    <div class="label">本月业绩</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 订单状态统计 -->
+        <div class="row mb-4">
+            <div class="col-md-4">
+                <div class="stat-card info clickable-card" onclick="showProcessingOrders()" style="cursor: pointer;">
+                    <div class="icon text-info">
+                        <i class="fas fa-cog fa-spin"></i>
+                    </div>
+                    <div class="value text-info">{{ processing_orders }}</div>
+                    <div class="label">处理中订单</div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="stat-card success clickable-card" onclick="showCompletedOrders()" style="cursor: pointer;">
+                    <div class="icon text-success">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div class="value text-success">{{ completed_orders }}</div>
+                    <div class="label">已完成订单</div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="stat-card danger clickable-card" onclick="showErrorOrders()" style="cursor: pointer;">
+                    <div class="icon text-danger">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <div class="value text-danger">{{ error_orders }}</div>
+                    <div class="label">异常订单</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 业绩详情模态框 -->
+    <div class="modal fade" id="revenueModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="revenueModalTitle">业绩详情</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="revenueModalBody">
+                    <p class="text-muted">正在加载数据...</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 处理中订单详情模态框 -->
+    <div class="modal fade" id="processingOrdersModal" tabindex="-1">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">处理中订单详情</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="processingOrdersModalBody">
+                    <p class="text-muted">正在加载数据...</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                    <button type="button" class="btn btn-primary" onclick="refreshProcessingOrders()">
+                        <i class="fas fa-sync-alt"></i> 刷新
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 已完成订单模态框 -->
+    <div class="modal fade" id="completedOrdersModal" tabindex="-1">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">已完成订单</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="completedOrdersModalBody">
+                    <p class="text-muted">正在加载数据...</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 异常订单模态框 -->
+    <div class="modal fade" id="errorOrdersModal" tabindex="-1">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">异常订单</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="errorOrdersModalBody">
+                    <p class="text-muted">正在加载数据...</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // 显示业绩详情模态框
+        function showRevenueModal(period) {
+            var modal = new bootstrap.Modal(document.getElementById('revenueModal'));
+            var modalTitle = document.getElementById('revenueModalTitle');
+            var modalBody = document.getElementById('revenueModalBody');
+            
+            var titles = {
+                'yesterday': '昨日业绩详情',
+                'today': '今日业绩详情',
+                'week': '本周业绩详情',
+                'month': '本月业绩详情'
+            };
+            
+            modalTitle.textContent = titles[period] || '业绩详情';
+            modalBody.innerHTML = '<p class="text-muted">正在加载数据...</p>';
+            modal.show();
+            
+            fetch('/api/admin/dashboard/revenue?period=' + period, {
+                credentials: 'same-origin'
+            })
+            .then(function(response) {
+                return response.json();
+            })
+            .then(function(data) {
+                if (data.success) {
+                    renderRevenueDetail(data, period);
+                } else {
+                    modalBody.innerHTML = '<p class="text-danger">加载失败: ' + (data.message || '未知错误') + '</p>';
+                }
+            })
+            .catch(function(error) {
+                console.error('加载业绩详情失败:', error);
+                modalBody.innerHTML = '<p class="text-danger">加载失败，请重试</p>';
+            });
+        }
+
+        // 渲染业绩详情
+        function renderRevenueDetail(data, period) {
+            var modalBody = document.getElementById('revenueModalBody');
+            var html = '<div class="row mb-3">';
+            html += '<div class="col-md-6"><div class="card"><div class="card-body text-center"><h4>¥' + data.total_revenue.toFixed(2) + '</h4><small>总业绩</small></div></div></div>';
+            html += '<div class="col-md-6"><div class="card"><div class="card-body text-center"><h4>' + data.order_count + '</h4><small>订单数量</small></div></div></div>';
+            html += '</div>';
+            
+            if (data.orders && data.orders.length > 0) {
+                html += '<div class="table-responsive"><table class="table table-sm">';
+                html += '<thead><tr><th>订单号</th><th>金额</th><th>完成时间</th></tr></thead>';
+                html += '<tbody>';
+                for (var i = 0; i < Math.min(data.orders.length, 20); i++) {
+                    var order = data.orders[i];
+                    html += '<tr>';
+                    html += '<td><code>' + (order.order_number || '') + '</code></td>';
+                    html += '<td>¥' + (order.price || 0).toFixed(2) + '</td>';
+                    html += '<td>' + (order.completed_at || '未知') + '</td>';
+                    html += '</tr>';
+                }
+                html += '</tbody></table></div>';
+                if (data.orders.length > 20) {
+                    html += '<p class="text-muted text-center">仅显示前20条，共' + data.orders.length + '条</p>';
+                }
+            } else {
+                html += '<p class="text-muted text-center">暂无订单数据</p>';
+            }
+            
+            modalBody.innerHTML = html;
+        }
+
+        // 显示处理中订单
+        function showProcessingOrders() {
+            var modal = new bootstrap.Modal(document.getElementById('processingOrdersModal'));
+            var modalBody = document.getElementById('processingOrdersModalBody');
+            
+            modalBody.innerHTML = '<p class="text-muted">正在加载处理中订单...</p>';
+            modal.show();
+            
+            loadProcessingOrders();
+            
+            // 每5秒自动刷新
+            if (window.processingOrdersInterval) {
+                clearInterval(window.processingOrdersInterval);
+            }
+            window.processingOrdersInterval = setInterval(loadProcessingOrders, 5000);
+        }
+
+        // 加载处理中订单
+        function loadProcessingOrders() {
+            var modalBody = document.getElementById('processingOrdersModalBody');
+            
+            fetch('/api/admin/dashboard/processing-orders', {
+                credentials: 'same-origin'
+            })
+            .then(function(response) {
+                return response.json();
+            })
+            .then(function(data) {
+                console.log('处理中订单API响应:', data);
+                if (data.success) {
+                    if (data.orders && Array.isArray(data.orders) && data.orders.length > 0) {
+                        renderProcessingOrders(data.orders);
+                    } else {
+                        modalBody.innerHTML = '<p class="text-muted text-center">暂无处理中订单</p>';
+                    }
+                } else {
+                    modalBody.innerHTML = '<p class="text-danger">加载失败: ' + (data.message || '未知错误') + '</p>';
+                }
+            })
+            .catch(function(error) {
+                console.error('加载处理中订单失败:', error);
+                modalBody.innerHTML = '<p class="text-danger">加载失败，请重试。错误: ' + (error.message || '网络错误') + '</p>';
+            });
+        }
+
+        // 渲染处理中订单
+        function renderProcessingOrders(orders) {
+            var modalBody = document.getElementById('processingOrdersModalBody');
+            
+            if (!orders || orders.length === 0) {
+                modalBody.innerHTML = '<p class="text-muted text-center">暂无处理中订单</p>';
+                return;
+            }
+            
+            var html = '<div class="table-responsive">';
+            html += '<table class="table table-hover">';
+            html += '<thead><tr><th>订单编号</th><th>任务进度</th><th>当前状态</th><th>创建时间</th></tr></thead>';
+            html += '<tbody>';
+            
+            for (var i = 0; i < orders.length; i++) {
+                var order = orders[i];
+                var orderNumber = order.order_number || '';
+                var progress = getOrderProgress(order);
+                
+                html += '<tr>';
+                html += '<td style="vertical-align: middle;"><code>' + orderNumber + '</code></td>';
+                html += '<td style="min-width: 600px; vertical-align: middle;">';
+                html += '<div class="linear-progress-container">';
+                html += '<div class="linear-progress-track">';
+                for (var j = 0; j < progress.steps.length; j++) {
+                    var step = progress.steps[j];
+                    var stepClass = 'pending';
+                    var stepTooltip = step.text;
+                    if (step.completed) {
+                        stepClass = 'completed';
+                    } else if (step.active) {
+                        if (step.status === 'retrying') {
+                            stepClass = 'retrying';
+                            stepTooltip = step.text + ' (重试中，已重试' + (step.retryCount || 0) + '次)';
+                        } else if (step.status === 'failed') {
+                            stepClass = 'failed';
+                            stepTooltip = step.text + ' (失败: ' + (step.errorMessage || '未知错误') + ')';
+                        } else {
+                            stepClass = 'active';
+                        }
+                    }
+                    html += '<div class="linear-progress-node ' + stepClass + '" title="' + stepTooltip + '">';
+                    html += '<div class="linear-progress-node-circle"></div>';
+                    html += '<div class="linear-progress-node-label">' + step.text;
+                    if (step.status === 'retrying' && step.retryCount > 0) {
+                        html += '<div class="linear-progress-retry-info">重试' + step.retryCount + '</div>';
+                    }
+                    if (step.status === 'failed' && step.errorMessage) {
+                        var shortError = step.errorMessage.length > 15 ? step.errorMessage.substring(0, 15) + '...' : step.errorMessage;
+                        html += '<div class="linear-progress-error-info">' + shortError + '</div>';
+                    }
+                    html += '</div>';
+                    html += '</div>';
+                }
+                html += '</div>';
+                html += '</div>';
+                html += '</td>';
+                html += '<td style="vertical-align: middle;"><span class="badge bg-info">' + (order.status || 'processing') + '</span></td>';
+                var createdTime = '未知';
+                if (order.created_at) {
+                    try {
+                        createdTime = new Date(order.created_at).toLocaleString('zh-CN');
+                    } catch (e) {
+                        createdTime = String(order.created_at);
+                    }
+                }
+                html += '<td style="vertical-align: middle;">' + createdTime + '</td>';
+                html += '</tr>';
+            }
+            
+            html += '</tbody></table></div>';
+            modalBody.innerHTML = html;
+        }
+
+        // 获取订单进度
+        function getOrderProgress(order) {
+            var steps = [
+                { text: '订单创建', completed: false, active: false, status: null, retryCount: 0, errorMessage: null },
+                { text: '拍摄中', completed: false, active: false, status: null, retryCount: 0, errorMessage: null },
+                { text: 'AI美颜中', completed: false, active: false, status: null, retryCount: 0, errorMessage: null },
+                { text: 'AI任务中', completed: false, active: false, status: null, retryCount: 0, errorMessage: null },
+                { text: '制作完成', completed: false, active: false, status: null, retryCount: 0, errorMessage: null }
+            ];
+            
+            var currentStep = 0;
+            var status = order.status || 'processing';
+            
+            // 步骤1：订单创建（已完成）
+            steps[0].completed = true;
+            currentStep = 1;
+            
+            // 步骤2：拍摄中
+            if (order.shooting_completed_at) {
+                steps[1].completed = true;
+                currentStep = 2;
+            } else {
+                steps[1].active = true;
+                currentStep = 1;
+            }
+            
+            // 步骤3：AI美颜中
+            if (order.retouch_completed_at) {
+                steps[2].completed = true;
+                currentStep = 3;
+            } else if (order.shooting_completed_at && !order.retouch_completed_at) {
+                steps[2].active = true;
+                currentStep = 2;
+            }
+            
+            // 步骤4：AI任务中（需要判断重试和失败状态）
+            if (order.ai_task_status) {
+                if (order.ai_task_status === 'completed') {
+                    steps[3].completed = true;
+                    currentStep = 4;
+                } else if (order.ai_task_status === 'failed') {
+                    // AI任务失败（重试完且失败）
+                    steps[3].active = true;
+                    steps[3].status = 'failed';
+                    steps[3].errorMessage = order.ai_task_error_message || '任务失败';
+                    currentStep = 3;
+                } else if (order.ai_task_status === 'processing') {
+                    // 检查是否在重试
+                    var retryCount = order.ai_task_retry_count || 0;
+                    if (retryCount > 0) {
+                        // 正在重试中
+                        steps[3].active = true;
+                        steps[3].status = 'retrying';
+                        steps[3].retryCount = retryCount;
+                    } else {
+                        // 正常处理中
+                        steps[3].active = true;
+                        steps[3].status = 'processing';
+                    }
+                    currentStep = 3;
+                } else if (order.ai_task_status === 'pending') {
+                    // 等待中
+                    steps[3].active = true;
+                    currentStep = 3;
+                }
+            } else if (order.retouch_completed_at && !order.ai_task_status) {
+                // 如果美颜已完成但没有AI任务状态，可能还在等待AI任务
+                steps[3].active = true;
+                currentStep = 3;
+            }
+            
+            // 步骤5：制作完成
+            if (status === 'completed' || order.completed_at) {
+                steps[4].completed = true;
+                currentStep = 5;
+            } else if (order.ai_task_status === 'completed') {
+                steps[4].active = true;
+                currentStep = 4;
+            }
+            
+            // 确保只有一个步骤是active（除了已完成和失败的）
+            for (var i = 0; i < steps.length; i++) {
+                if (steps[i].completed || steps[i].status === 'failed') {
+                    continue; // 已完成或失败的步骤保持原样
+                }
+                if (i === currentStep - 1 && currentStep > 0) {
+                    steps[i].active = true;
+                } else {
+                    steps[i].active = false;
+                }
+            }
+            
+            return {
+                steps: steps,
+                currentStep: currentStep
+            };
+        }
+
+        // 刷新处理中订单
+        function refreshProcessingOrders() {
+            loadProcessingOrders();
+        }
+
+        // 显示已完成订单
+        function showCompletedOrders() {
+            var modal = new bootstrap.Modal(document.getElementById('completedOrdersModal'));
+            var modalBody = document.getElementById('completedOrdersModalBody');
+            
+            modalBody.innerHTML = '<p class="text-muted">正在加载已完成订单...</p>';
+            modal.show();
+            
+            fetch('/api/admin/dashboard/completed-orders', {
+                credentials: 'same-origin'
+            })
+            .then(function(response) {
+                return response.json();
+            })
+            .then(function(data) {
+                if (data.success && data.orders) {
+                    renderOrderList(data.orders, modalBody);
+                } else {
+                    modalBody.innerHTML = '<p class="text-danger">加载失败: ' + (data.message || '未知错误') + '</p>';
+                }
+            })
+            .catch(function(error) {
+                console.error('加载已完成订单失败:', error);
+                modalBody.innerHTML = '<p class="text-danger">加载失败，请重试</p>';
+            });
+        }
+
+        // 显示异常订单
+        function showErrorOrders() {
+            var modal = new bootstrap.Modal(document.getElementById('errorOrdersModal'));
+            var modalBody = document.getElementById('errorOrdersModalBody');
+            
+            modalBody.innerHTML = '<p class="text-muted">正在加载异常订单...</p>';
+            modal.show();
+            
+            fetch('/api/admin/dashboard/error-orders', {
+                credentials: 'same-origin'
+            })
+            .then(function(response) {
+                return response.json();
+            })
+            .then(function(data) {
+                console.log('异常订单API响应:', data);
+                if (data.success) {
+                    if (data.orders && Array.isArray(data.orders) && data.orders.length > 0) {
+                        renderOrderList(data.orders, modalBody, true);
+                    } else {
+                        modalBody.innerHTML = '<p class="text-muted text-center">暂无异常订单</p>';
+                    }
+                } else {
+                    modalBody.innerHTML = '<p class="text-danger">加载失败: ' + (data.message || '未知错误') + '</p>';
+                }
+            })
+            .catch(function(error) {
+                console.error('加载异常订单失败:', error);
+                modalBody.innerHTML = '<p class="text-danger">加载失败，请重试</p>';
+            });
+        }
+
+        // 渲染订单列表
+        function renderOrderList(orders, container, showError) {
+            if (!orders || orders.length === 0) {
+                container.innerHTML = '<p class="text-muted text-center">暂无订单数据</p>';
+                return;
+            }
+            
+            var html = '<div class="table-responsive">';
+            html += '<table class="table table-hover">';
+            html += '<thead><tr><th>订单号</th><th>客户姓名</th><th>金额</th><th>状态</th>';
+            if (showError) {
+                html += '<th>错误信息</th>';
+            }
+            html += '<th>创建时间</th></tr></thead>';
+            html += '<tbody>';
+            
+            for (var i = 0; i < orders.length; i++) {
+                var order = orders[i];
+                html += '<tr>';
+                html += '<td><code>' + (order.order_number || '') + '</code></td>';
+                html += '<td>' + (order.customer_name || '未知') + '</td>';
+                html += '<td>¥' + (order.price || 0).toFixed(2) + '</td>';
+                html += '<td><span class="badge bg-info">' + (order.status || '未知') + '</span></td>';
+                if (showError) {
+                    html += '<td><small class="text-danger">' + (order.error_message || '无') + '</small></td>';
+                }
+                var createdTime = '未知';
+                if (order.created_at) {
+                    try {
+                        createdTime = new Date(order.created_at).toLocaleString('zh-CN');
+                    } catch (e) {
+                        createdTime = String(order.created_at);
+                    }
+                }
+                html += '<td>' + createdTime + '</td>';
+                html += '</tr>';
+            }
+            
+            html += '</tbody></table></div>';
+            container.innerHTML = html;
+        }
+
+        // 关闭模态框时清除定时器
+        document.getElementById('processingOrdersModal').addEventListener('hidden.bs.modal', function() {
+            if (window.processingOrdersInterval) {
+                clearInterval(window.processingOrdersInterval);
+                window.processingOrdersInterval = null;
+            }
+        });
+    </script>
+</body>
+</html>

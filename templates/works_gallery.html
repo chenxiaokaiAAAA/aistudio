@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>作品展示 - {{ brand_name }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Microsoft YaHei', sans-serif;
+        }
+        
+        .gallery-header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            margin: 20px 0;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+        
+        .gallery-title {
+            color: #333;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        
+        .gallery-subtitle {
+            color: #666;
+            font-size: 16px;
+        }
+        
+        .works-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 25px;
+            margin: 30px 0;
+        }
+        
+        .work-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .work-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+        }
+        
+        .work-image {
+            width: 100%;
+            height: 250px;
+            object-fit: cover;
+            transition: transform 0.3s ease;
+        }
+        
+        .work-card:hover .work-image {
+            transform: scale(1.05);
+        }
+        
+        .work-info {
+            padding: 20px;
+        }
+        
+        .work-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 8px;
+        }
+        
+        .work-meta {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 5px;
+        }
+        
+        .work-date {
+            color: #999;
+            font-size: 12px;
+        }
+        
+        .back-btn {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 1000;
+            background: rgba(255, 255, 255, 0.9);
+            border: none;
+            border-radius: 50px;
+            padding: 12px 20px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+        
+        .back-btn:hover {
+            background: rgba(255, 255, 255, 1);
+            transform: translateX(-3px);
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #666;
+        }
+        
+        .empty-state i {
+            font-size: 64px;
+            color: #ccc;
+            margin-bottom: 20px;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+        
+        .spinner-border {
+            width: 3rem;
+            height: 3rem;
+        }
+        
+        @media (max-width: 768px) {
+            .works-grid {
+                grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+                gap: 15px;
+            }
+            
+            .gallery-header {
+                margin: 10px 0;
+                padding: 20px;
+            }
+            
+            .back-btn {
+                top: 10px;
+                left: 10px;
+                padding: 8px 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 返回按钮 -->
+    <button class="back-btn" onclick="goBack()">
+        <i class="fas fa-arrow-left"></i> 返回首页
+    </button>
+
+    <div class="container">
+        <!-- 页面标题 -->
+        <div class="gallery-header text-center">
+            <h1 class="gallery-title">
+                <i class="fas fa-palette text-primary"></i>
+                作品展示
+            </h1>
+            <p class="gallery-subtitle">
+                欣赏我们精心制作的AI拍照作品，每一幅都是独一无二的艺术品
+            </p>
+        </div>
+
+        <!-- 作品网格 -->
+        {% if works %}
+        <div class="works-grid">
+            {% for work in works %}
+            <div class="work-card" data-bs-toggle="modal" data-bs-target="#workModal{{ work.id }}">
+                <img src="{{ work.image_url }}" 
+                     class="work-image" 
+                     alt="作品展示"
+                     onerror="this.src='/static/images/placeholder.jpg'">
+                <div class="work-info">
+                    <div class="work-title">作品展示</div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <i class="fas fa-image"></i>
+            <h3>暂无作品展示</h3>
+            <p>我们正在努力创作更多精美的AI拍照作品，敬请期待！</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- 作品大图查看模态框 -->
+    {% for work in works %}
+    <div class="modal fade" id="workModal{{ work.id }}" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-palette text-primary"></i>
+                        作品展示
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body text-center">
+                    <img src="{{ work.image_url }}" 
+                         class="img-fluid rounded" 
+                         alt="作品展示"
+                         style="max-height: 70vh;">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // 返回首页
+        function goBack() {
+            window.location.href = '/';
+        }
+        
+        // 图片加载错误处理
+        document.addEventListener('DOMContentLoaded', function() {
+            const images = document.querySelectorAll('.work-image');
+            images.forEach(img => {
+                img.addEventListener('error', function() {
+                    this.src = '/static/images/placeholder.jpg';
+                });
+            });
+        });
+        
+        // 添加键盘支持
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                // 关闭所有打开的模态框
+                const modals = document.querySelectorAll('.modal.show');
+                modals.forEach(modal => {
+                    const bootstrapModal = bootstrap.Modal.getInstance(modal);
+                    if (bootstrapModal) {
+                        bootstrapModal.hide();
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>

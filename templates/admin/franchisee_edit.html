@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>编辑 {{ account.company_name }} - AI拍照管理系统</title>
+    <link href="/static/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            padding-top: 80px;
+        }
+        .navbar-custom {
+            background: #0a0a0a !important;
+            border-bottom: 1px solid #1a1a1a;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        }
+        .navbar-brand, .nav-link {
+            color: #e0e0e0 !important;
+        }
+        .nav-link:hover {
+            color: #ffffff !important;
+        }
+        .nav-link.active {
+            color: #ffffff !important;
+            font-weight: 600;
+        }
+        .form-container { max-width: 800px; margin: 0 auto; }
+        .required { color: red; }
+    </style>
+</head>
+<body>
+    <!-- 导航栏 -->
+    {% include 'admin/_navbar.html' %}
+
+    <div class="container mt-4">
+        <div class="form-container">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>🏢 编辑加盟商账户</h2>
+                <a href="/franchisee/admin/accounts/{{ account.id }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> 返回详情
+                </a>
+            </div>
+
+            <!-- 消息提示 -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">基本信息</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="company_name" class="form-label">公司名称 <span class="required">*</span></label>
+                                    <input type="text" class="form-control" id="company_name" name="company_name" 
+                                           value="{{ account.company_name }}" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="contact_person" class="form-label">联系人 <span class="required">*</span></label>
+                                    <input type="text" class="form-control" id="contact_person" name="contact_person" 
+                                           value="{{ account.contact_person }}" required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="contact_phone" class="form-label">联系电话 <span class="required">*</span></label>
+                                    <input type="tel" class="form-control" id="contact_phone" name="contact_phone" 
+                                           value="{{ account.contact_phone }}" required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="address" class="form-label">公司地址</label>
+                            <textarea class="form-control" id="address" name="address" rows="3">{{ account.address or '' }}</textarea>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="status" class="form-label">账户状态</label>
+                                    <select class="form-select" id="status" name="status">
+                                        <option value="active" {% if account.status == 'active' %}selected{% endif %}>正常</option>
+                                        <option value="inactive" {% if account.status == 'inactive' %}selected{% endif %}>未激活</option>
+                                        <option value="suspended" {% if account.status == 'suspended' %}selected{% endif %}>已暂停</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <hr>
+
+                        <div class="mb-3">
+                            <label for="new_password" class="form-label">新密码</label>
+                            <input type="password" class="form-control" id="new_password" name="new_password" 
+                                   placeholder="留空则不修改密码">
+                            <div class="form-text">如需修改密码，请输入新密码；否则留空</div>
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="/franchisee/admin/accounts/{{ account.id }}" class="btn btn-secondary me-md-2">取消</a>
+                            <button type="submit" class="btn btn-primary">保存修改</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- 专属水印上传 -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h6 class="mb-0">🎨 专属水印配置</h6>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i> 
+                        为加盟商配置专属水印后，该加盟商的所有订单将使用此水印。如果未配置，订单图片将不添加水印。
+                    </div>
+                    
+                    {% if account.watermark_path %}
+                    <div class="mb-3">
+                        <label class="form-label">当前水印：</label>
+                        <div class="border p-2 bg-light rounded">
+                            <img src="/final_works/{{ account.watermark_path }}" alt="当前水印" 
+                                 style="max-width: 200px; max-height: 200px;" 
+                                 onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%27200%27 height=%27200%27%3E%3Ctext x=%2750%25%27 y=%2750%25%27 text-anchor=%27middle%27 dy=%27.3em%27%3E图片加载失败%3C/text%3E%3C/svg%3E'">
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="mb-3">
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle"></i> 当前未配置专属水印
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <form id="watermarkForm" enctype="multipart/form-data">
+                        <div class="mb-3">
+                            <label for="watermark" class="form-label">上传专属水印</label>
+                            <input type="file" class="form-control" id="watermark" name="watermark" accept="image/*">
+                            <div class="form-text">支持的格式：PNG, JPG, JPEG。建议上传透明背景的PNG格式图片</div>
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-upload"></i> 上传水印
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <script>
+                document.getElementById('watermarkForm').addEventListener('submit', async function(e) {
+                    e.preventDefault();
+                    
+                    const formData = new FormData();
+                    const fileInput = document.getElementById('watermark');
+                    if (!fileInput.files[0]) {
+                        alert('请选择文件');
+                        return;
+                    }
+                    formData.append('watermark', fileInput.files[0]);
+                    
+                    try {
+                        const response = await fetch('/franchisee/admin/accounts/{{ account.id }}/watermark', {
+                            method: 'POST',
+                            body: formData
+                        });
+                        
+                        const data = await response.json();
+                        
+                        if (data.success) {
+                            alert('水印上传成功');
+                            location.reload();
+                        } else {
+                            alert('上传失败：' + data.message);
+                        }
+                    } catch (error) {
+                        alert('上传失败：' + error.message);
+                    }
+                });
+            </script>
+
+            <!-- 账户信息 -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h6 class="mb-0">📋 账户信息</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <table class="table table-borderless table-sm">
+                                <tr>
+                                    <td><strong>用户名:</strong></td>
+                                    <td>{{ account.username }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>二维码:</strong></td>
+                                    <td><code>{{ account.qr_code }}</code></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>创建时间:</strong></td>
+                                    <td>{{ account.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
+
+
+
+
+
+

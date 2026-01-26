@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>系统配置管理 - {{ brand_name }}管理系统</title>
+    <link href="/static/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body {
+            padding-top: 80px;
+        }
+        .navbar-custom {
+            background: #0a0a0a !important;
+            border-bottom: 1px solid #1a1a1a;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        }
+        .navbar-brand, .nav-link {
+            color: #e0e0e0 !important;
+        }
+        .nav-link:hover {
+            color: #ffffff !important;
+        }
+        .nav-link.active {
+            color: #ffffff !important;
+            font-weight: 600;
+        }
+        .config-section {
+            margin-bottom: 30px;
+        }
+        .config-card {
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            background: #fff;
+        }
+        .config-card h5 {
+            color: #495057;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 10px;
+        }
+        .form-label {
+            font-weight: 600;
+            color: #495057;
+        }
+        .help-text {
+            font-size: 0.875rem;
+            color: #6c757d;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <!-- 导航栏 -->
+    {% include 'admin/_navbar.html' %}
+
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-md-12">
+                <h2 class="mb-4">
+                    <i class="fas fa-cog"></i> 系统配置管理
+                </h2>
+                
+                <!-- ComfyUI配置 -->
+                <div class="config-card">
+                    <h5><i class="fas fa-server"></i> ComfyUI配置</h5>
+                    <form id="comfyuiConfigForm">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="comfyuiBaseUrl" class="form-label">ComfyUI服务器地址</label>
+                                    <input type="text" class="form-control" id="comfyuiBaseUrl" 
+                                           placeholder="http://127.0.0.1:8187" required>
+                                    <div class="help-text">ComfyUI服务器的完整地址，包括协议和端口</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="comfyuiApiEndpoint" class="form-label">API端点</label>
+                                    <input type="text" class="form-control" id="comfyuiApiEndpoint" 
+                                           value="/api/prompt" required>
+                                    <div class="help-text">ComfyUI API的端点路径，通常为 /api/prompt</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="comfyuiTimeout" class="form-label">超时时间（秒）</label>
+                                    <input type="number" class="form-control" id="comfyuiTimeout" 
+                                           value="300" min="30" max="600" required>
+                                    <div class="help-text">请求ComfyUI的超时时间，建议300秒</div>
+                                </div>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> 保存ComfyUI配置
+                        </button>
+                    </form>
+                </div>
+
+                <!-- 并发和队列配置 -->
+                <div class="config-card">
+                    <h5><i class="fas fa-tasks"></i> 并发和队列配置</h5>
+                    <form id="concurrencyConfigForm">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="comfyuiMaxConcurrency" class="form-label">ComfyUI最大并发数</label>
+                                    <input type="number" class="form-control" id="comfyuiMaxConcurrency" 
+                                           value="10" min="1" max="50" required>
+                                    <div class="help-text">同时处理ComfyUI任务的最大数量，建议10-20（根据服务器性能调整）</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="apiMaxConcurrency" class="form-label">API最大并发数</label>
+                                    <input type="number" class="form-control" id="apiMaxConcurrency" 
+                                           value="5" min="1" max="20" required>
+                                    <div class="help-text">同时处理API任务的最大数量，建议3-10（根据服务商限流调整）</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="taskQueueMaxSize" class="form-label">任务队列最大大小</label>
+                                    <input type="number" class="form-control" id="taskQueueMaxSize" 
+                                           value="100" min="10" max="500" required>
+                                    <div class="help-text">任务队列能容纳的最大任务数，建议100-200（根据业务量调整）</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="taskQueueWorkers" class="form-label">任务队列工作线程数</label>
+                                    <input type="number" class="form-control" id="taskQueueWorkers" 
+                                           value="3" min="1" max="10" required>
+                                    <div class="help-text">处理队列任务的工作线程数，建议3-5（根据服务器CPU核心数调整）</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle"></i> 
+                            <strong>注意：</strong>修改这些配置后需要重启服务才能生效
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> 保存并发和队列配置
+                        </button>
+                    </form>
+                </div>
+
+                <!-- 品牌名称配置 -->
+                <div class="config-card">
+                    <h5><i class="fas fa-tag"></i> 品牌名称配置</h5>
+                    <form id="brandNameConfigForm">
+                        <div class="mb-3">
+                            <label for="brandName" class="form-label">品牌名称</label>
+                            <input type="text" class="form-control" id="brandName" 
+                                   placeholder="AI拍照机" required>
+                            <div class="help-text">系统显示的品牌名称，将用于所有页面标题、导航栏、支付订单等场景</div>
+                        </div>
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i> 
+                            <strong>提示：</strong>修改品牌名称后，系统所有相关位置都会自动更新，无需重启服务
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> 保存品牌名称配置
+                        </button>
+                    </form>
+                </div>
+
+                <!-- 服务器URL配置 -->
+                <div class="config-card">
+                    <h5><i class="fas fa-globe"></i> 服务器URL配置</h5>
+                    <form id="serverUrlConfigForm">
+                        <div class="mb-3">
+                            <label for="serverBaseUrl" class="form-label">服务器基础URL</label>
+                            <input type="text" class="form-control" id="serverBaseUrl" 
+                                   placeholder="http://192.168.2.54:8000 或 https://moeart.cc" required>
+                            <div class="help-text">用于生成二维码、图片链接等。本地开发使用 http://192.168.x.x:8000，生产环境使用 https://域名</div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="serverApiUrl" class="form-label">API基础URL</label>
+                            <input type="text" class="form-control" id="serverApiUrl" 
+                                   placeholder="http://192.168.2.54:8000/api 或 https://moeart.cc/api" required>
+                            <div class="help-text">API接口的基础URL</div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="serverMediaUrl" class="form-label">媒体文件URL</label>
+                            <input type="text" class="form-control" id="serverMediaUrl" 
+                                   placeholder="http://192.168.2.54:8000/media 或 https://moeart.cc/media" required>
+                            <div class="help-text">媒体文件（图片等）的访问URL</div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="serverStaticUrl" class="form-label">静态文件URL</label>
+                            <input type="text" class="form-control" id="serverStaticUrl" 
+                                   placeholder="http://192.168.2.54:8000/static 或 https://moeart.cc/static" required>
+                            <div class="help-text">静态文件（CSS、JS等）的访问URL</div>
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> 保存服务器URL配置
+                        </button>
+                    </form>
+                </div>
+
+                <!-- 图片路径配置 -->
+                <div class="config-card" id="image-path-config">
+                    <h5><i class="fas fa-images"></i> 图片路径配置</h5>
+                    <form id="imagePathsConfigForm">
+                        <div class="mb-3">
+                            <label class="form-label">存储类型</label>
+                            <select class="form-select" id="imageStorageType">
+                                <option value="local">本地存储</option>
+                                <option value="oss">阿里云OSS</option>
+                            </select>
+                            <div class="help-text">选择图片存储方式。本地存储：图片保存在服务器本地；OSS存储：图片上传到阿里云OSS</div>
+                        </div>
+                        
+                        <div id="localStorageConfig">
+                            <h6 class="mt-3 mb-2">本地存储路径配置</h6>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="imageUploadFolder" class="form-label">上传原图文件夹</label>
+                                        <input type="text" class="form-control" id="imageUploadFolder" 
+                                               placeholder="uploads" value="uploads">
+                                        <div class="help-text">用户上传的原图存储路径，相对项目根目录</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="imageFinalFolder" class="form-label">完成效果图文件夹</label>
+                                        <input type="text" class="form-control" id="imageFinalFolder" 
+                                               placeholder="final_works" value="final_works">
+                                        <div class="help-text">AI处理完成的效果图存储路径</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="imageHdFolder" class="form-label">高清图文件夹</label>
+                                        <input type="text" class="form-control" id="imageHdFolder" 
+                                               placeholder="hd_images" value="hd_images">
+                                        <div class="help-text">高清放大图存储路径</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="imageWatermarkFolder" class="form-label">水印文件夹</label>
+                                        <input type="text" class="form-control" id="imageWatermarkFolder" 
+                                               placeholder="static/images/shuiyin" value="static/images/shuiyin">
+                                        <div class="help-text">水印图片存储路径</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="imageStaticFolder" class="form-label">静态文件文件夹</label>
+                                        <input type="text" class="form-control" id="imageStaticFolder" 
+                                               placeholder="static" value="static">
+                                        <div class="help-text">静态资源文件存储路径</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div id="ossStorageConfig" style="display: none;">
+                            <h6 class="mt-3 mb-2">OSS存储配置</h6>
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle"></i> 
+                                <strong>提示：</strong>配置OSS后，所有图片将上传到阿里云OSS，本地路径配置将作为备份路径使用
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="ossBucket" class="form-label">OSS存储桶名称</label>
+                                        <input type="text" class="form-control" id="ossBucket" 
+                                               placeholder="your-bucket-name">
+                                        <div class="help-text">阿里云OSS存储桶名称</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="ossEndpoint" class="form-label">OSS端点地址</label>
+                                        <input type="text" class="form-control" id="ossEndpoint" 
+                                               placeholder="oss-cn-hangzhou.aliyuncs.com">
+                                        <div class="help-text">OSS服务端点，如：oss-cn-hangzhou.aliyuncs.com</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="ossDomain" class="form-label">OSS自定义域名（可选）</label>
+                                        <input type="text" class="form-control" id="ossDomain" 
+                                               placeholder="https://cdn.example.com">
+                                        <div class="help-text">如果配置了OSS自定义域名，将使用此域名访问图片</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="ossAccessKey" class="form-label">OSS AccessKey ID</label>
+                                        <input type="text" class="form-control" id="ossAccessKey" 
+                                               placeholder="LTAI5t...">
+                                        <div class="help-text">阿里云OSS访问密钥ID</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="ossSecretKey" class="form-label">OSS AccessKey Secret</label>
+                                        <input type="password" class="form-control" id="ossSecretKey" 
+                                               placeholder="输入密钥后保存，不会显示原值">
+                                        <div class="help-text">阿里云OSS访问密钥Secret（敏感信息，保存后不会显示）</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="alert alert-warning mt-3">
+                            <i class="fas fa-exclamation-triangle"></i> 
+                            <strong>注意：</strong>修改图片路径配置后需要重启服务才能生效。切换到OSS存储前，请确保已正确配置OSS参数并测试连接。
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> 保存图片路径配置
+                        </button>
+                    </form>
+                </div>
+
+                <!-- 支付配置 -->
+                <div class="config-card">
+                    <h5><i class="fas fa-credit-card"></i> 支付配置</h5>
+                    <form id="paymentConfigForm">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="paymentTestMode" checked>
+                                        <label class="form-check-label" for="paymentTestMode">
+                                            测试模式
+                                        </label>
+                                    </div>
+                                    <div class="help-text">启用测试模式后，可以使用跳过支付功能</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="paymentSkipPayment" checked>
+                                        <label class="form-check-label" for="paymentSkipPayment">
+                                            允许跳过支付
+                                        </label>
+                                    </div>
+                                    <div class="help-text">测试模式下，允许跳过支付直接完成订单</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="mb-3">
+                                    <label for="paymentQrcodeUrl" class="form-label">支付二维码URL（可选）</label>
+                                    <input type="text" class="form-control" id="paymentQrcodeUrl" 
+                                           placeholder="https://example.com/qrcode.png">
+                                    <div class="help-text">正式环境填写真实的支付二维码URL，留空则使用订单号生成临时二维码</div>
+                                </div>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> 保存支付配置
+                        </button>
+                    </form>
+                </div>
+
+                <!-- 操作提示 -->
+                <div class="alert alert-info mt-4">
+                    <i class="fas fa-info-circle"></i> 
+                    <strong>提示：</strong>
+                    <ul class="mb-0 mt-2">
+                        <li>修改配置后，需要重启服务才能完全生效</li>
+                        <li>ComfyUI地址修改后，新的AI任务会使用新地址</li>
+                        <li>服务器URL修改后，会影响二维码生成和图片链接</li>
+                        <li>支付配置：测试模式用于开发测试，正式环境请关闭测试模式并填写真实的支付二维码URL</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // 页面加载时获取配置
+        document.addEventListener('DOMContentLoaded', function() {
+            loadConfigs();
+            
+            // 处理锚点跳转（从导航菜单点击时）
+            function scrollToImageConfig() {
+                const element = document.getElementById('image-path-config');
+                if (element) {
+                    // 等待页面完全加载
+                    setTimeout(function() {
+                        element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        // 高亮显示
+                        element.style.transition = 'box-shadow 0.3s';
+                        element.style.boxShadow = '0 0 20px rgba(0, 123, 255, 0.5)';
+                        setTimeout(function() {
+                            element.style.boxShadow = '';
+                        }, 2000);
+                    }, 300);
+                }
+            }
+            
+            // 检查URL中的锚点
+            if (window.location.hash === '#image-path-config') {
+                scrollToImageConfig();
+            }
+            
+            // 监听hash变化（如果用户点击了锚点链接）
+            window.addEventListener('hashchange', function() {
+                if (window.location.hash === '#image-path-config') {
+                    scrollToImageConfig();
+                }
+            });
+        });
+
+        // 加载配置
+        async function loadConfigs() {
+            try {
+                const response = await fetch('/api/admin/system-config');
+                const result = await response.json();
+                
+                if (result.status === 'success') {
+                    const configs = result.data;
+                    
+                    // 填充ComfyUI配置
+                    if (configs.comfyui_base_url) {
+                        document.getElementById('comfyuiBaseUrl').value = configs.comfyui_base_url;
+                    }
+                    if (configs.comfyui_api_endpoint) {
+                        document.getElementById('comfyuiApiEndpoint').value = configs.comfyui_api_endpoint;
+                    }
+                    if (configs.comfyui_timeout) {
+                        document.getElementById('comfyuiTimeout').value = configs.comfyui_timeout;
+                    }
+                    
+                    // 填充服务器URL配置
+                    if (configs.server_base_url) {
+                        document.getElementById('serverBaseUrl').value = configs.server_base_url;
+                    }
+                    if (configs.server_api_url) {
+                        document.getElementById('serverApiUrl').value = configs.server_api_url;
+                    }
+                    if (configs.server_media_url) {
+                        document.getElementById('serverMediaUrl').value = configs.server_media_url;
+                    }
+                    if (configs.server_static_url) {
+                        document.getElementById('serverStaticUrl').value = configs.server_static_url;
+                    }
+                    
+                    // 填充并发和队列配置
+                    if (configs.comfyui_max_concurrency) {
+                        document.getElementById('comfyuiMaxConcurrency').value = configs.comfyui_max_concurrency;
+                    }
+                    if (configs.api_max_concurrency) {
+                        document.getElementById('apiMaxConcurrency').value = configs.api_max_concurrency;
+                    }
+                    if (configs.task_queue_max_size) {
+                        document.getElementById('taskQueueMaxSize').value = configs.task_queue_max_size;
+                    }
+                    if (configs.task_queue_workers) {
+                        document.getElementById('taskQueueWorkers').value = configs.task_queue_workers;
+                    }
+                    
+                    // 填充品牌名称配置
+                    if (configs.brand_name) {
+                        document.getElementById('brandName').value = configs.brand_name;
+                    }
+                    
+                    // 填充支付配置
+                    if (configs.payment_test_mode !== undefined) {
+                        document.getElementById('paymentTestMode').checked = configs.payment_test_mode === 'true';
+                    }
+                    if (configs.payment_skip_payment !== undefined) {
+                        document.getElementById('paymentSkipPayment').checked = configs.payment_skip_payment === 'true';
+                    }
+                    if (configs.payment_qrcode_url) {
+                        document.getElementById('paymentQrcodeUrl').value = configs.payment_qrcode_url;
+                    }
+                    
+                    // 填充图片路径配置
+                    if (configs.image_path_upload_folder) {
+                        document.getElementById('imageUploadFolder').value = configs.image_path_upload_folder;
+                    }
+                    if (configs.image_path_final_folder) {
+                        document.getElementById('imageFinalFolder').value = configs.image_path_final_folder;
+                    }
+                    if (configs.image_path_hd_folder) {
+                        document.getElementById('imageHdFolder').value = configs.image_path_hd_folder;
+                    }
+                    if (configs.image_path_watermark_folder) {
+                        document.getElementById('imageWatermarkFolder').value = configs.image_path_watermark_folder;
+                    }
+                    if (configs.image_path_static_folder) {
+                        document.getElementById('imageStaticFolder').value = configs.image_path_static_folder;
+                    }
+                    if (configs.image_storage_type) {
+                        document.getElementById('imageStorageType').value = configs.image_storage_type;
+                        toggleStorageConfig(configs.image_storage_type);
+                    }
+                    if (configs.image_oss_bucket) {
+                        document.getElementById('ossBucket').value = configs.image_oss_bucket;
+                    }
+                    if (configs.image_oss_endpoint) {
+                        document.getElementById('ossEndpoint').value = configs.image_oss_endpoint;
+                    }
+                    if (configs.image_oss_domain) {
+                        document.getElementById('ossDomain').value = configs.image_oss_domain;
+                    }
+                }
+            } catch (error) {
+                console.error('加载配置失败:', error);
+            }
+        }
+        
+        // 切换存储类型配置显示
+        function toggleStorageConfig(storageType) {
+            const localConfig = document.getElementById('localStorageConfig');
+            const ossConfig = document.getElementById('ossStorageConfig');
+            if (storageType === 'oss') {
+                localConfig.style.display = 'none';
+                ossConfig.style.display = 'block';
+            } else {
+                localConfig.style.display = 'block';
+                ossConfig.style.display = 'none';
+            }
+        }
+        
+        // 存储类型切换事件
+        document.getElementById('imageStorageType').addEventListener('change', function(e) {
+            toggleStorageConfig(e.target.value);
+        });
+
+        // 保存ComfyUI配置
+        document.getElementById('comfyuiConfigForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const data = {
+                comfyui_base_url: document.getElementById('comfyuiBaseUrl').value.trim(),
+                comfyui_api_endpoint: document.getElementById('comfyuiApiEndpoint').value.trim(),
+                comfyui_timeout: document.getElementById('comfyuiTimeout').value
+            };
+            
+            try {
+                const response = await fetch('/api/admin/system-config/comfyui', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                if (result.status === 'success') {
+                    alert('ComfyUI配置保存成功！');
+                } else {
+                    alert('保存失败: ' + result.message);
+                }
+            } catch (error) {
+                alert('保存失败: ' + error.message);
+            }
+        });
+
+        // 保存并发和队列配置
+        document.getElementById('concurrencyConfigForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const data = {
+                comfyui_max_concurrency: parseInt(document.getElementById('comfyuiMaxConcurrency').value),
+                api_max_concurrency: parseInt(document.getElementById('apiMaxConcurrency').value),
+                task_queue_max_size: parseInt(document.getElementById('taskQueueMaxSize').value),
+                task_queue_workers: parseInt(document.getElementById('taskQueueWorkers').value)
+            };
+            
+            try {
+                const response = await fetch('/api/admin/system-config/concurrency', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                if (result.status === 'success') {
+                    alert('并发和队列配置保存成功！\n注意：需要重启服务才能生效');
+                } else {
+                    alert('保存失败: ' + result.message);
+                }
+            } catch (error) {
+                alert('保存失败: ' + error.message);
+            }
+        });
+
+        // 保存图片路径配置
+        document.getElementById('imagePathsConfigForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const storageType = document.getElementById('imageStorageType').value;
+            const data = {
+                upload_folder: document.getElementById('imageUploadFolder').value.trim(),
+                final_folder: document.getElementById('imageFinalFolder').value.trim(),
+                hd_folder: document.getElementById('imageHdFolder').value.trim(),
+                watermark_folder: document.getElementById('imageWatermarkFolder').value.trim(),
+                static_folder: document.getElementById('imageStaticFolder').value.trim(),
+                storage_type: storageType
+            };
+            
+            if (storageType === 'oss') {
+                data.oss_bucket = document.getElementById('ossBucket').value.trim();
+                data.oss_endpoint = document.getElementById('ossEndpoint').value.trim();
+                data.oss_domain = document.getElementById('ossDomain').value.trim();
+                const accessKey = document.getElementById('ossAccessKey').value.trim();
+                const secretKey = document.getElementById('ossSecretKey').value.trim();
+                if (accessKey) {
+                    data.oss_access_key = accessKey;
+                }
+                if (secretKey) {
+                    data.oss_secret_key = secretKey;
+                }
+            }
+            
+            try {
+                const response = await fetch('/api/admin/system-config/image-paths', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                
+                if (result.status === 'success') {
+                    alert('图片路径配置保存成功！\n注意：需要重启服务才能生效');
+                } else {
+                    alert('保存失败: ' + (result.message || '未知错误'));
+                }
+            } catch (error) {
+                console.error('保存图片路径配置失败:', error);
+                alert('保存失败: ' + error.message);
+            }
+        });
+
+        // 保存支付配置
+        document.getElementById('paymentConfigForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const data = {
+                test_mode: document.getElementById('paymentTestMode').checked,
+                skip_payment: document.getElementById('paymentSkipPayment').checked,
+                qrcode_url: document.getElementById('paymentQrcodeUrl').value.trim()
+            };
+            
+            try {
+                const response = await fetch('/api/admin/payment-config', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                
+                if (result.status === 'success') {
+                    alert('支付配置保存成功！');
+                } else {
+                    alert('保存失败: ' + (result.message || '未知错误'));
+                }
+            } catch (error) {
+                console.error('保存支付配置失败:', error);
+                alert('保存失败: ' + error.message);
+            }
+        });
+
+        // 保存品牌名称配置
+        document.getElementById('brandNameConfigForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const data = {
+                brand_name: document.getElementById('brandName').value.trim()
+            };
+            
+            if (!data.brand_name) {
+                alert('品牌名称不能为空！');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/admin/system-config/brand-name', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                if (result.status === 'success') {
+                    alert('品牌名称配置保存成功！\n系统将自动使用新的品牌名称');
+                } else {
+                    alert('保存失败: ' + result.message);
+                }
+            } catch (error) {
+                alert('保存失败: ' + error.message);
+            }
+        });
+
+        // 保存服务器URL配置
+        document.getElementById('serverUrlConfigForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const data = {
+                server_base_url: document.getElementById('serverBaseUrl').value.trim(),
+                server_api_url: document.getElementById('serverApiUrl').value.trim(),
+                server_media_url: document.getElementById('serverMediaUrl').value.trim(),
+                server_static_url: document.getElementById('serverStaticUrl').value.trim()
+            };
+            
+            try {
+                const response = await fetch('/api/admin/system-config/server-url', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                if (result.status === 'success') {
+                    alert('服务器URL配置保存成功！');
+                } else {
+                    alert('保存失败: ' + result.message);
+                }
+            } catch (error) {
+                alert('保存失败: ' + error.message);
+            }
+        });
+    </script>
+</body>
+</html>
+

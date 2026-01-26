@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>加盟商下单 - {{ account.company_name }}</title>
+    <link href="/static/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Microsoft YaHei', sans-serif;
+            padding: 20px 0;
+        }
+        .order-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            margin: 0 auto;
+            max-width: 1200px;
+        }
+        .header-section {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 20px 20px 0 0;
+            text-align: center;
+        }
+        .quota-info {
+            background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+            border-radius: 15px;
+            padding: 20px;
+            margin: 20px;
+            text-align: center;
+        }
+        .quota-amount {
+            font-size: 24px;
+            font-weight: bold;
+            color: #d2691e;
+        }
+        .products-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px;
+            padding: 20px;
+        }
+        .product-card {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+        .product-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(79, 172, 254, 0.3);
+        }
+        .product-image {
+            width: 100%;
+            aspect-ratio: 3 / 4;
+            object-fit: cover;
+            border-radius: 10px;
+            margin-bottom: 15px;
+        }
+        .product-name {
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+        }
+        .product-description {
+            color: #666;
+            font-size: 14px;
+        }
+        /* 弹窗样式 */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            overflow-y: auto;
+        }
+        .modal-content {
+            background: white;
+            border-radius: 20px;
+            max-width: 900px;
+            margin: 50px auto;
+            padding: 30px;
+            position: relative;
+        }
+        .modal-close {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 30px;
+            cursor: pointer;
+            color: #999;
+        }
+        .modal-close:hover {
+            color: #333;
+        }
+        .style-selection {
+            margin-top: 20px;
+        }
+        .style-category {
+            margin-bottom: 30px;
+        }
+        .style-category-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #4facfe;
+        }
+        .style-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 15px;
+        }
+        .style-item {
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            padding: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+        .style-item:hover {
+            border-color: #4facfe;
+            transform: translateY(-2px);
+        }
+        .style-item.selected {
+            border-color: #4facfe;
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+        }
+        .style-item img {
+            width: 100%;
+            height: 100px;
+            object-fit: cover;
+            border-radius: 5px;
+            margin-bottom: 5px;
+        }
+        .size-selection {
+            margin-top: 20px;
+        }
+        .size-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+        }
+        .size-item {
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            padding: 15px 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            white-space: normal;
+            min-height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .size-item div {
+            width: 100%;
+            line-height: 1.4;
+        }
+        .size-item strong {
+            font-size: 14px;
+            display: block;
+            word-break: break-word;
+        }
+        .size-item:hover {
+            border-color: #28a745;
+        }
+        .size-item.selected {
+            border-color: #28a745;
+            background: #28a745;
+            color: white;
+        }
+        .price-display {
+            font-size: 24px;
+            font-weight: bold;
+            color: #28a745;
+            text-align: center;
+            margin: 20px 0;
+        }
+        .btn-submit {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            border: none;
+            border-radius: 15px;
+            padding: 15px 40px;
+            font-size: 18px;
+            font-weight: bold;
+            color: white;
+            width: 100%;
+            margin-top: 20px;
+        }
+        .btn-submit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(79, 172, 254, 0.3);
+        }
+        .form-section {
+            padding: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="order-container">
+            <div class="header-section">
+                <h2><i class="fas fa-store"></i> {{ account.company_name }} - 加盟商下单</h2>
+                <p class="mb-0">专业AI拍照机定制服务</p>
+                <div class="mt-3">
+                    <a href="/franchisee/dashboard" class="btn btn-light">
+                        <i class="fas fa-arrow-left"></i> 返回管理面板
+                    </a>
+                </div>
+            </div>
+
+            <div class="quota-info">
+                <h5><i class="fas fa-wallet"></i> 账户信息</h5>
+                <div class="quota-amount">剩余额度：¥{{ "%.2f"|format(account.remaining_quota) }}</div>
+                <small class="text-muted">已使用：¥{{ "%.2f"|format(account.used_quota) }} | 总额度：¥{{ "%.2f"|format(account.total_quota) }}</small>
+            </div>
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ 'danger' if category == 'error' else 'success' }} alert-dismissible fade show m-3" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <!-- 产品卡片网格 -->
+            <div class="products-grid" id="productsGrid">
+                {% for product in products %}
+                <div class="product-card" data-product-id="{{ product.id }}">
+                    {% if product.image_url %}
+                        <img src="{{ product.image_url }}" class="product-image" alt="{{ product.name }}" onerror="this.src='/static/images/placeholder.jpg'">
+                    {% else %}
+                        <div class="product-image bg-light d-flex align-items-center justify-content-center" style="aspect-ratio: 3 / 4;">
+                            <i class="fas fa-image fa-3x text-muted"></i>
+                        </div>
+                    {% endif %}
+                    <div class="product-name">{{ product.name }}</div>
+                    <div class="product-description">{{ product.description or '专业定制服务' }}</div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- 商品详情弹窗 -->
+    <div class="modal-overlay" id="productModal">
+        <div class="modal-content">
+            <span class="modal-close" onclick="closeModal()">&times;</span>
+            <h3 id="modalProductName"></h3>
+            <form method="POST" enctype="multipart/form-data" id="orderForm">
+                <input type="hidden" name="product_id" id="selected_product_id">
+                <input type="hidden" name="size_id" id="selected_size_id">
+                <input type="hidden" name="style_id_real" id="selected_style_id">
+                
+                <!-- 客户信息 -->
+                <div class="form-section">
+                    {% if default_name or default_phone or default_address %}
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="use_default_info" name="use_default_info">
+                            <label class="form-check-label" for="use_default_info">
+                                <strong>使用默认信息</strong>
+                                <small class="text-muted d-block mt-1">
+                                    {% if default_name %}姓名：{{ default_name }}{% endif %}
+                                    {% if default_phone %} | 电话：{{ default_phone }}{% endif %}
+                                    {% if default_address %} | 地址：{{ default_address[:20] }}{% if default_address|length > 20 %}...{% endif %}{% endif %}
+                                </small>
+                            </label>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">客户姓名</label>
+                            <input type="text" class="form-control" name="customer_name" id="customer_name" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">联系电话</label>
+                            <input type="tel" class="form-control" name="customer_phone" id="customer_phone" required>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">收货地址</label>
+                        <textarea class="form-control" name="full_address" id="full_address" rows="2" required></textarea>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">备注</label>
+                        <textarea class="form-control" name="customer_note" id="customer_note" rows="2"></textarea>
+                    </div>
+                </div>
+
+                <!-- 风格选择 -->
+                <div class="style-selection" id="styleSelection">
+                    <h5 class="mb-3"><i class="fas fa-palette"></i> 选择艺术风格</h5>
+                    <div id="styleCategoriesContainer"></div>
+                </div>
+
+                <!-- 尺寸选择 -->
+                <div class="size-selection" id="sizeSelection" style="display: none;">
+                    <h5 class="mb-3"><i class="fas fa-ruler"></i> 选择尺寸</h5>
+                    <div class="size-grid" id="sizeGrid"></div>
+                </div>
+
+                <!-- 自定义字段 -->
+                <div class="custom-fields-section" id="customFieldsSection" style="display: none;">
+                    <h5 class="mb-3"><i class="fas fa-tags"></i> 其他信息</h5>
+                    <div id="customFieldsContainer"></div>
+                </div>
+
+                <!-- 价格显示 -->
+                <div class="price-display" id="priceDisplay" style="display: none;">
+                    价格：<span id="selectedPrice">¥0.00</span>
+                </div>
+
+                <!-- 图片上传 -->
+                <div class="mb-3">
+                    <label class="form-label"><i class="fas fa-image"></i> 上传宠物照片（可多选）</label>
+                    <input type="file" class="form-control" id="imageUpload" name="images" accept="image/*" multiple required>
+                    <small class="text-muted d-block mt-1">支持多图上传，请选择一张作为主图</small>
+                    <!-- 图片预览和主图选择区域 -->
+                    <div id="imagePreviewContainer" class="mt-3" style="display: none;">
+                        <div class="mb-2"><strong>请选择一张主图（其他为参考图）：</strong></div>
+                        <div id="imagePreviewGrid" class="d-flex flex-wrap gap-3"></div>
+                        <input type="hidden" name="main_image_index" id="main_image_index" value="">
+                    </div>
+                </div>
+
+                <!-- 确版选项 -->
+                <div class="mb-3">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="need_confirmation" name="need_confirmation" value="1" checked>
+                        <label class="form-check-label" for="need_confirmation">
+                            <strong>需要确版</strong>
+                        </label>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-submit">
+                    <i class="fas fa-paper-plane"></i> 提交订单
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script src="/static/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const productSizes = {{ product_sizes | tojson }};
+        const productStyleCategories = {{ product_style_categories | tojson }};
+        const productCustomFields = {{ product_custom_fields | tojson }};
+        const allStyleCategories = {{ all_style_categories | tojson }};
+        const allStyleImages = {{ all_style_images | tojson }};
+        
+        {% if default_name or default_phone or default_address %}
+        const defaultName = {{ default_name | tojson }};
+        const defaultPhone = {{ default_phone | tojson }};
+        const defaultAddress = {{ default_address | tojson }};
+        
+        document.getElementById('use_default_info').addEventListener('change', function() {
+            if (this.checked) {
+                document.getElementById('customer_name').value = defaultName || '';
+                document.getElementById('customer_phone').value = defaultPhone || '';
+                document.getElementById('full_address').value = defaultAddress || '';
+            } else {
+                document.getElementById('customer_name').value = '';
+                document.getElementById('customer_phone').value = '';
+                document.getElementById('full_address').value = '';
+            }
+        });
+        {% endif %}
+        
+        // 产品卡片点击事件
+        document.querySelectorAll('.product-card').forEach(card => {
+            card.addEventListener('click', function() {
+                const productId = parseInt(this.dataset.productId);
+                openProductModal(productId);
+            });
+        });
+        
+        function openProductModal(productId) {
+            const productsList = {{ products_list | tojson }};
+            const product = productsList.find(p => p.id === productId);
+            if (!product) return;
+            
+            // 清除之前的选择状态
+            document.getElementById('selected_product_id').value = productId;
+            document.getElementById('selected_size_id').value = '';
+            document.getElementById('selected_style_id').value = '';
+            
+            // 清除宠物数量选项
+            const petOptionIdInput = document.getElementById('selected_pet_option_id');
+            if (petOptionIdInput) {
+                petOptionIdInput.value = '';
+            }
+            
+            // 隐藏并清空尺寸选择区域
+            const sizeSelection = document.getElementById('sizeSelection');
+            const sizeGrid = document.getElementById('sizeGrid');
+            if (sizeSelection) {
+                sizeSelection.style.display = 'none';
+            }
+            if (sizeGrid) {
+                sizeGrid.innerHTML = '';
+            }
+            
+            // 隐藏并清空自定义字段区域
+            const customFieldsSection = document.getElementById('customFieldsSection');
+            const customFieldsContainer = document.getElementById('customFieldsContainer');
+            if (customFieldsSection) {
+                customFieldsSection.style.display = 'none';
+            }
+            if (customFieldsContainer) {
+                customFieldsContainer.innerHTML = '';
+            }
+            
+            // 隐藏价格显示
+            const priceDisplay = document.getElementById('priceDisplay');
+            if (priceDisplay) {
+                priceDisplay.style.display = 'none';
+            }
+            const selectedPrice = document.getElementById('selectedPrice');
+            if (selectedPrice) {
+                selectedPrice.textContent = '¥0.00';
+            }
+            
+            // 清除所有选择状态（移除 selected 类）
+            document.querySelectorAll('.style-item.selected').forEach(item => {
+                item.classList.remove('selected');
+            });
+            document.querySelectorAll('.size-item.selected').forEach(item => {
+                item.classList.remove('selected');
+            });
+            document.querySelectorAll('.pet-option-item.selected').forEach(item => {
+                item.classList.remove('selected', 'border-primary', 'bg-light');
+            });
+            
+            // 清除图片上传预览
+            const imageUpload = document.getElementById('imageUpload');
+            const imagePreviewContainer = document.getElementById('imagePreviewContainer');
+            const imagePreviewGrid = document.getElementById('imagePreviewGrid');
+            const mainImageIndexInput = document.getElementById('main_image_index');
+            if (imageUpload) {
+                imageUpload.value = '';
+            }
+            if (imagePreviewContainer) {
+                imagePreviewContainer.style.display = 'none';
+            }
+            if (imagePreviewGrid) {
+                imagePreviewGrid.innerHTML = '';
+            }
+            if (mainImageIndexInput) {
+                mainImageIndexInput.value = '';
+            }
+            
+            // 更新产品信息
+            document.getElementById('modalProductName').textContent = product.name;
+            
+            // 显示绑定的风格分类
+            const boundCategoryIds = productStyleCategories[productId] || [];
+            const styleContainer = document.getElementById('styleCategoriesContainer');
+            styleContainer.innerHTML = '';
+            
+            if (boundCategoryIds.length === 0) {
+                styleContainer.innerHTML = '<p class="text-muted">该产品暂未绑定风格分类</p>';
+            } else {
+                boundCategoryIds.forEach(categoryId => {
+                    const category = allStyleCategories.find(c => c.id === categoryId);
+                    if (category && allStyleImages[categoryId]) {
+                        const categoryDiv = document.createElement('div');
+                        categoryDiv.className = 'style-category';
+                        categoryDiv.innerHTML = `<div class="style-category-title">${category.name}</div>`;
+                        
+                        const styleGrid = document.createElement('div');
+                        styleGrid.className = 'style-grid';
+                        
+                        const images = allStyleImages[categoryId] || [];
+                        images.forEach(image => {
+                            const styleItem = document.createElement('div');
+                            styleItem.className = 'style-item';
+                            styleItem.dataset.styleId = image.id;
+                            styleItem.innerHTML = `
+                                <img src="${image.image_url}" alt="${image.name}" onerror="this.src='/static/images/placeholder.jpg'">
+                                <div>${image.name}</div>
+                            `;
+                            styleItem.addEventListener('click', function() {
+                                document.querySelectorAll('.style-item').forEach(item => {
+                                    item.classList.remove('selected');
+                                });
+                                this.classList.add('selected');
+                                document.getElementById('selected_style_id').value = image.id;
+                                showSizeSelection(productId);
+                            });
+                            styleGrid.appendChild(styleItem);
+                        });
+                        
+                        categoryDiv.appendChild(styleGrid);
+                        styleContainer.appendChild(categoryDiv);
+                    }
+                });
+            }
+            
+            document.getElementById('productModal').style.display = 'block';
+        }
+        
+        function closeModal() {
+            document.getElementById('productModal').style.display = 'none';
+        }
+        
+        function showSizeSelection(productId) {
+            const sizes = productSizes[productId] || [];
+            const sizeGrid = document.getElementById('sizeGrid');
+            sizeGrid.innerHTML = '';
+            
+            if (sizes.length > 0) {
+                sizes.forEach(size => {
+                    const sizeItem = document.createElement('div');
+                    sizeItem.className = 'size-item';
+                    sizeItem.dataset.sizeId = size.id;
+                    // 只显示尺寸名称，不显示价格信息（价格信息在下方宠物数量选择中显示）
+                    sizeItem.innerHTML = `
+                        <div><strong>${size.size_name}</strong></div>
+                    `;
+                    sizeItem.addEventListener('click', function() {
+                        document.querySelectorAll('.size-item').forEach(item => {
+                            item.classList.remove('selected');
+                        });
+                        this.classList.add('selected');
+                        document.getElementById('selected_size_id').value = size.id;
+                        // 显示该尺寸的宠物数量选项
+                        showPetOptions(size);
+                    });
+                    sizeGrid.appendChild(sizeItem);
+                });
+                document.getElementById('sizeSelection').style.display = 'block';
+            }
+        }
+        
+        // 显示宠物数量选项
+        function showPetOptions(size) {
+            const customFieldsSection = document.getElementById('customFieldsSection');
+            const customFieldsContainer = document.getElementById('customFieldsContainer');
+            customFieldsContainer.innerHTML = '';
+            
+            if (size.pet_options && size.pet_options.length > 0) {
+                // 如果有多个选项，显示为选择项
+                if (size.pet_options.length > 1) {
+                    const fieldDiv = document.createElement('div');
+                    fieldDiv.className = 'mb-3';
+                    fieldDiv.innerHTML = `
+                        <label class="form-label">宠物数量 <span class="text-danger">*</span></label>
+                        <div class="pet-options-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px;">
+                            ${size.pet_options.map(opt => `
+                                <div class="pet-option-item border rounded p-3 text-center" 
+                                     data-option-id="${opt.id}" 
+                                     data-price="${opt.price}"
+                                     style="cursor: pointer; transition: all 0.3s;">
+                                    <div><strong>${opt.pet_count_name}</strong></div>
+                                    <div class="text-primary">¥${opt.price}</div>
+                                </div>
+                            `).join('')}
+                        </div>
+                        <input type="hidden" name="pet_option_id" id="selected_pet_option_id" required>
+                    `;
+                    customFieldsContainer.appendChild(fieldDiv);
+                    
+                    // 添加点击事件
+                    customFieldsContainer.querySelectorAll('.pet-option-item').forEach(item => {
+                        item.addEventListener('click', function() {
+                            customFieldsContainer.querySelectorAll('.pet-option-item').forEach(opt => {
+                                opt.classList.remove('selected', 'border-primary', 'bg-light');
+                            });
+                            this.classList.add('selected', 'border-primary', 'bg-light');
+                            document.getElementById('selected_pet_option_id').value = this.dataset.optionId;
+                            document.getElementById('selectedPrice').textContent = '¥' + parseFloat(this.dataset.price).toFixed(2);
+                            document.getElementById('priceDisplay').style.display = 'block';
+                        });
+                    });
+                } else {
+                    // 如果只有一个选项，直接显示价格
+                    const option = size.pet_options[0];
+                    document.getElementById('selectedPrice').textContent = '¥' + parseFloat(option.price).toFixed(2);
+                    document.getElementById('priceDisplay').style.display = 'block';
+                    document.getElementById('selected_pet_option_id').value = option.id;
+                }
+                customFieldsSection.style.display = 'block';
+            } else {
+                // 向后兼容：如果没有选项，使用基础价格
+                document.getElementById('selectedPrice').textContent = '¥' + parseFloat(size.price).toFixed(2);
+                document.getElementById('priceDisplay').style.display = 'block';
+                customFieldsSection.style.display = 'none';
+            }
+        }
+        
+        // 更新价格显示
+        function updatePriceDisplay(basePrice, multiPetPrice) {
+            // 检查是否选择了"多只"
+            const petCountFields = document.querySelectorAll('[id^="custom_field_"]');
+            let isMultiPet = false;
+            
+            petCountFields.forEach(field => {
+                const fieldLabel = field.previousElementSibling;
+                if (fieldLabel && fieldLabel.textContent) {
+                    // 检查字段名称是否包含"宠物数量"或"数量"
+                    const fieldName = fieldLabel.textContent.replace(/\*/g, '').trim();
+                    if (fieldName.includes('宠物数量') || fieldName.includes('数量')) {
+                        const fieldValue = field.value;
+                        // 检查字段值是否包含"多只"或"多"
+                        if (fieldValue && (fieldValue.includes('多只') || fieldValue.includes('多') || fieldValue.toLowerCase().includes('multi'))) {
+                            isMultiPet = true;
+                        }
+                    }
+                }
+            });
+            
+            const finalPrice = isMultiPet ? basePrice + multiPetPrice : basePrice;
+            document.getElementById('selectedPrice').textContent = '¥' + finalPrice.toFixed(2);
+        }
+        
+        // 显示自定义字段
+        function showCustomFields(productId) {
+            const customFields = productCustomFields[productId] || [];
+            const container = document.getElementById('customFieldsContainer');
+            container.innerHTML = '';
+            
+            if (customFields.length > 0) {
+                customFields.forEach(field => {
+                    const fieldDiv = document.createElement('div');
+                    fieldDiv.className = 'mb-3';
+                    
+                    let inputHtml = '';
+                    if (field.field_type === 'select') {
+                        const options = field.field_options ? field.field_options.split(',').map(opt => opt.trim()) : [];
+                        inputHtml = `<select class="form-control custom-field-input" name="custom_field_${field.id}" id="custom_field_${field.id}" ${field.is_required ? 'required' : ''} onchange="handleCustomFieldChange()">`;
+                        inputHtml += '<option value="">请选择</option>';
+                        options.forEach(option => {
+                            inputHtml += `<option value="${option}">${option}</option>`;
+                        });
+                        inputHtml += '</select>';
+                    } else if (field.field_type === 'number') {
+                        inputHtml = `<input type="number" class="form-control custom-field-input" name="custom_field_${field.id}" id="custom_field_${field.id}" ${field.is_required ? 'required' : ''} placeholder="请输入${field.field_name}" onchange="handleCustomFieldChange()">`;
+                    } else {
+                        inputHtml = `<input type="text" class="form-control custom-field-input" name="custom_field_${field.id}" id="custom_field_${field.id}" ${field.is_required ? 'required' : ''} placeholder="请输入${field.field_name}" onchange="handleCustomFieldChange()">`;
+                    }
+                    
+                    fieldDiv.innerHTML = `
+                        <label class="form-label">${field.field_name}${field.is_required ? '<span class="text-danger">*</span>' : ''}</label>
+                        ${inputHtml}
+                    `;
+                    container.appendChild(fieldDiv);
+                });
+                document.getElementById('customFieldsSection').style.display = 'block';
+            } else {
+                document.getElementById('customFieldsSection').style.display = 'none';
+            }
+        }
+        
+        // 处理自定义字段变化（用于更新价格）
+        function handleCustomFieldChange() {
+            const selectedSizeItem = document.querySelector('.size-item.selected');
+            if (selectedSizeItem) {
+                const basePrice = parseFloat(selectedSizeItem.dataset.price) || 0;
+                const multiPetPrice = parseFloat(selectedSizeItem.dataset.multipetprice) || 0;
+                updatePriceDisplay(basePrice, multiPetPrice);
+            }
+        }
+        
+        // 点击遮罩层关闭弹窗
+        document.getElementById('productModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeModal();
+            }
+        });
+        
+        // 表单验证
+        document.getElementById('orderForm').addEventListener('submit', function(e) {
+            const productId = document.getElementById('selected_product_id').value;
+            const sizeId = document.getElementById('selected_size_id').value;
+            const styleId = document.getElementById('selected_style_id').value;
+            const images = document.querySelector('input[name="images"]').files;
+            
+            if (!productId) {
+                alert('请选择产品');
+                e.preventDefault();
+                return false;
+            }
+            
+            if (!styleId) {
+                alert('请选择艺术风格');
+                e.preventDefault();
+                return false;
+            }
+            
+            if (!sizeId) {
+                alert('请选择产品尺寸');
+                e.preventDefault();
+                return false;
+            }
+            
+            // 验证宠物数量选项：如果尺寸有多个宠物数量选项，必须选择
+            const petOptionIdInput = document.getElementById('selected_pet_option_id');
+            if (petOptionIdInput) {
+                // 检查当前尺寸是否有多个宠物数量选项
+                const selectedSizeItem = document.querySelector('.size-item.selected');
+                if (selectedSizeItem) {
+                    const currentSizeId = parseInt(selectedSizeItem.dataset.sizeId);
+                    // 查找该尺寸的宠物数量选项
+                    const productIdNum = parseInt(productId);
+                    const sizes = productSizes[productIdNum] || [];
+                    const currentSize = sizes.find(s => s.id === currentSizeId);
+                    
+                    if (currentSize && currentSize.pet_options && currentSize.pet_options.length > 1) {
+                        // 如果有多个选项，必须选择
+                        const selectedPetOptionId = petOptionIdInput.value;
+                        if (!selectedPetOptionId || selectedPetOptionId.trim() === '') {
+                            alert('请选择宠物数量');
+                            e.preventDefault();
+                            return false;
+                        }
+                    }
+                }
+            }
+            
+            if (images.length === 0) {
+                alert('请上传宠物照片');
+                e.preventDefault();
+                return false;
+            }
+            
+            // 验证多图时必须选择主图
+            if (images.length > 1) {
+                const mainImageIndex = document.getElementById('main_image_index').value;
+                if (!mainImageIndex || mainImageIndex === '') {
+                    alert('请选择一张主图（点击图片即可选择）');
+                    e.preventDefault();
+                    return false;
+                }
+            }
+        });
+        
+        // 图片上传预览和主图选择
+        const imageUpload = document.getElementById('imageUpload');
+        const imagePreviewContainer = document.getElementById('imagePreviewContainer');
+        const imagePreviewGrid = document.getElementById('imagePreviewGrid');
+        const mainImageIndexInput = document.getElementById('main_image_index');
+        let uploadedImages = [];
+        
+        imageUpload.addEventListener('change', function(e) {
+            const files = Array.from(e.target.files);
+            uploadedImages = [];
+            imagePreviewGrid.innerHTML = '';
+            
+            if (files.length === 0) {
+                imagePreviewContainer.style.display = 'none';
+                mainImageIndexInput.value = '';
+                return;
+            }
+            
+            imagePreviewContainer.style.display = 'block';
+            
+            files.forEach((file, index) => {
+                if (!file.type.startsWith('image/')) {
+                    return;
+                }
+                
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const imageData = {
+                        file: file,
+                        index: index,
+                        preview: e.target.result
+                    };
+                    uploadedImages.push(imageData);
+                    
+                    // 创建图片预览卡片
+                    const imageCard = document.createElement('div');
+                    imageCard.className = 'image-preview-card position-relative';
+                    imageCard.dataset.index = index;
+                    imageCard.style.cssText = 'width: 120px; height: 120px; border: 2px solid #ddd; border-radius: 8px; overflow: hidden; cursor: pointer; position: relative;';
+                    
+                    const img = document.createElement('img');
+                    img.src = e.target.result;
+                    img.style.cssText = 'width: 100%; height: 100%; object-fit: cover;';
+                    
+                    const badge = document.createElement('div');
+                    badge.className = 'main-image-badge';
+                    badge.style.cssText = 'position: absolute; top: 5px; right: 5px; background: #28a745; color: white; padding: 2px 8px; border-radius: 12px; font-size: 12px; display: none;';
+                    badge.textContent = '主图';
+                    
+                    imageCard.appendChild(img);
+                    imageCard.appendChild(badge);
+                    
+                    // 点击选择主图
+                    imageCard.addEventListener('click', function() {
+                        // 清除所有主图标记
+                        imagePreviewGrid.querySelectorAll('.image-preview-card').forEach(card => {
+                            card.style.borderColor = '#ddd';
+                            card.querySelector('.main-image-badge').style.display = 'none';
+                        });
+                        
+                        // 设置当前为主图
+                        this.style.borderColor = '#28a745';
+                        this.style.borderWidth = '3px';
+                        badge.style.display = 'block';
+                        mainImageIndexInput.value = index;
+                    });
+                    
+                    // 如果只有一张图片，自动设为主图
+                    if (files.length === 1) {
+                        imageCard.click();
+                    }
+                    
+                    imagePreviewGrid.appendChild(imageCard);
+                };
+                reader.readAsDataURL(file);
+            });
+        });
+    </script>
+</body>
+</html>
+

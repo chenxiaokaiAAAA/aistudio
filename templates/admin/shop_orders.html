@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>商城订单管理 - 管理后台</title>
+    <link href="/static/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+        
+        .main-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            margin: 20px auto;
+            padding: 30px;
+            max-width: 1400px;
+        }
+        
+        .page-title {
+            text-align: center;
+            color: #212529;
+            margin-bottom: 30px;
+            font-weight: 600;
+            font-size: 1.8rem;
+        }
+        
+        .filter-card {
+            background: #ffffff;
+            border: 1px solid #dee2e6;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+        
+        .orders-table {
+            background: #ffffff;
+            border: 1px solid #dee2e6;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            overflow-x: auto;
+        }
+        
+        .table {
+            margin-bottom: 0;
+        }
+        
+        .table thead th {
+            background: #f8f9fa;
+            color: #212529;
+            font-weight: 600;
+            border-bottom: 2px solid #dee2e6;
+        }
+        
+        .table tbody tr:hover {
+            background: #f8f9fa;
+        }
+        
+        .badge {
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 0.85rem;
+        }
+        
+        .status-pending {
+            background: #ffc107;
+            color: #000;
+        }
+        
+        .status-paid {
+            background: #17a2b8;
+            color: #fff;
+        }
+        
+        .status-processing {
+            background: #007bff;
+            color: #fff;
+        }
+        
+        .status-shipped {
+            background: #28a745;
+            color: #fff;
+        }
+        
+        .status-completed {
+            background: #6c757d;
+            color: #fff;
+        }
+        
+        .status-cancelled {
+            background: #dc3545;
+            color: #fff;
+        }
+        
+        .btn-sm {
+            padding: 4px 12px;
+            font-size: 0.85rem;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark" style="background: #667eea;">
+        <div class="container">
+            <a class="navbar-brand" href="/admin/dashboard">管理后台</a>
+            <div class="collapse navbar-collapse">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/logout">退出登录</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="main-container">
+        <h1 class="page-title">商城订单管理</h1>
+        
+        <!-- 筛选器 -->
+        <div class="filter-card">
+            <form method="GET" action="{{ url_for('admin_shop.admin_shop_orders') }}" class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label">订单状态</label>
+                    <select class="form-select" name="status">
+                        <option value="">全部状态</option>
+                        <option value="pending" {% if status == 'pending' %}selected{% endif %}>待支付</option>
+                        <option value="paid" {% if status == 'paid' %}selected{% endif %}>已支付</option>
+                        <option value="processing" {% if status == 'processing' %}selected{% endif %}>处理中</option>
+                        <option value="shipped" {% if status == 'shipped' %}selected{% endif %}>已发货</option>
+                        <option value="completed" {% if status == 'completed' %}selected{% endif %}>已完成</option>
+                        <option value="cancelled" {% if status == 'cancelled' %}selected{% endif %}>已取消</option>
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">搜索（订单号/姓名/电话）</label>
+                    <input type="text" class="form-control" name="search" value="{{ search }}" placeholder="输入订单号、姓名或电话">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">&nbsp;</label>
+                    <button type="submit" class="btn btn-primary w-100">搜索</button>
+                </div>
+            </form>
+        </div>
+        
+        <!-- 订单列表 -->
+        <div class="orders-table">
+            <h4 class="mb-4">订单列表（共 {{ orders|length }} 条）</h4>
+            
+            {% if orders %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>订单号</th>
+                            <th>关联订单</th>
+                            <th>客户姓名</th>
+                            <th>联系电话</th>
+                            <th>产品名称</th>
+                            <th>规格</th>
+                            <th>数量</th>
+                            <th>总价</th>
+                            <th>状态</th>
+                            <th>下单时间</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for order in orders %}
+                        <tr>
+                            <td>{{ order.order_number }}</td>
+                            <td>
+                                {% if order.original_order_number %}
+                                <span class="badge bg-info">{{ order.original_order_number }}</span>
+                                {% else %}
+                                <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ order.customer_name }}</td>
+                            <td>{{ order.customer_phone }}</td>
+                            <td>{{ order.product_name }}</td>
+                            <td>{{ order.size_name }}</td>
+                            <td>{{ order.quantity }}</td>
+                            <td>¥{{ '%.2f'|format(order.total_price) }}</td>
+                            <td>
+                                {% if order.status == 'pending' %}
+                                <span class="badge status-pending">待支付</span>
+                                {% elif order.status == 'paid' %}
+                                <span class="badge status-paid">已支付</span>
+                                {% elif order.status == 'processing' %}
+                                <span class="badge status-processing">处理中</span>
+                                {% elif order.status == 'shipped' %}
+                                <span class="badge status-shipped">已发货</span>
+                                {% elif order.status == 'completed' %}
+                                <span class="badge status-completed">已完成</span>
+                                {% elif order.status == 'cancelled' %}
+                                <span class="badge status-cancelled">已取消</span>
+                                {% else %}
+                                <span class="badge bg-secondary">{{ order.status }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if order.created_at %}
+                                {{ order.created_at.strftime('%Y-%m-%d %H:%M') }}
+                                {% else %}
+                                -
+                                {% endif %}
+                            </td>
+                            <td>
+                                <button class="btn btn-sm btn-primary" onclick="viewOrderDetail({{ order.id }})">查看详情</button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <p class="text-muted">暂无订单</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- 订单详情模态框 -->
+    <div class="modal fade" id="orderDetailModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">订单详情</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="orderDetailContent">
+                    <p>加载中...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="/static/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function viewOrderDetail(orderId) {
+            window.location.href = '/admin/shop/orders/' + orderId;
+        }
+    </script>
+</body>
+</html>

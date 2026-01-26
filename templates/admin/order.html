@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI拍照定制 - 下单</title>
+    <link href="/static/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="/">AI拍照管理系统</a>
+        </div>
+    </nav>
+
+    <div class="container mt-5">
+        <div class="row">
+            <div class="col-md-8 offset-md-2">
+                <h2>定制您的AI拍照</h2>
+                {% if merchant %}
+                <div class="alert alert-info">
+                    您正在通过商家 <strong>{{ merchant.username }}</strong> 下单
+                </div>
+                {% endif %}
+                
+                <form method="POST" enctype="multipart/form-data" class="mt-4">
+                    <div class="mb-3">
+                        <label for="name" class="form-label">您的姓名</label>
+                        <input type="text" class="form-control" id="name" name="name" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="phone" class="form-label">联系电话</label>
+                        <input type="tel" class="form-control" id="phone" name="phone" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="size" class="form-label">选择尺寸</label>
+                        <select class="form-select" id="size" name="size" required>
+                            <option value="">请选择尺寸</option>
+                            <option value="small">小型 (30x40cm)</option>
+                            <option value="medium">中型 (40x50cm)</option>
+                            <option value="large">大型 (50x70cm)</option>
+                            <option value="xlarge">超大型 (70x100cm)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="image" class="form-label">上传宠物照片</label>
+                        <input class="form-control" type="file" id="image" name="image" accept="image/*" required>
+                        <div class="form-text">请上传清晰的照片，这将影响最终效果</div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">提交订单</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

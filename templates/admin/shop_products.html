@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>商城产品管理 - 管理后台</title>
+    <link href="/static/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+        
+        .main-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            margin: 20px auto;
+            padding: 30px;
+            max-width: 1400px;
+        }
+        
+        .page-title {
+            text-align: center;
+            color: #212529;
+            margin-bottom: 30px;
+            font-weight: 600;
+            font-size: 1.8rem;
+        }
+        
+        .add-product-card, .products-container {
+            background: #ffffff;
+            border: 1px solid #dee2e6;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+        
+        .products-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        
+        .product-card {
+            background: white;
+            border-radius: 15px;
+            padding: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+        
+        .product-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(79, 172, 254, 0.3);
+            border-color: #4facfe;
+        }
+        
+        .product-image {
+            width: 100%;
+            aspect-ratio: 1 / 1;
+            object-fit: cover;
+            border-radius: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .no-image {
+            width: 100%;
+            aspect-ratio: 1 / 1;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #999;
+            margin-bottom: 10px;
+        }
+        
+        .product-info h5 {
+            font-size: 16px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 8px;
+        }
+        
+        .product-code {
+            font-size: 11px;
+            color: #999;
+            background: #f8f9fa;
+            padding: 2px 6px;
+            border-radius: 5px;
+            display: inline-block;
+            margin-bottom: 6px;
+        }
+        
+        .product-actions {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid #f0f0f0;
+        }
+        
+        .size-input-group {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 10px;
+        }
+        
+        .btn-primary {
+            background: #667eea;
+            border: none;
+            border-radius: 6px;
+            padding: 10px 20px;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #5568d3;
+        }
+        
+        .file-input {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark" style="background: #667eea;">
+        <div class="container">
+            <a class="navbar-brand" href="/admin/dashboard">管理后台</a>
+            <div class="collapse navbar-collapse">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/logout">退出登录</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="main-container">
+        <h1 class="page-title">商城产品管理</h1>
+        
+        <!-- 添加产品表单 -->
+        <div class="add-product-card">
+            <h4 class="mb-4">添加商城产品</h4>
+            <form method="POST" action="{{ url_for('admin_shop.admin_shop_products') }}" enctype="multipart/form-data">
+                <input type="hidden" name="action" value="add_product">
+                
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label>产品代码</label>
+                            <input type="text" class="form-control" name="code" required placeholder="如: photo_frame">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label>产品名称</label>
+                            <input type="text" class="form-control" name="name" required placeholder="如: 精美相框">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label>产品分类</label>
+                            <select class="form-control" name="category">
+                                <option value="photo_frame">相框</option>
+                                <option value="t_shirt">T恤</option>
+                                <option value="pillow">抱枕</option>
+                                <option value="mug">马克杯</option>
+                                <option value="other">其他</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label>排序顺序</label>
+                            <input type="number" class="form-control" name="sort_order" value="0" min="0">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="form-group">
+                            <label>产品描述</label>
+                            <textarea class="form-control" name="description" rows="2" placeholder="产品描述"></textarea>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label>主图</label>
+                            <input type="file" class="form-control" name="product_image" accept="image/*">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label>多图上传</label>
+                            <input type="file" class="form-control" name="product_images[]" accept="image/*" multiple>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 规格配置 -->
+                <div class="mt-3">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <label>产品规格（尺寸/颜色等）</label>
+                        <button type="button" class="btn btn-outline-primary btn-sm" onclick="addSize()">+ 添加规格</button>
+                    </div>
+                    <div id="sizesContainer">
+                        <div class="size-input-group">
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <label>规格名称</label>
+                                    <input type="text" class="form-control" name="size_name[]" placeholder="如: A4尺寸" required>
+                                </div>
+                                <div class="col-md-2">
+                                    <label>价格</label>
+                                    <input type="number" step="0.01" class="form-control" name="size_price[]" placeholder="如: 99.00" required>
+                                </div>
+                                <div class="col-md-2">
+                                    <label>库存（0=不限）</label>
+                                    <input type="number" class="form-control" name="size_stock[]" value="0" min="0">
+                                </div>
+                                <div class="col-md-3">
+                                    <label>效果图</label>
+                                    <input type="file" class="form-control form-control-sm" name="size_effect_image[]" accept="image/*">
+                                    <small class="text-muted">用于选片页面显示</small>
+                                </div>
+                                <div class="col-md-2">
+                                    <label>&nbsp;</label>
+                                    <button type="button" class="btn btn-outline-danger btn-sm w-100" onclick="removeSize(this)">删除</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-3">
+                    <button type="submit" class="btn btn-primary">添加产品</button>
+                </div>
+            </form>
+        </div>
+        
+        <!-- 产品列表 -->
+        <div class="products-container">
+            <h4 class="mb-4">产品列表</h4>
+            <div class="products-grid">
+                {% for product in products %}
+                <div class="product-card" onclick="openEditModal({{ product.id }})">
+                    {% if product.image_url %}
+                    <img src="{{ product.image_url }}" alt="{{ product.name }}" class="product-image">
+                    {% else %}
+                    <div class="no-image">
+                        <i class="bi bi-image" style="font-size: 3rem;"></i>
+                        <div>无图片</div>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="product-info">
+                        <h5>{{ product.name }}</h5>
+                        <span class="product-code">{{ product.code }}</span>
+                        {% if product.description %}
+                        <div style="font-size: 12px; color: #666; margin-top: 5px;">{{ product.description[:50] }}{% if product.description|length > 50 %}...{% endif %}</div>
+                        {% endif %}
+                        <div style="font-size: 11px; color: #999; margin-top: 5px;">
+                            分类: {{ product.category or '未分类' }} | 排序: {{ product.sort_order or 0 }}
+                        </div>
+                        {% if product.sizes_list %}
+                        <div style="font-size: 11px; color: #667eea; margin-top: 5px;">
+                            规格数: {{ product.sizes_list|length }}
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="product-actions" onclick="event.stopPropagation();">
+                        <form method="POST" action="{{ url_for('admin_shop.admin_shop_products') }}" style="display: inline;" onsubmit="return confirm('确定要删除产品 {{ product.name }} 吗？');">
+                            <input type="hidden" name="action" value="delete_product">
+                            <input type="hidden" name="product_id" value="{{ product.id }}">
+                            <button type="submit" class="btn btn-danger btn-sm">删除</button>
+                        </form>
+                        <form method="POST" action="{{ url_for('admin_shop.admin_shop_products') }}" style="display: inline;">
+                            <input type="hidden" name="action" value="toggle_active">
+                            <input type="hidden" name="product_id" value="{{ product.id }}">
+                            <button type="submit" class="btn btn-{{ 'success' if product.is_active else 'secondary' }} btn-sm">
+                                {{ '启用' if product.is_active else '禁用' }}
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- 编辑模态框 -->
+    <div class="modal fade" id="editModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">编辑产品</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="editProductForm" method="POST" action="{{ url_for('admin_shop.admin_shop_products') }}" enctype="multipart/form-data">
+                        <input type="hidden" name="action" value="edit_product">
+                        <input type="hidden" name="product_id" id="editProductId">
+                        
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label>产品代码</label>
+                                    <input type="text" class="form-control" name="code" id="editCode" required placeholder="如: photo_frame">
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label>产品名称</label>
+                                    <input type="text" class="form-control" name="name" id="editName" required placeholder="如: 精美相框">
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label>产品分类</label>
+                                    <select class="form-control" name="category" id="editCategory">
+                                        <option value="photo_frame">相框</option>
+                                        <option value="t_shirt">T恤</option>
+                                        <option value="pillow">抱枕</option>
+                                        <option value="mug">马克杯</option>
+                                        <option value="other">其他</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label>排序顺序</label>
+                                    <input type="number" class="form-control" name="sort_order" id="editSortOrder" value="0" min="0">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="form-group">
+                                    <label>产品描述</label>
+                                    <textarea class="form-control" name="description" id="editDescription" rows="2" placeholder="产品描述"></textarea>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>主图（留空则不更新）</label>
+                                    <input type="file" class="form-control" name="product_image" accept="image/*">
+                                    <div id="editMainImagePreview" class="mt-2"></div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>多图上传（追加新图片）</label>
+                                    <input type="file" class="form-control" name="product_images[]" accept="image/*" multiple>
+                                    <div id="editImagesPreview" class="mt-2"></div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 规格配置 -->
+                        <div class="mt-3">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <label>尺寸规格</label>
+                                <button type="button" class="btn btn-outline-primary btn-sm" onclick="addEditSize()">+ 添加尺寸</button>
+                            </div>
+                            <div id="editSizesContainer">
+                                <!-- 动态加载规格 -->
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" onclick="saveEditProduct()">保存</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="/static/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function addSize() {
+            const container = document.getElementById('sizesContainer');
+            const newSize = document.createElement('div');
+            newSize.className = 'size-input-group';
+            newSize.innerHTML = `
+                <div class="row">
+                    <div class="col-md-3">
+                        <label>规格名称</label>
+                        <input type="text" class="form-control" name="size_name[]" placeholder="如: A4尺寸" required>
+                    </div>
+                    <div class="col-md-2">
+                        <label>价格</label>
+                        <input type="number" step="0.01" class="form-control" name="size_price[]" placeholder="如: 99.00" required>
+                    </div>
+                    <div class="col-md-2">
+                        <label>库存（0=不限）</label>
+                        <input type="number" class="form-control" name="size_stock[]" value="0" min="0">
+                    </div>
+                    <div class="col-md-3">
+                        <label>效果图</label>
+                        <input type="file" class="form-control form-control-sm" name="size_effect_image[]" accept="image/*">
+                        <small class="text-muted">用于选片页面显示</small>
+                    </div>
+                    <div class="col-md-2">
+                        <label>&nbsp;</label>
+                        <button type="button" class="btn btn-outline-danger btn-sm w-100" onclick="removeSize(this)">删除</button>
+                    </div>
+                </div>
+            `;
+            container.appendChild(newSize);
+        }
+        
+        function removeSize(btn) {
+            btn.closest('.size-input-group').remove();
+        }
+        
+        async function openEditModal(productId) {
+            console.log('📂 打开编辑模态框, productId:', productId);
+            try {
+                // 获取产品详情
+                const response = await fetch(`/admin/shop/products/${productId}`);
+                const result = await response.json();
+                
+                console.log('📥 获取产品数据响应:', result);
+                
+                if (result.status === 'success') {
+                    const product = result.data;
+                    console.log('📦 产品数据:', product);
+                    console.log('📏 规格数据:', product.sizes);
+                    
+                    // 填充表单
+                    document.getElementById('editProductId').value = product.id;
+                    document.getElementById('editCode').value = product.code || '';
+                    document.getElementById('editName').value = product.name || '';
+                    document.getElementById('editCategory').value = product.category || 'other';
+                    document.getElementById('editSortOrder').value = product.sort_order || 0;
+                    document.getElementById('editDescription').value = product.description || '';
+                    
+                    // 显示主图预览
+                    const mainImagePreview = document.getElementById('editMainImagePreview');
+                    if (product.image_url) {
+                        mainImagePreview.innerHTML = `<img src="${product.image_url}" style="max-width: 200px; max-height: 200px; border-radius: 8px;" alt="主图">`;
+                    } else {
+                        mainImagePreview.innerHTML = '<p class="text-muted">暂无主图</p>';
+                    }
+                    
+                    // 显示多图预览
+                    const imagesPreview = document.getElementById('editImagesPreview');
+                    if (product.images && product.images.length > 0) {
+                        imagesPreview.innerHTML = product.images.map(img => 
+                            `<img src="${img.image_url}" style="max-width: 100px; max-height: 100px; border-radius: 4px; margin-right: 5px; margin-bottom: 5px;" alt="产品图">`
+                        ).join('');
+                    } else {
+                        imagesPreview.innerHTML = '<p class="text-muted">暂无附加图片</p>';
+                    }
+                    
+                    // 加载规格 - 按sort_order排序
+                    const sizesContainer = document.getElementById('editSizesContainer');
+                    sizesContainer.innerHTML = '';
+                    if (product.sizes && product.sizes.length > 0) {
+                        // 按sort_order排序，确保顺序正确
+                        const sortedSizes = [...product.sizes].sort((a, b) => {
+                            const orderA = a.sort_order !== undefined ? a.sort_order : 999;
+                            const orderB = b.sort_order !== undefined ? b.sort_order : 999;
+                            return orderA - orderB;
+                        });
+                        console.log('📊 排序后的规格:', sortedSizes);
+                        sortedSizes.forEach((size, index) => {
+                            console.log(`  规格 ${index + 1}: ID=${size.id}, 名称=${size.size_name}, 效果图=${size.effect_image_url || '无'}`);
+                            addEditSize(size.id, size.size_name, size.price, size.stock, size.effect_image_url || '');
+                        });
+                    } else {
+                        addEditSize(); // 至少添加一个空规格
+                    }
+                    
+                    console.log('✅ 模态框数据加载完成');
+                    
+                    // 显示模态框
+                    const modal = new bootstrap.Modal(document.getElementById('editModal'));
+                    modal.show();
+                } else {
+                    console.error('❌ 获取产品信息失败:', result.message);
+                    alert('获取产品信息失败: ' + (result.message || '未知错误'));
+                }
+            } catch (error) {
+                console.error('❌ 加载产品信息失败:', error);
+                alert('加载产品信息失败，请重试');
+            }
+        }
+        
+        function addEditSize(sizeId = '', sizeName = '', price = '', stock = '0', effectImageUrl = '') {
+            const container = document.getElementById('editSizesContainer');
+            const newSize = document.createElement('div');
+            newSize.className = 'size-input-group';
+            const sizeIndex = container.children.length;
+            const previewId = `effectImagePreview_${sizeIndex}`;
+            const effectImagePreview = effectImageUrl ? `<img id="${previewId}" src="${effectImageUrl}" style="max-width: 60px; max-height: 60px; border-radius: 4px; margin-top: 5px; display: block;" alt="效果图">` : `<img id="${previewId}" style="max-width: 60px; max-height: 60px; border-radius: 4px; margin-top: 5px; display: none;" alt="效果图">`;
+            newSize.innerHTML = `
+                <div class="row">
+                    <div class="col-md-3">
+                        <label>规格名称</label>
+                        <input type="text" class="form-control" name="size_name[]" value="${sizeName}" placeholder="如: A4尺寸" required>
+                    </div>
+                    <div class="col-md-2">
+                        <label>价格</label>
+                        <input type="number" step="0.01" class="form-control" name="size_price[]" value="${price}" placeholder="如: 99.00" required>
+                    </div>
+                    <div class="col-md-2">
+                        <label>库存（0=不限）</label>
+                        <input type="number" class="form-control" name="size_stock[]" value="${stock}" min="0">
+                    </div>
+                    <div class="col-md-3">
+                        <label>效果图</label>
+                        <input type="file" class="form-control form-control-sm size-effect-image-input" name="size_effect_image[]" accept="image/*" data-size-index="${sizeIndex}">
+                        <small class="text-muted">用于选片页面显示</small>
+                        ${effectImagePreview}
+                        <input type="hidden" name="size_effect_image_url[]" value="${effectImageUrl || ''}">
+                    </div>
+                    <div class="col-md-2">
+                        <label>&nbsp;</label>
+                        <input type="hidden" name="size_id[]" value="${sizeId}">
+                        <button type="button" class="btn btn-outline-danger btn-sm w-100" onclick="removeSize(this)">删除</button>
+                    </div>
+                </div>
+            `;
+            container.appendChild(newSize);
+            
+            // 为新添加的文件输入添加change事件监听
+            const fileInput = newSize.querySelector('.size-effect-image-input');
+            if (fileInput) {
+                fileInput.addEventListener('change', function(e) {
+                    const file = e.target.files[0];
+                    const previewImg = document.getElementById(previewId);
+                    const hiddenInput = newSize.querySelector('input[name="size_effect_image_url[]"]');
+                    
+                    console.log(`📸 规格 ${sizeIndex + 1} 选择了文件:`, file ? file.name : '无');
+                    
+                    if (file) {
+                        // 显示新选择的文件预览
+                        const reader = new FileReader();
+                        reader.onload = function(e) {
+                            previewImg.src = e.target.result;
+                            previewImg.style.display = 'block';
+                            console.log(`✅ 规格 ${sizeIndex + 1} 效果图预览已更新`);
+                        };
+                        reader.readAsDataURL(file);
+                        // 清空隐藏的URL，因为要使用新上传的
+                        if (hiddenInput) {
+                            hiddenInput.value = '';
+                        }
+                    } else {
+                        // 如果没有选择文件，恢复原来的预览
+                        if (hiddenInput && hiddenInput.value) {
+                            previewImg.src = hiddenInput.value;
+                            previewImg.style.display = 'block';
+                        } else {
+                            previewImg.style.display = 'none';
+                        }
+                    }
+                });
+            }
+        }
+        
+        function saveEditProduct() {
+            const form = document.getElementById('editProductForm');
+            
+            // 收集所有规格数据用于调试
+            const sizeInputs = form.querySelectorAll('input[name="size_name[]"]');
+            const sizeIds = form.querySelectorAll('input[name="size_id[]"]');
+            const sizePrices = form.querySelectorAll('input[name="size_price[]"]');
+            const sizeEffectImages = form.querySelectorAll('input[name="size_effect_image[]"]');
+            const sizeEffectImageUrls = form.querySelectorAll('input[name="size_effect_image_url[]"]');
+            
+            console.log('💾 准备保存产品数据:');
+            console.log(`  规格数量: ${sizeInputs.length}`);
+            for (let i = 0; i < sizeInputs.length; i++) {
+                const sizeId = sizeIds[i] ? sizeIds[i].value : '新规格';
+                const sizeName = sizeInputs[i].value;
+                const sizePrice = sizePrices[i].value;
+                const hasNewImage = sizeEffectImages[i] && sizeEffectImages[i].files.length > 0;
+                const existingImageUrl = sizeEffectImageUrls[i] ? sizeEffectImageUrls[i].value : '';
+                console.log(`  规格 ${i + 1}: ID=${sizeId}, 名称=${sizeName}, 价格=${sizePrice}, 新图片=${hasNewImage}, 现有效果图=${existingImageUrl || '无'}`);
+            }
+            
+            form.submit();
+        }
+    </script>
+</body>
+</html>

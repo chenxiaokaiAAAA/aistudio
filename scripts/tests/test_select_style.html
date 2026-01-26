@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>下拉菜单样式测试</title>
+    <link href="/static/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            color: #ffffff;
+            min-height: 100vh;
+            padding: 50px;
+        }
+        
+        .test-container {
+            background: rgba(255,255,255,0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+        }
+        
+        .form-control {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            color: white;
+            margin-bottom: 20px;
+        }
+        
+        .form-control:focus {
+            background: rgba(255,255,255,0.15);
+            border-color: #4ecdc4;
+            color: white;
+            box-shadow: 0 0 0 0.2rem rgba(78, 205, 196, 0.25);
+        }
+        
+        .form-control::placeholder {
+            color: rgba(255,255,255,0.6);
+        }
+        
+        /* Select下拉菜单样式优化 */
+        select.form-control {
+            background: rgba(30,30,30,0.9) !important;
+            color: white !important;
+            border: 1px solid rgba(255,255,255,0.3) !important;
+            font-size: 16px;
+            padding: 10px 15px;
+        }
+        
+        select.form-control option {
+            background: rgba(30,30,30,0.95) !important;
+            color: white !important;
+            padding: 10px 15px;
+            border: none;
+        }
+        
+        select.form-control:focus {
+            background: rgba(30,30,30,0.9) !important;
+            border-color: #4ecdc4 !important;
+            color: white !important;
+        }
+        
+        /* 悬停效果 */
+        select.form-control option:hover {
+            background: rgba(78, 205, 196, 0.3) !important;
+            color: white !important;
+        }
+        
+        select.form-control option:checked {
+            background: #4ecdc4 !important;
+            color: white !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 下拉菜单样式测试</h1>
+        
+        <div class="test-container">
+            <h3>📋 测试下拉菜单</h3>
+            <p>说明：下拉菜单应该有深色背景和白色文字，选项清晰可见</p>
+            
+            <div class="row">
+                <div class="col-md-6">
+                    <label for="statusSelect" class="form-label">状态选择</label>
+                    <select class="form-control" id="statusSelect">
+                        <option value="">请选择状态</option>
+                        <option value="pending">待联系</option>
+                        <option value="contacted">已联系</option>
+                        <option value="contact_failed">电话未打通</option>
+                        <option value="scheduled">已预约</option>
+                        <option value="completed">已完成</option>
+                        <option value="cancelled">已取消</option>
+                    </select>
+                </div>
+                
+                <div class="col-md-6">
+                    <label for="filterSelect" class="form-label">筛选条件</label>
+                    <select class="form-control" id="filterSelect">
+                        <option value="">全部状态</option>
+                        <option value="pending">待联系</option>
+                        <option value="contacted">已联系</option>
+                        <option value="contact_failed">电话未打通</option>
+                        <option value="scheduled">已预约</option>
+                        <option value="completed">已完成</option>
+                        <option value="cancelled">已取消</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="row mt-3">
+                <div class="col-12">
+                    <button class="btn btn-primary me-2" onclick="testSelectedValue()">测试选中值</button>
+                    <span id="selectedValue" class="text-info"></span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="test-container">
+            <h3>📝 样式说明</h3>
+            <ul class="list-unstyled">
+                <li>✅ 下拉菜单背景：深灰色 (rgba(30,30,30,0.9))</li>
+                <li>✅ 文字颜色：白色</li>
+                <li>✅ 选项背景：深灰色 (rgba(30,30,30,0.95))</li>
+                <li>✅ 悬停效果：青绿色背景</li>
+                <li>✅ 选中效果：青绿色背景</li>
+                <li>✅ 边框：半透明白色，聚焦时变为青绿色</li>
+            </ul>
+        </div>
+    </div>
+    
+    <script>
+        function testSelectedValue() {
+            const statusValue = document.getElementById('statusSelect').value;
+            const statusText = statusValue ? 
+                document.getElementById('statusSelect').options[document.getElementById('statusSelect').selectedIndex].text : 
+                '未选择';
+            document.getElementById('selectedValue').textContent = `当前选择: ${statusText} (值: ${statusValue || '空'})`;
+        }
+        
+        // 监听变化
+        document.getElementById('statusSelect').addEventListener('change', testSelectedValue);
+        
+        // 页面加载完成后测试
+        window.addEventListener('load', function() {
+            console.log('下拉菜单样式测试页面已加载');
+            console.log('请检查下拉菜单是否可见：');
+            console.log('1. 背景为深灰色');
+            console.log('2. 文字为白色');
+            console.log('3. 选项列表可见');
+            console.log('4. 悬停效果正常');
+        });
+    </script>
+</body>
+</html>

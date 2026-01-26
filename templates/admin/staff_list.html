@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>子用户管理 - {{ franchisee.company_name }}</title>
+    <link href="/static/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="/admin/dashboard">AI拍照管理系统</a>
+            <div class="collapse navbar-collapse">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <span class="nav-link">管理员: {{ current_user.username }}</span>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/logout">退出登录</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>👥 子用户管理 - {{ franchisee.company_name }}</h2>
+            <div class="btn-group">
+                <a href="/staff-permission/franchisee/{{ franchisee.id }}/staff/add" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> 添加子用户
+                </a>
+                <a href="/franchisee/admin/accounts/{{ franchisee.id }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> 返回详情
+                </a>
+            </div>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">子用户列表</h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i> 
+                    <strong>说明：</strong>子用户（店员）可以通过手机号或openid进行匹配，配置不同的权限（如查看今天的订单、查看门店图片等）。
+                    建议优先使用手机号进行匹配，更便于管理。
+                </div>
+                {% if staff_users %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>姓名</th>
+                                <th>手机号</th>
+                                <th>OpenID</th>
+                                <th>角色</th>
+                                <th>权限</th>
+                                <th>状态</th>
+                                <th>创建时间</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for staff in staff_users %}
+                            <tr>
+                                <td><strong>{{ staff.name or '-' }}</strong></td>
+                                <td>{{ staff.phone or '-' }}</td>
+                                <td><code style="font-size: 0.8rem;">{{ staff.openid[:20] + '...' if staff.openid and staff.openid|length > 20 else (staff.openid or '-') }}</code></td>
+                                <td>{{ staff.role }}</td>
+                                        <td>
+                                            {% if staff.permissions %}
+                                                {% set perms = staff.permissions|from_json %}
+                                            {% else %}
+                                                {% set perms = {} %}
+                                            {% endif %}
+                                            {% if perms.get('view_today_orders') %}
+                                                <span class="badge bg-info">今日订单</span>
+                                            {% endif %}
+                                            {% if perms.get('view_store_images') %}
+                                                <span class="badge bg-success">门店图片</span>
+                                            {% endif %}
+                                            {% if perms.get('view_all_orders') %}
+                                                <span class="badge bg-primary">全部订单</span>
+                                            {% endif %}
+                                            {% if perms.get('view_statistics') %}
+                                                <span class="badge bg-warning">统计数据</span>
+                                            {% endif %}
+                                            {% if perms.get('groupon_verify') %}
+                                                <span class="badge bg-danger">团购核销</span>
+                                            {% endif %}
+                                            {% if not perms or (not perms.get('view_today_orders') and not perms.get('view_store_images') and not perms.get('view_all_orders') and not perms.get('view_statistics') and not perms.get('groupon_verify')) %}
+                                                <span class="text-muted">无权限</span>
+                                            {% endif %}
+                                        </td>
+                                <td>
+                                    {% if staff.status == 'active' %}
+                                        <span class="badge bg-success">正常</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">停用</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ staff.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                                <td>
+                                    <a href="/staff-permission/franchisee/{{ franchisee.id }}/staff/{{ staff.id }}/edit" class="btn btn-sm btn-outline-warning">
+                                        <i class="fas fa-edit"></i> 编辑
+                                    </a>
+                                    <form method="POST" action="/staff-permission/franchisee/{{ franchisee.id }}/staff/{{ staff.id }}/delete" 
+                                          style="display: inline;" onsubmit="return confirm('确定要删除该子用户吗？');">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger">
+                                            <i class="fas fa-trash"></i> 删除
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <p class="text-muted">暂无子用户</p>
+                    <a href="/staff-permission/franchisee/{{ franchisee.id }}/staff/add" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> 添加第一个子用户
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

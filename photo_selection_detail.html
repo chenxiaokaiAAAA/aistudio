@@ -1,0 +1,1873 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>选片详情 - {{ brand_name }}后台</title>
+    <link href="/static/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #f0f2f5;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            overflow: hidden;
+        }
+
+        .navbar-custom {
+            background: #0a0a0a !important;
+        }
+
+        /* 主容器 */
+        .photo-selection-container {
+            display: flex;
+            height: calc(100vh - 80px);
+            margin-top: 80px;
+            background: #ffffff;
+        }
+
+        /* 左侧缩略图区域 */
+        .sidebar-left {
+            width: 280px;
+            background: #fcfcfc;
+            border-right: 1px solid #e0e0e0;
+            display: flex;
+            flex-direction: column;
+            padding: 24px 16px 24px 16px; /* 上下左右padding一致 */
+            overflow: hidden; /* 防止整体滚动 */
+        }
+
+        .section-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #888;
+            margin-bottom: 16px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        /* 过滤标签 */
+        .filter-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+        
+        .filter-tab {
+            padding: 6px 12px;
+            background: #fff;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 12px;
+            color: #666;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .filter-tab:hover {
+            background: #f8f9fa;
+            border-color: #4361ee;
+        }
+        
+        .filter-tab.active {
+            background: #4361ee;
+            color: #fff;
+            border-color: #4361ee;
+        }
+
+        .thumb-list {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            grid-auto-rows: min-content; /* 确保每行高度由内容决定，不被压缩 */
+            row-gap: 20px !important; /* 行间距（上下间距），使用!important确保在所有情况下生效 */
+            column-gap: 16px !important; /* 列间距（左右间距），使用!important确保在所有情况下生效 */
+            gap: 20px 16px !important; /* 统一设置gap，确保在所有情况下生效 */
+            overflow-y: auto;
+            flex: 1;
+            min-height: 0; /* 允许flex子元素缩小，但grid items本身不会被压缩 */
+            padding: 12px 4px 12px 0; /* 上下增加12px padding，右侧保留用于滚动条 */
+            align-content: start; /* 确保从顶部开始排列 */
+            /* 性能优化 */
+            will-change: scroll-position;
+            /* 移除contain属性，避免影响grid布局和gap计算 */
+            /* 硬件加速 */
+            transform: translateZ(0);
+            -webkit-overflow-scrolling: touch; /* iOS平滑滚动 */
+        }
+        
+        .thumb-list::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .thumb-list::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 3px;
+        }
+        
+        .thumb-list::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 3px;
+        }
+        
+        .thumb-list::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+
+        .thumb-item {
+            position: relative;
+            width: 100%; /* 使用grid自动填充 */
+            aspect-ratio: 3/4; /* 固定3:4竖版比例 */
+            /* 移除min-height和height，让aspect-ratio完全控制尺寸 */
+            border-radius: 8px;
+            overflow: hidden;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: border-color 0.2s, box-shadow 0.2s; /* 只过渡必要的属性 */
+            /* 性能优化 */
+            will-change: border-color, box-shadow;
+            /* 硬件加速 */
+            transform: translateZ(0);
+            backface-visibility: hidden;
+            /* 确保不会重叠 */
+            box-sizing: border-box;
+            margin: 0; /* 确保没有额外的margin */
+            /* 确保grid item不会被压缩 */
+            flex-shrink: 0; /* 防止被flex压缩 */
+            align-self: start; /* 确保从顶部对齐 */
+            /* 确保grid item保持固定尺寸 */
+            min-width: 0; /* 允许grid item缩小宽度，但不影响高度 */
+        }
+        
+        .thumb-item:hover {
+            transform: none; /* 移除transform避免重排 */
+            border-color: #4361ee;
+        }
+
+        .thumb-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+            /* 性能优化 */
+            image-rendering: -webkit-optimize-contrast;
+            will-change: transform;
+            /* 确保图片不会超出容器 */
+            max-width: 100%;
+            max-height: 100%;
+        }
+        
+        /* 懒加载占位符 */
+        .thumb-item img[data-src] {
+            background: #f0f0f0;
+            min-height: 100px;
+        }
+        
+        /* 确保缩略图容器不会因为内容而改变大小 */
+        .thumb-item * {
+            box-sizing: border-box;
+        }
+        
+        /* 防止grid item被内容撑大导致重叠 */
+        .thumb-list > * {
+            min-width: 0;
+            /* 移除min-height: 0，让aspect-ratio正常工作 */
+        }
+
+        .thumb-item.active {
+            border-color: #4361ee;
+            box-shadow: 0 4px 12px rgba(67, 97, 238, 0.2);
+        }
+
+        .thumb-item.selected .status-badge {
+            display: flex;
+        }
+
+        .thumb-item .status-badge {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: rgba(67, 97, 238, 0.9);
+            color: #fff;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+        }
+
+        /* 中间预览区域 */
+        .main-preview {
+            flex: 1;
+            background: #f0f2f5;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 32px;
+            position: relative;
+        }
+
+        .preview-container {
+            width: 100%;
+            height: 100%;
+            max-width: 1200px;
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.08);
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .preview-image-wrapper {
+            flex: 1;
+            width: 100%;
+            border-radius: 8px;
+            overflow: hidden;
+            position: relative;
+            background: #1a1a1a;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer; /* 点击图片可选中 */
+        }
+        
+        /* 右上角产品标记 */
+        .product-badge {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            background: rgba(67, 97, 238, 0.95);
+            color: #fff;
+            padding: 8px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+            display: none;
+            align-items: center;
+            gap: 6px;
+            z-index: 20;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            backdrop-filter: blur(10px);
+        }
+        
+        .product-badge i {
+            font-size: 14px;
+        }
+        
+        .product-badge.show {
+            display: flex;
+        }
+        
+        /* 左右切换按钮 */
+        .nav-arrow {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 48px;
+            height: 48px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            cursor: pointer;
+            color: #333;
+            font-size: 20px;
+            z-index: 10; /* 提高z-index确保可点击 */
+            transition: all 0.2s;
+            border: 1px solid #e0e0e0;
+            pointer-events: auto; /* 确保可以接收点击事件 */
+        }
+        
+        .nav-arrow:hover {
+            background: #fff;
+            box-shadow: 0 6px 16px rgba(0,0,0,0.15);
+            transform: translateY(-50%) scale(1.1);
+        }
+        
+        .nav-prev {
+            left: 16px;
+        }
+        
+        .nav-next {
+            right: 16px;
+        }
+
+        .preview-image-wrapper img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+        .preview-controls {
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 24px;
+            border-top: 1px solid #f0f0f0;
+            margin-top: 16px;
+            position: relative;
+            z-index: 10; /* 确保按钮在最上层 */
+        }
+
+        .control-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 1px solid #ddd;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #fff;
+            color: #555;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 18px;
+            position: relative;
+            z-index: 11; /* 确保按钮可点击 */
+            pointer-events: auto; /* 确保可以接收点击事件 */
+        }
+
+        .control-btn:hover {
+            background: #f8f8f8;
+            color: #1a1a1a;
+        }
+
+        .control-btn.primary {
+            background: #4361ee;
+            color: #fff;
+            border-color: #4361ee;
+        }
+
+        .control-btn.primary:hover {
+            background: #3a52d4;
+        }
+
+        .control-btn.heart {
+            color: #ff4757;
+        }
+
+        .control-btn.heart.selected {
+            background: #ff4757;
+            color: #fff;
+            border-color: #ff4757;
+        }
+
+        .control-btn.design {
+            color: #4361ee;
+        }
+
+        .control-btn.design.active {
+            background: #4361ee;
+            color: #fff;
+            border-color: #4361ee;
+        }
+
+        .control-btn.design:hover {
+            background: #e8ecff;
+            border-color: #4361ee;
+        }
+
+        /* 右侧产品区域 */
+        .sidebar-right {
+            width: 420px;
+            background: #fff;
+            border-left: 1px solid #e0e0e0;
+            display: flex;
+            flex-direction: column;
+            padding: 24px;
+            overflow-y: auto;
+        }
+
+        .product-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+            margin-top: 10px;
+        }
+
+        .product-card {
+            background: #fff;
+            border: 1px solid #eee;
+            border-radius: 8px;
+            overflow: hidden;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        .product-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+        }
+
+        .product-card.selected {
+            border-color: #4361ee;
+            box-shadow: 0 4px 12px rgba(67, 97, 238, 0.2);
+        }
+
+        .product-img {
+            width: 100%;
+            height: 140px;
+            object-fit: cover;
+            background: #f5f5f5;
+        }
+
+        .product-details {
+            padding: 12px;
+        }
+
+        .product-title {
+            font-weight: 500;
+            font-size: 13px;
+            color: #333;
+            margin-bottom: 8px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        /* 套餐产品卡片样式 */
+        .package-product-card {
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            overflow: hidden;
+            height: 280px;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .package-card-image {
+            flex: 1;
+            min-height: 0;
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            overflow: hidden;
+            background: #fff;
+            padding: 0;
+        }
+        
+        .package-card-image img {
+            height: 100%;
+            width: auto;
+            max-width: 100%;
+            object-fit: contain;
+        }
+        
+        .product-sizes {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin-top: 8px;
+        }
+        
+        .product-size-item {
+            padding: 6px 10px;
+            background: #f8f9fa;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .product-size-item:hover {
+            background: #e8ecff;
+            border-color: #4361ee;
+        }
+        
+        .product-size-item.selected {
+            background: #4361ee;
+            color: #fff;
+            border-color: #4361ee;
+        }
+        
+        .product-size-name {
+            font-weight: 500;
+        }
+        
+        .product-size-price {
+            font-weight: 600;
+            color: inherit;
+        }
+        
+        .product-size-item.selected .product-size-price {
+            color: #fff;
+        }
+
+        /* 套餐信息 */
+        .package-info {
+            margin-top: 32px;
+            border-top: 1px solid #f0f0f0;
+            padding-top: 24px;
+        }
+
+        .package-info .section-title {
+            margin-bottom: 16px;
+        }
+
+        .package-item {
+            padding: 16px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            margin-bottom: 12px;
+        }
+
+        .package-item-title {
+            font-weight: 600;
+            font-size: 15px;
+            color: #333;
+            margin-bottom: 0;
+            line-height: 1.4;
+        }
+
+        .package-item-desc {
+            font-size: 13px;
+            color: #666;
+            line-height: 1.5;
+        }
+        
+        .package-item-size {
+            font-size: 13px;
+            color: #888;
+            margin-top: 4px;
+            font-weight: 500;
+        }
+        
+        .package-item-info {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .package-info-row {
+            display: flex;
+            align-items: center;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+        
+        .package-info-label {
+            color: #888;
+            min-width: 50px;
+            font-weight: 500;
+        }
+        
+        .package-info-value {
+            color: #333;
+            font-weight: 500;
+        }
+
+        /* 提交按钮 */
+        .submit-section {
+            margin-top: 24px;
+            padding-top: 24px;
+            border-top: 1px solid #f0f0f0;
+        }
+
+        .btn-submit {
+            width: 100%;
+            background: #1a1a1a;
+            color: #fff;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-submit:hover:not(:disabled) {
+            background: #333;
+        }
+
+        .btn-submit:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        
+        /* 确认选片模态框样式 */
+        .confirm-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        
+        .confirm-modal-content {
+            background: #fff;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 800px;
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+        }
+        
+        .confirm-modal-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid #e0e0e0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .confirm-modal-header h3 {
+            margin: 0;
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .confirm-modal-close {
+            background: none;
+            border: none;
+            font-size: 28px;
+            color: #999;
+            cursor: pointer;
+            padding: 0;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+        
+        .confirm-modal-close:hover {
+            background: #f5f5f5;
+            color: #333;
+        }
+        
+        .confirm-modal-body {
+            padding: 24px;
+            overflow-y: auto;
+            flex: 1;
+        }
+        
+        .confirm-image-list {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        
+        .confirm-image-item {
+            display: flex;
+            gap: 16px;
+            padding: 16px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            align-items: center;
+        }
+        
+        .confirm-image-preview {
+            width: 120px;
+            height: 120px;
+            flex-shrink: 0;
+            border-radius: 8px;
+            overflow: hidden;
+            background: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .confirm-image-preview img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+        
+        .confirm-image-info {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .confirm-image-label {
+            font-size: 14px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .confirm-product-name {
+            font-size: 13px;
+            color: #666;
+        }
+        
+        .confirm-quantity-control {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .quantity-btn {
+            width: 32px;
+            height: 32px;
+            border: 1px solid #e0e0e0;
+            background: #fff;
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            color: #333;
+            transition: all 0.2s;
+        }
+        
+        .quantity-btn:hover {
+            background: #f5f5f5;
+            border-color: #4361ee;
+        }
+        
+        .quantity-input {
+            width: 60px;
+            height: 32px;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            text-align: center;
+            font-size: 14px;
+        }
+        
+        .confirm-item-price {
+            font-size: 16px;
+            font-weight: 600;
+            color: #4361ee;
+        }
+        
+        .confirm-total {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            margin-top: 16px;
+        }
+        
+        .confirm-total-label {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .confirm-total-price {
+            font-size: 24px;
+            font-weight: 600;
+            color: #4361ee;
+        }
+        
+        .confirm-modal-footer {
+            padding: 20px 24px;
+            border-top: 1px solid #e0e0e0;
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+        }
+        
+        .confirm-modal-footer .btn {
+            padding: 10px 24px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s;
+        }
+        
+        .confirm-modal-footer .btn-secondary {
+            background: #f5f5f5;
+            color: #333;
+        }
+        
+        .confirm-modal-footer .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+        
+        .confirm-modal-footer .btn-primary {
+            background: #4361ee;
+            color: #fff;
+        }
+        
+        .confirm-modal-footer .btn-primary:hover {
+            background: #3651d4;
+        }
+
+        .selection-stats {
+            margin-bottom: 16px;
+            padding: 12px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            font-size: 13px;
+        }
+
+        .selection-stats .stat-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .selection-stats .stat-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .stat-label {
+            color: #666;
+        }
+
+        .stat-value {
+            font-weight: 600;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <!-- 导航栏 -->
+    {% include 'admin/_navbar.html' %}
+
+    <div class="photo-selection-container">
+        <!-- 左侧缩略图 -->
+        <aside class="sidebar-left">
+            <div class="section-title">效果图列表</div>
+            <div class="filter-tabs">
+                <div class="filter-tab active" data-filter="all" onclick="window.filterThumbnails('all')">全部</div>
+                <div class="filter-tab" data-filter="selected" onclick="window.filterThumbnails('selected')">已选中</div>
+                <div class="filter-tab" data-filter="unselected" onclick="window.filterThumbnails('unselected')">未选中</div>
+            </div>
+            <div class="thumb-list" id="thumbList">
+                {% for image in effect_images %}
+                <div class="thumb-item" data-image-id="{{ image.id }}" data-image-url="{{ image.url }}" onclick="selectThumbnail('{{ image.id }}')">
+                    <img data-src="{{ image.url }}" alt="效果图" loading="lazy" class="lazy-image">
+                    <div class="status-badge">
+                        <i class="fas fa-check"></i>
+                    </div>
+                </div>
+                {% else %}
+                <div style="padding: 20px; text-align: center; color: #999;">
+                    <i class="fas fa-exclamation-triangle"></i> 该订单暂无效果图
+                </div>
+                {% endfor %}
+            </div>
+        </aside>
+
+        <!-- 中间预览区域 -->
+        <main class="main-preview">
+            <div class="preview-container">
+                <div class="preview-image-wrapper" id="previewWrapper">
+                    {% if effect_images|length > 0 %}
+                    {% if effect_images|length > 1 %}
+                    <div class="nav-arrow nav-prev" onclick="navigateImage(-1)" title="上一张 (←)">
+                        <i class="fas fa-chevron-left"></i>
+                    </div>
+                    {% endif %}
+                    <img id="previewImage" src="{{ effect_images[0].url }}" alt="预览">
+                    {% if effect_images|length > 1 %}
+                    <div class="nav-arrow nav-next" onclick="navigateImage(1)" title="下一张 (→)">
+                        <i class="fas fa-chevron-right"></i>
+                    </div>
+                    {% endif %}
+                    {% else %}
+                    <div style="color: #999; text-align: center;">
+                        <i class="fas fa-image" style="font-size: 48px; margin-bottom: 16px;"></i>
+                        <p>暂无效果图</p>
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="preview-controls">
+                    <button class="control-btn" id="rotateBtn" onclick="window.rotateImage()" title="旋转">
+                        <i class="fas fa-redo"></i>
+                    </button>
+                    <button class="control-btn" id="cropBtn" onclick="window.cropImage()" title="裁切">
+                        <i class="fas fa-crop"></i>
+                    </button>
+                    <button class="control-btn heart" id="heartBtn" onclick="window.toggleHeart()" title="选中 (H)">
+                        <i class="fas fa-heart"></i>
+                    </button>
+                    <button class="control-btn design" id="designBtn" onclick="window.toggleDesign()" title="设计">
+                        <i class="fas fa-palette"></i>
+                    </button>
+                    <button class="control-btn" id="zoomBtn" onclick="window.zoomImage()" title="放大">
+                        <i class="fas fa-search-plus"></i>
+                    </button>
+                </div>
+            </div>
+        </main>
+
+        <!-- 右侧套餐产品区域 -->
+        <aside class="sidebar-right">
+            <div class="section-title">套餐产品</div>
+            {% if package_product and package_size %}
+            <div class="package-product-card">
+                <div class="package-card-image">
+                    <img src="{{ package_effect_image_url or package_product.image_url or '/static/images/default-product.png' }}" 
+                         alt="{{ package_product.name }}" 
+                         onerror="console.error('❌ 套餐效果图加载失败:', this.src); this.src='/static/images/default-product.png';"
+                         onload="console.log('✅ 套餐效果图加载成功:', this.src);">
+                </div>
+            </div>
+            <script>
+                console.log('📦 套餐产品信息:', {
+                    product: '{{ package_product.name }}',
+                    size: '{{ package_size.size_name }}',
+                    effect_image_url: '{{ package_effect_image_url or "(无)" }}',
+                    product_image_url: '{{ package_product.image_url or "(无)" }}'
+                });
+            </script>
+            {% else %}
+            <div style="padding: 20px; text-align: center; color: #999;">
+                <i class="fas fa-info-circle"></i> 暂无套餐产品信息
+            </div>
+            <script>
+                console.log('⚠️ 套餐产品信息缺失:', {
+                    package_product: {{ 'true' if package_product else 'false' }},
+                    package_size: {{ 'true' if package_size else 'false' }},
+                    order_product_name: '{{ order.product_name or "(无)" }}',
+                    order_size: '{{ order.size or "(无)" }}'
+                });
+            </script>
+            {% endif %}
+
+            <!-- 套餐信息 -->
+            <div class="package-info">
+                <div class="section-title">套餐信息</div>
+                <div class="package-item">
+                    <div class="package-item-info">
+                        <div class="package-info-row">
+                            <span class="package-info-label">主题：</span>
+                            <span class="package-info-value">{{ order.product_name or '未指定' }}</span>
+                        </div>
+                        {% if order.size %}
+                        <div class="package-info-row">
+                            <span class="package-info-label">规格：</span>
+                            <span class="package-info-value">{{ order.size }}</span>
+                        </div>
+                        {% endif %}
+                        {% if order.style_name %}
+                        <div class="package-info-row">
+                            <span class="package-info-label">风格：</span>
+                            <span class="package-info-value">{{ order.style_name }}</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="package-item-desc" style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #e0e0e0;">
+                        免费选片: <strong style="color: #4361ee;">{{ free_selection_count }}</strong> 张底片
+                    </div>
+                </div>
+            </div>
+
+            <!-- 选片统计和提交 -->
+            <div class="submit-section">
+                <div class="selection-stats">
+                    <div class="stat-item">
+                        <span class="stat-label">已选择</span>
+                        <span class="stat-value"><span id="selectedCount">0</span> / {{ free_selection_count }} 张</span>
+                    </div>
+                </div>
+                
+                <select class="form-select mb-3" id="sizeSelect" style="display: none;">
+                    <option value="">请选择规格</option>
+                </select>
+                
+                <button class="btn-submit" onclick="submitSelection()" disabled id="submitBtn">
+                    <i class="fas fa-check"></i> 确认选片
+                </button>
+            </div>
+        </aside>
+    </div>
+
+    <script src="/static/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // 全局变量和函数，确保onclick可以访问
+        const freeSelectionCount = {{ free_selection_count }};
+        const extraPhotoPrice = {{ extra_photo_price }};
+        const effectImages = {{ effect_images | tojson }};
+        const designImageUrl = {% if design_image_url %}'{{ design_image_url }}'{% else %}null{% endif %};
+        console.log('🎨 初始化设计图片URL:', designImageUrl);
+        
+        let selectedImageIds = [];
+        let currentImageId = null;
+        let rejectedImageIds = [];
+        let imageRotation = 0; // 当前图片旋转角度
+        let isDesignActive = false; // 设计效果是否激活
+        let originalImageSrc = null; // 原始图片URL
+        
+        // 从URL参数恢复选中的照片ID
+        function restoreSelectedImages() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const imagesParam = urlParams.get('images');
+            if (imagesParam) {
+                // 解析照片ID列表
+                const imageIds = imagesParam.split(',').map(id => {
+                    const numId = parseInt(id);
+                    return isNaN(numId) ? null : numId;
+                }).filter(id => id !== null);
+                
+                // 验证这些ID是否存在于effectImages中
+                const validIds = imageIds.filter(id => {
+                    return effectImages.some(img => {
+                        const imgId = typeof img.id === 'string' ? parseInt(img.id) : img.id;
+                        return imgId === id;
+                    });
+                });
+                
+                if (validIds.length > 0) {
+                    selectedImageIds = validIds;
+                    console.log('✅ 恢复选中的照片:', selectedImageIds);
+                    // 更新UI
+                    updateSelectionUI();
+                }
+            }
+        }
+        
+        // 选择缩略图 - 定义为全局函数
+        window.selectThumbnail = function(imageId) {
+            // 确保imageId是数字类型（支持字符串和数字）
+            imageId = typeof imageId === 'string' ? parseInt(imageId) : imageId;
+            currentImageId = imageId;
+            const image = effectImages.find(img => img.id == imageId);
+            if (image) {
+                const previewImg = document.getElementById('previewImage');
+                if (previewImg) {
+                    originalImageSrc = image.url;
+                    previewImg.src = image.url;
+                    // 重置旋转和设计状态
+                    imageRotation = 0;
+                    isDesignActive = false;
+                    updateImageTransform();
+                    // 等待图片加载完成后再更新设计效果
+                    previewImg.onload = function() {
+                        updateDesignEffect();
+                    };
+                    // 如果图片已经加载完成，立即更新
+                    if (previewImg.complete) {
+                        setTimeout(updateDesignEffect, 100);
+                    }
+                }
+                
+                // 更新缩略图激活状态，并确保对应的缩略图已加载
+                document.querySelectorAll('.thumb-item').forEach(item => {
+                    const itemId = parseInt(item.dataset.imageId);
+                    if (itemId === imageId) {
+                        item.classList.add('active');
+                        // 如果缩略图还没加载，立即加载
+                        const thumbImg = item.querySelector('.lazy-image[data-src]');
+                        if (thumbImg) {
+                            const src = thumbImg.getAttribute('data-src');
+                            if (src) {
+                                thumbImg.src = src;
+                                thumbImg.removeAttribute('data-src');
+                                thumbImg.classList.remove('lazy-image');
+                            }
+                        }
+                    } else {
+                        item.classList.remove('active');
+                    }
+                });
+                
+                // 更新爱心按钮状态
+                updateHeartButton();
+            }
+        }
+        
+        // 懒加载图片
+        function initLazyLoading() {
+            const lazyImages = document.querySelectorAll('.lazy-image[data-src]');
+            
+            if ('IntersectionObserver' in window) {
+                const imageObserver = new IntersectionObserver((entries, observer) => {
+                    entries.forEach(entry => {
+                        if (entry.isIntersecting) {
+                            const img = entry.target;
+                            const src = img.getAttribute('data-src');
+                            if (src) {
+                                img.src = src;
+                                img.removeAttribute('data-src');
+                                img.classList.remove('lazy-image');
+                                observer.unobserve(img);
+                            }
+                        }
+                    });
+                }, {
+                    rootMargin: '50px' // 提前50px开始加载
+                });
+                
+                lazyImages.forEach(img => imageObserver.observe(img));
+            } else {
+                // 降级方案：直接加载所有图片
+                lazyImages.forEach(img => {
+                    const src = img.getAttribute('data-src');
+                    if (src) {
+                        img.src = src;
+                        img.removeAttribute('data-src');
+                        img.classList.remove('lazy-image');
+                    }
+                });
+            }
+        }
+        
+        // 初始化：选中第一张图片（在函数定义后执行）
+        document.addEventListener('DOMContentLoaded', function() {
+            // 从URL参数恢复选中的照片
+            restoreSelectedImages();
+            
+            // 立即加载前几张图片（确保可见区域有内容）
+            const firstImages = document.querySelectorAll('.lazy-image[data-src]');
+            const loadCount = Math.min(6, firstImages.length); // 先加载前6张（3行x2列）
+            for (let i = 0; i < loadCount; i++) {
+                const img = firstImages[i];
+                if (img) {
+                    const src = img.getAttribute('data-src');
+                    if (src) {
+                        img.src = src;
+                        img.removeAttribute('data-src');
+                        img.classList.remove('lazy-image');
+                    }
+                }
+            }
+            
+            // 初始化懒加载
+            initLazyLoading();
+            
+            // 初始化第一张图片（如果有选中的照片，优先显示第一张选中的）
+            if (effectImages.length > 0) {
+                let firstImageId;
+                if (selectedImageIds.length > 0) {
+                    // 如果有选中的照片，显示第一张选中的
+                    firstImageId = selectedImageIds[0];
+                } else {
+                    // 否则显示第一张照片
+                    firstImageId = effectImages[0].id;
+                }
+                currentImageId = typeof firstImageId === 'string' ? parseInt(firstImageId) : firstImageId;
+                window.selectThumbnail(firstImageId);
+            }
+            
+            // 使用事件委托确保所有缩略图都能点击
+            const thumbList = document.getElementById('thumbList');
+            if (thumbList) {
+                thumbList.addEventListener('click', function(e) {
+                    const thumbItem = e.target.closest('.thumb-item');
+                    if (thumbItem) {
+                        const imageId = thumbItem.dataset.imageId;
+                        if (imageId !== undefined && imageId !== null) {
+                            window.selectThumbnail(imageId);
+                        }
+                    }
+                });
+            }
+            
+            // 更新导航按钮显示状态
+            window.updateNavButtons();
+            
+            // 添加鼠标滚轮切换图片功能和点击选中功能
+            const previewWrapper = document.getElementById('previewWrapper');
+            if (previewWrapper) {
+                // 共享变量
+                let wheelTimeout = null;
+                let isWheeling = false;
+                let clickStartTime = 0;
+                let clickStartX = 0;
+                let clickStartY = 0;
+                let isDragging = false;
+                
+                // 滚轮切换图片
+                previewWrapper.addEventListener('wheel', function(e) {
+                    // 防止页面滚动
+                    e.preventDefault();
+                    
+                    // 标记正在滚动
+                    isWheeling = true;
+                    clearTimeout(wheelTimeout);
+                    
+                    // 延迟执行，避免滚动过快
+                    wheelTimeout = setTimeout(function() {
+                        isWheeling = false;
+                    }, 150);
+                    
+                    // 向上滚动切换到上一张，向下滚动切换到下一张
+                    if (e.deltaY < 0) {
+                        // 向上滚动
+                        window.navigateImage(-1);
+                    } else if (e.deltaY > 0) {
+                        // 向下滚动
+                        window.navigateImage(1);
+                    }
+                }, { passive: false });
+                
+                // 点击图片切换选中状态
+                previewWrapper.addEventListener('mousedown', function(e) {
+                    // 如果点击的是导航按钮或控制按钮，不处理
+                    if (e.target.closest('.nav-arrow') || e.target.closest('.control-btn')) {
+                        return;
+                    }
+                    
+                    clickStartTime = Date.now();
+                    clickStartX = e.clientX;
+                    clickStartY = e.clientY;
+                    isDragging = false;
+                });
+                
+                previewWrapper.addEventListener('mousemove', function(e) {
+                    if (clickStartTime > 0) {
+                        const moveDistance = Math.sqrt(
+                            Math.pow(e.clientX - clickStartX, 2) + 
+                            Math.pow(e.clientY - clickStartY, 2)
+                        );
+                        // 如果移动距离超过5px，认为是拖拽
+                        if (moveDistance > 5) {
+                            isDragging = true;
+                        }
+                    }
+                });
+                
+                previewWrapper.addEventListener('mouseup', function(e) {
+                    // 如果点击的是导航按钮或控制按钮，不处理
+                    if (e.target.closest('.nav-arrow') || e.target.closest('.control-btn')) {
+                        clickStartTime = 0;
+                        return;
+                    }
+                    
+                    // 检查是否是点击（不是拖拽，不是滚动）
+                    const clickDuration = Date.now() - clickStartTime;
+                    const moveDistance = Math.sqrt(
+                        Math.pow(e.clientX - clickStartX, 2) + 
+                        Math.pow(e.clientY - clickStartY, 2)
+                    );
+                    
+                    // 如果点击时间短于300ms且移动距离小于5px，且不是拖拽，且不在滚动中，认为是点击
+                    if (clickDuration < 300 && moveDistance < 5 && !isDragging && !isWheeling && clickStartTime > 0) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        // 切换选中状态
+                        window.toggleHeart();
+                    }
+                    
+                    // 重置
+                    clickStartTime = 0;
+                    isDragging = false;
+                });
+                
+                // 鼠标离开时重置
+                previewWrapper.addEventListener('mouseleave', function() {
+                    clickStartTime = 0;
+                    isDragging = false;
+                });
+            }
+        });
+        
+        // 切换爱心（保留）- 定义为全局函数
+        window.toggleHeart = function() {
+            if (!currentImageId) return;
+            
+            const index = selectedImageIds.indexOf(currentImageId);
+            if (index > -1) {
+                // 取消选择
+                selectedImageIds.splice(index, 1);
+            } else {
+                // 添加到选择列表
+                selectedImageIds.push(currentImageId);
+                // 从拒绝列表中移除
+                rejectedImageIds = rejectedImageIds.filter(id => id !== currentImageId);
+            }
+            
+            updateSelectionUI();
+            updateHeartButton();
+        }
+        
+        // 切换拒绝（删除）- 定义为全局函数
+        window.toggleReject = function() {
+            if (!currentImageId) return;
+            
+            const index = rejectedImageIds.indexOf(currentImageId);
+            if (index > -1) {
+                rejectedImageIds.splice(index, 1);
+            } else {
+                rejectedImageIds.push(currentImageId);
+                // 从选择列表中移除
+                selectedImageIds = selectedImageIds.filter(id => id !== currentImageId);
+            }
+            
+            updateSelectionUI();
+            updateHeartButton();
+        }
+        
+        // 更新爱心按钮状态
+        function updateHeartButton() {
+            const heartBtn = document.getElementById('heartBtn');
+            if (!heartBtn) return;
+            
+            if (currentImageId && selectedImageIds.includes(currentImageId)) {
+                heartBtn.classList.add('selected');
+            } else {
+                heartBtn.classList.remove('selected');
+            }
+        }
+        
+        // 当前过滤状态
+        let currentFilter = 'all';
+        
+        // 获取过滤后的图片列表
+        function getFilteredImages() {
+            if (currentFilter === 'all') {
+                return effectImages;
+            } else if (currentFilter === 'selected') {
+                return effectImages.filter(img => {
+                    const imgId = typeof img.id === 'string' ? parseInt(img.id) : img.id;
+                    return selectedImageIds.includes(imgId);
+                });
+            } else if (currentFilter === 'unselected') {
+                return effectImages.filter(img => {
+                    const imgId = typeof img.id === 'string' ? parseInt(img.id) : img.id;
+                    return !selectedImageIds.includes(imgId);
+                });
+            }
+            return effectImages;
+        }
+        
+        // 过滤缩略图
+        window.filterThumbnails = function(filter) {
+            currentFilter = filter;
+            
+            // 更新过滤标签状态
+            document.querySelectorAll('.filter-tab').forEach(tab => {
+                if (tab.dataset.filter === filter) {
+                    tab.classList.add('active');
+                } else {
+                    tab.classList.remove('active');
+                }
+            });
+            
+            // 应用过滤
+            document.querySelectorAll('.thumb-item').forEach(item => {
+                const imageId = parseInt(item.dataset.imageId);
+                const isSelected = selectedImageIds.includes(imageId);
+                
+                let shouldShow = true;
+                if (filter === 'selected') {
+                    shouldShow = isSelected;
+                } else if (filter === 'unselected') {
+                    shouldShow = !isSelected;
+                }
+                // filter === 'all' 时显示所有
+                
+                if (shouldShow) {
+                    item.style.display = '';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+            
+            // 获取过滤后的图片列表
+            const filteredImages = getFilteredImages();
+            
+            // 如果当前图片不在过滤后的列表中，切换到过滤后列表的第一张图片
+            if (filteredImages.length > 0) {
+                const currentId = typeof currentImageId === 'string' ? parseInt(currentImageId) : currentImageId;
+                const isCurrentInFiltered = filteredImages.some(img => {
+                    const imgId = typeof img.id === 'string' ? parseInt(img.id) : img.id;
+                    return imgId === currentId;
+                });
+                
+                if (!isCurrentInFiltered) {
+                    // 切换到过滤后列表的第一张图片
+                    window.selectThumbnail(filteredImages[0].id);
+                }
+            }
+        };
+        
+        // 更新选择UI
+        function updateSelectionUI() {
+            // 更新缩略图选中状态
+            document.querySelectorAll('.thumb-item').forEach(item => {
+                const imageId = parseInt(item.dataset.imageId);
+                if (selectedImageIds.includes(imageId)) {
+                    item.classList.add('selected');
+                } else {
+                    item.classList.remove('selected');
+                }
+            });
+            
+            // 如果当前有过滤，重新应用过滤
+            if (currentFilter !== 'all') {
+                window.filterThumbnails(currentFilter);
+            }
+            
+            // 更新计数
+            const selectedCount = selectedImageIds.length;
+            document.getElementById('selectedCount').textContent = selectedCount;
+            
+            // 计算超出费用
+            const extraCount = Math.max(0, selectedCount - freeSelectionCount);
+            const extraFee = extraCount * extraPhotoPrice;
+            
+            // 超出费用字段已隐藏，不再更新
+            
+            // 隐藏产品价格和总价信息（不再关联产品）
+            const productPriceInfo = document.getElementById('productPriceInfo');
+            const totalPriceInfo = document.getElementById('totalPriceInfo');
+            if (productPriceInfo) {
+                productPriceInfo.style.display = 'none';
+            }
+            if (totalPriceInfo) {
+                if (extraFee > 0) {
+                    totalPriceInfo.style.display = 'flex';
+                    const totalPrice = document.getElementById('totalPrice');
+                    if (totalPrice) {
+                        totalPrice.textContent = '¥' + extraFee.toFixed(2);
+                    }
+                } else {
+                    totalPriceInfo.style.display = 'none';
+                }
+            }
+            
+            // 更新提交按钮状态（只要有选中的照片就可以提交，产品是可选增项）
+            const submitBtn = document.getElementById('submitBtn');
+            if (selectedCount > 0) {
+                submitBtn.disabled = false;
+            } else {
+                submitBtn.disabled = true;
+            }
+        }
+        
+        // 旋转图片
+        window.rotateImage = function() {
+            imageRotation = (imageRotation + 90) % 360;
+            updateImageTransform();
+        }
+        
+        // 更新图片变换（旋转）
+        function updateImageTransform() {
+            const previewImg = document.getElementById('previewImage');
+            if (previewImg) {
+                previewImg.style.transform = `rotate(${imageRotation}deg)`;
+                previewImg.style.transition = 'transform 0.3s ease';
+            }
+        }
+        
+        // 裁切图片
+        window.cropImage = function() {
+            alert('裁切功能开发中，将支持自定义裁剪区域');
+            // TODO: 实现裁切功能，可以使用canvas或者第三方库如cropperjs
+        }
+        
+        // 放大图片
+        window.zoomImage = function() {
+            const previewImg = document.getElementById('previewImage');
+            if (!previewImg) return;
+            
+            // 创建全屏模态框
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.95);
+                z-index: 10000;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                cursor: zoom-out;
+            `;
+            
+            const img = document.createElement('img');
+            img.src = previewImg.src;
+            img.style.cssText = `
+                max-width: 90%;
+                max-height: 90%;
+                object-fit: contain;
+                transform: rotate(${imageRotation}deg);
+            `;
+            
+            modal.appendChild(img);
+            document.body.appendChild(modal);
+            
+            // 点击关闭
+            modal.addEventListener('click', function() {
+                document.body.removeChild(modal);
+            });
+        }
+        
+        // 切换设计效果
+        window.toggleDesign = function() {
+            console.log('🎨 点击设计按钮, designImageUrl:', designImageUrl);
+            if (!designImageUrl) {
+                alert('当前风格主题未配置设计图片');
+                return;
+            }
+            
+            isDesignActive = !isDesignActive;
+            updateDesignEffect();
+        }
+        
+        // 更新设计效果（叠加设计图片）
+        function updateDesignEffect() {
+            const previewWrapper = document.getElementById('previewWrapper');
+            const previewImage = document.getElementById('previewImage');
+            if (!previewWrapper || !previewImage) return;
+            
+            // 移除现有的设计层和监听器
+            const existingDesign = previewWrapper.querySelector('.design-overlay');
+            if (existingDesign) {
+                // 清理监听器
+                if (existingDesign._resizeHandler) {
+                    window.removeEventListener('resize', existingDesign._resizeHandler);
+                    previewImage.removeEventListener('load', existingDesign._resizeHandler);
+                }
+                if (existingDesign._observer) {
+                    existingDesign._observer.disconnect();
+                }
+                existingDesign.remove();
+            }
+            
+            if (isDesignActive && designImageUrl) {
+                // 获取图片的实际位置和尺寸（相对于previewWrapper）
+                const imageRect = previewImage.getBoundingClientRect();
+                const wrapperRect = previewWrapper.getBoundingClientRect();
+                
+                // 计算图片相对于wrapper的位置和尺寸
+                const imageLeft = imageRect.left - wrapperRect.left;
+                const imageTop = imageRect.top - wrapperRect.top;
+                const imageWidth = imageRect.width;
+                const imageHeight = imageRect.height;
+                
+                // 创建设计层，定位到实际图片的位置
+                const designOverlay = document.createElement('div');
+                designOverlay.className = 'design-overlay';
+                designOverlay.style.cssText = `
+                    position: absolute;
+                    left: ${imageLeft}px;
+                    top: ${imageTop}px;
+                    width: ${imageWidth}px;
+                    height: ${imageHeight}px;
+                    background-image: url(${designImageUrl});
+                    background-size: cover;
+                    background-position: center;
+                    background-repeat: no-repeat;
+                    pointer-events: none;
+                    z-index: 5;
+                    mix-blend-mode: overlay;
+                    opacity: 0.8;
+                `;
+                
+                previewWrapper.appendChild(designOverlay);
+                
+                // 更新位置的函数
+                const updatePosition = () => {
+                    const newImageRect = previewImage.getBoundingClientRect();
+                    const newWrapperRect = previewWrapper.getBoundingClientRect();
+                    const newImageLeft = newImageRect.left - newWrapperRect.left;
+                    const newImageTop = newImageRect.top - newWrapperRect.top;
+                    const newImageWidth = newImageRect.width;
+                    const newImageHeight = newImageRect.height;
+                    
+                    designOverlay.style.left = `${newImageLeft}px`;
+                    designOverlay.style.top = `${newImageTop}px`;
+                    designOverlay.style.width = `${newImageWidth}px`;
+                    designOverlay.style.height = `${newImageHeight}px`;
+                };
+                
+                // 保存更新函数到overlay对象，以便后续清理
+                designOverlay._resizeHandler = updatePosition;
+                
+                // 添加监听器
+                window.addEventListener('resize', updatePosition);
+                previewImage.addEventListener('load', updatePosition);
+                
+                // 使用MutationObserver监听图片尺寸变化
+                designOverlay._observer = new MutationObserver(updatePosition);
+                designOverlay._observer.observe(previewImage, {
+                    attributes: true,
+                    attributeFilter: ['style', 'src']
+                });
+                
+                // 使用ResizeObserver监听图片尺寸变化（更准确）
+                if (window.ResizeObserver) {
+                    designOverlay._resizeObserver = new ResizeObserver(updatePosition);
+                    designOverlay._resizeObserver.observe(previewImage);
+                }
+                
+                // 更新按钮状态
+                const designBtn = document.getElementById('designBtn');
+                if (designBtn) {
+                    designBtn.classList.add('active');
+                }
+            } else {
+                // 更新按钮状态
+                const designBtn = document.getElementById('designBtn');
+                if (designBtn) {
+                    designBtn.classList.remove('active');
+                }
+            }
+        }
+        
+        // 键盘快捷键
+        document.addEventListener('keydown', function(e) {
+            // 如果正在输入框中，不触发快捷键
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') {
+                return;
+            }
+            
+            if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+                e.preventDefault();
+                window.navigateImage(-1);
+            } else if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+                e.preventDefault();
+                window.navigateImage(1);
+            } else if (e.key === 'h' || e.key === 'H') {
+                e.preventDefault();
+                window.toggleHeart();
+            } else if (e.key === 'x' || e.key === 'X') {
+                e.preventDefault();
+                window.toggleReject();
+            }
+        });
+        
+        // 导航图片 - 定义为全局函数
+        window.navigateImage = function(direction) {
+            // 获取过滤后的图片列表
+            const filteredImages = getFilteredImages();
+            
+            if (filteredImages.length === 0) return;
+            if (filteredImages.length === 1) {
+                // 如果只有一张图片，直接切换到它（如果当前不是这张）
+                const imgId = typeof filteredImages[0].id === 'string' ? parseInt(filteredImages[0].id) : filteredImages[0].id;
+                const currentId = typeof currentImageId === 'string' ? parseInt(currentImageId) : currentImageId;
+                if (imgId !== currentId) {
+                    window.selectThumbnail(filteredImages[0].id);
+                }
+                return;
+            }
+            
+            // 确保currentImageId是数字类型
+            const currentId = typeof currentImageId === 'string' ? parseInt(currentImageId) : currentImageId;
+            
+            // 在过滤后的列表中查找当前图片的索引
+            let currentIndex = filteredImages.findIndex(img => {
+                const imgId = typeof img.id === 'string' ? parseInt(img.id) : img.id;
+                return imgId === currentId;
+            });
+            
+            // 如果当前图片不在过滤后的列表中，使用第一张或最后一张
+            if (currentIndex === -1) {
+                currentIndex = direction > 0 ? -1 : filteredImages.length; // 向前则从最后一张开始，向后则从第一张开始
+            }
+            
+            // 计算新索引
+            let newIndex = currentIndex + direction;
+            
+            // 循环切换
+            if (newIndex < 0) {
+                newIndex = filteredImages.length - 1;
+            } else if (newIndex >= filteredImages.length) {
+                newIndex = 0;
+            }
+            
+            // 切换到新图片
+            if (filteredImages[newIndex]) {
+                window.selectThumbnail(filteredImages[newIndex].id);
+            }
+        }
+        
+        // 更新导航按钮显示状态
+        window.updateNavButtons = function() {
+            const navPrev = document.querySelector('.nav-prev');
+            const navNext = document.querySelector('.nav-next');
+            if (effectImages.length <= 1) {
+                if (navPrev) navPrev.style.display = 'none';
+                if (navNext) navNext.style.display = 'none';
+            } else {
+                if (navPrev) navPrev.style.display = 'flex';
+                if (navNext) navNext.style.display = 'flex';
+            }
+        };
+        
+        // 跳转到确认选片页面
+        function submitSelection() {
+            if (selectedImageIds.length === 0) {
+                alert('请至少选择一张照片');
+                return;
+            }
+            
+            // 跳转到确认选片页面，传递选中的图片ID
+            const imageIdsParam = selectedImageIds.join(',');
+            window.location.href = '/admin/photo-selection/{{ order.id }}/confirm?images=' + imageIdsParam;
+        }
+        
+        // 打开确认选片模态框
+        function openConfirmModal() {
+            const modal = document.getElementById('confirmSelectionModal');
+            if (!modal) return;
+            
+            // 获取选中的图片信息
+            const selectedImages = effectImages.filter(img => selectedImageIds.includes(img.id));
+            
+            // 清空并填充图片列表
+            const imageList = document.getElementById('confirmImageList');
+            imageList.innerHTML = '';
+            
+            selectedImages.forEach((image, index) => {
+                const item = document.createElement('div');
+                item.className = 'confirm-image-item';
+                item.dataset.imageId = image.id;
+                item.dataset.imageUrl = image.url;
+                
+                // 默认产品：电子照片打印1张，默认数量1，默认价格10元
+                const defaultProductName = '电子照片打印1张';
+                const defaultQuantity = 1;
+                const defaultPrice = 10.0;
+                
+                item.innerHTML = `
+                    <div class="confirm-image-preview">
+                        <img src="${image.url}" alt="效果图 ${index + 1}">
+                    </div>
+                    <div class="confirm-image-info">
+                        <div class="confirm-image-label">图${index + 1}</div>
+                        <div class="confirm-product-name">${defaultProductName}</div>
+                        <div class="confirm-quantity-control">
+                            <button type="button" class="quantity-btn minus" onclick="adjustQuantity(${index}, -1)">-</button>
+                            <input type="number" class="quantity-input" value="${defaultQuantity}" min="1" data-index="${index}" onchange="updateQuantity(${index}, this.value)">
+                            <button type="button" class="quantity-btn plus" onclick="adjustQuantity(${index}, 1)">+</button>
+                        </div>
+                        <div class="confirm-item-price">¥<span class="item-price-value" data-index="${index}">${defaultPrice.toFixed(2)}</span></div>
+                    </div>
+                `;
+                
+                imageList.appendChild(item);
+            });
+            
+            // 更新总价
+            updateTotalPrice();
+            
+            // 显示模态框
+            modal.style.display = 'flex';
+        }
+        
+        // 调整数量
+        function adjustQuantity(index, delta) {
+            const item = document.querySelector(`.confirm-image-item:nth-child(${index + 1})`);
+            if (!item) return;
+            
+            const quantityInput = item.querySelector('.quantity-input');
+            const currentQuantity = parseInt(quantityInput.value) || 1;
+            const newQuantity = Math.max(1, currentQuantity + delta);
+            
+            quantityInput.value = newQuantity;
+            updateQuantity(index, newQuantity);
+        }
+        
+        // 更新数量
+        function updateQuantity(index, quantity) {
+            const qty = parseInt(quantity) || 1;
+            const item = document.querySelector(`.confirm-image-item:nth-child(${index + 1})`);
+            if (!item) return;
+            
+            const quantityInput = item.querySelector('.quantity-input');
+            quantityInput.value = Math.max(1, qty);
+            
+            // 更新单价显示（默认10元/张）
+            const pricePerItem = 10.0;
+            const itemPrice = pricePerItem * quantityInput.value;
+            const priceElement = item.querySelector('.item-price-value');
+            if (priceElement) {
+                priceElement.textContent = itemPrice.toFixed(2);
+            }
+            
+            // 更新总价
+            updateTotalPrice();
+        }
+        
+        // 更新总价
+        function updateTotalPrice() {
+            const items = document.querySelectorAll('.confirm-image-item');
+            let total = 0;
+            
+            items.forEach(item => {
+                const quantity = parseInt(item.querySelector('.quantity-input').value) || 1;
+                const pricePerItem = 10.0; // 默认价格
+                total += pricePerItem * quantity;
+            });
+            
+            const totalPriceElement = document.getElementById('confirmTotalPrice');
+            if (totalPriceElement) {
+                totalPriceElement.textContent = total.toFixed(2);
+            }
+        }
+        
+        // 关闭确认模态框
+        function closeConfirmModal() {
+            const modal = document.getElementById('confirmSelectionModal');
+            if (modal) {
+                modal.style.display = 'none';
+            }
+        }
+        
+        // 提交确认的选片
+        function submitConfirmedSelection() {
+            const items = document.querySelectorAll('.confirm-image-item');
+            const selectedImageIds = [];
+            
+            items.forEach(item => {
+                const imageId = parseInt(item.dataset.imageId);
+                selectedImageIds.push(imageId);
+            });
+            
+            // 提交选片结果
+            fetch('{{ url_for("photo_selection.photo_selection_submit", order_id=order.id) }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    selected_image_ids: selectedImageIds
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(data.message || '选片成功');
+                    closeConfirmModal();
+                    window.location.href = '{{ url_for("photo_selection.photo_selection_list") }}';
+                } else {
+                    alert(data.message || '选片失败');
+                }
+            })
+            .catch(error => {
+                console.error('提交选片失败:', error);
+                alert('提交选片失败，请重试');
+            });
+        }
+    </script>
+</body>
+</html>

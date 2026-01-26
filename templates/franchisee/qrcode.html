@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>我的二维码 - {{ account.company_name }}</title>
+    <link href="/static/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .qrcode-card { border-left: 4px solid #007bff; }
+        .info-card { border-left: 4px solid #28a745; }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="/franchisee/dashboard">加盟商管理</a>
+            <div class="collapse navbar-collapse">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <span class="nav-link">{{ account.company_name }}</span>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/franchisee/logout">退出登录</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <!-- 页面标题 -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>📱 我的二维码</h2>
+            <div class="btn-group">
+                <a href="/franchisee/dashboard" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> 返回首页
+                </a>
+            </div>
+        </div>
+
+        <!-- 消息提示 -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="row">
+            <!-- 二维码显示区域 -->
+            <div class="col-md-6">
+                <div class="card qrcode-card">
+                    <div class="card-header">
+                        <h5 class="mb-0">📱 推广二维码</h5>
+                    </div>
+                    <div class="card-body text-center">
+                        <div id="qrcodeContainer">
+                            <div class="spinner-border" role="status">
+                                <span class="visually-hidden">加载中...</span>
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <button type="button" class="btn btn-primary" onclick="refreshQrcode()">
+                                <i class="fas fa-sync-alt"></i> 刷新二维码
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 二维码信息 -->
+            <div class="col-md-6">
+                <div class="card info-card">
+                    <div class="card-header">
+                        <h5 class="mb-0">ℹ️ 二维码信息</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="qrcodeInfo" style="display: none;">
+                            <p><strong>公司名称：</strong>{{ account.company_name }}</p>
+                            <p><strong>二维码标识：</strong>{{ account.qr_code }}</p>
+                            <p><strong>二维码链接：</strong></p>
+                            <p class="small text-break bg-light p-2 rounded" id="qrContent"></p>
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle"></i>
+                                <strong>使用说明：</strong><br>
+                                1. 用户扫描此二维码可直接进入下单页面<br>
+                                2. 系统会自动扣除您的账户额度<br>
+                                3. 订单完成后可在订单管理中查看详情
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 账户信息 -->
+                <div class="card info-card mt-3">
+                    <div class="card-header">
+                        <h5 class="mb-0">💰 账户信息</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-6">
+                                <p class="mb-1"><strong>总充值额度：</strong></p>
+                                <h4 class="text-primary">¥{{ "%.2f"|format(account.total_quota) }}</h4>
+                            </div>
+                            <div class="col-6">
+                                <p class="mb-1"><strong>已使用额度：</strong></p>
+                                <h4 class="text-warning">¥{{ "%.2f"|format(account.used_quota) }}</h4>
+                            </div>
+                        </div>
+                        <hr>
+                        <div class="text-center">
+                            <p class="mb-1"><strong>剩余额度：</strong></p>
+                            <h3 class="text-success">¥{{ "%.2f"|format(account.remaining_quota) }}</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // 页面加载时获取二维码
+        document.addEventListener('DOMContentLoaded', function() {
+            loadQrcode();
+        });
+
+        function loadQrcode() {
+            const container = document.getElementById('qrcodeContainer');
+            const info = document.getElementById('qrcodeInfo');
+            
+            // 显示加载状态
+            container.innerHTML = '<div class="spinner-border" role="status"><span class="visually-hidden">加载中...</span></div>';
+            info.style.display = 'none';
+            
+            // 获取二维码数据
+            fetch('/franchisee/api/qrcode-preview')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        container.innerHTML = `<img src="${data.qrcode}" class="img-fluid" alt="二维码" style="max-width: 300px;">`;
+                        document.getElementById('qrContent').textContent = data.content;
+                        info.style.display = 'block';
+                    } else {
+                        container.innerHTML = `<div class="alert alert-danger">${data.message}</div>`;
+                    }
+                })
+                .catch(error => {
+                    container.innerHTML = `<div class="alert alert-danger">加载失败: ${error.message}</div>`;
+                });
+        }
+
+        function refreshQrcode() {
+            loadQrcode();
+        }
+    </script>
+</body>
+</html>
+

@@ -1,0 +1,122 @@
+<!-- 统一导航栏模板 -->
+<nav class="navbar navbar-expand-lg navbar-dark navbar-custom fixed-top">
+    <div class="container">
+        <a class="navbar-brand" href="/admin/dashboard">{{ brand_name }}后台</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ms-auto">
+                <!-- 仪表盘 -->
+                <li class="nav-item">
+                    <a class="nav-link {% if request.endpoint and 'dashboard' in request.endpoint or request.path == '/admin/dashboard' %}active{% endif %}" href="/admin/dashboard">仪表盘</a>
+                </li>
+                <!-- 订单管理下拉菜单 -->
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle {% if request.path == '/admin/orders' or '/admin/order/' in request.path or request.path == '/admin/shop/orders' %}active{% endif %}" href="#" id="ordersDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        订单管理
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-dark" aria-labelledby="ordersDropdown">
+                        <li><a class="dropdown-item {% if request.path == '/admin/orders' or '/admin/order/' in request.path %}active{% endif %}" href="/admin/orders">
+                            <i class="fas fa-shopping-cart me-2"></i>订单管理
+                        </a></li>
+                        <li><a class="dropdown-item {% if request.path == '/admin/shop/orders' %}active{% endif %}" href="/admin/shop/orders">
+                            <i class="fas fa-store me-2"></i>商城订单
+                        </a></li>
+                    </ul>
+                </li>
+                <!-- 选片页面 -->
+                <li class="nav-item">
+                    <a class="nav-link {% if request.path == '/admin/photo-selection' %}active{% endif %}" href="/admin/photo-selection">选片页面</a>
+                </li>
+                <!-- 加盟商 -->
+                <li class="nav-item">
+                    <a class="nav-link {% if '/franchisee/admin' in request.path or '/admin/franchisee' in request.path %}active{% endif %}" href="/franchisee/admin/accounts">加盟商</a>
+                </li>
+                <!-- 产品管理下拉菜单 -->
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle {% if request.endpoint and 'sizes' in request.endpoint or request.path == '/admin/sizes' or request.path == '/admin/shop/products' %}active{% endif %}" href="#" id="productsDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        产品管理
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-dark" aria-labelledby="productsDropdown">
+                        <li><a class="dropdown-item {% if request.endpoint and 'sizes' in request.endpoint or request.path == '/admin/sizes' %}active{% endif %}" href="/admin/sizes">
+                            <i class="fas fa-box me-2"></i>产品管理
+                        </a></li>
+                        <li><a class="dropdown-item {% if request.path == '/admin/shop/products' %}active{% endif %}" href="/admin/shop/products">
+                            <i class="fas fa-store me-2"></i>商城产品
+                        </a></li>
+                    </ul>
+                </li>
+                <!-- 风格管理 -->
+                <li class="nav-item">
+                    <a class="nav-link {% if request.endpoint and 'styles' in request.endpoint or request.path == '/admin/styles' %}active{% endif %}" href="/admin/styles">风格管理</a>
+                </li>
+                <!-- AI任务管理 -->
+                <li class="nav-item">
+                    <a class="nav-link {% if request.endpoint and 'ai.tasks' in request.endpoint or request.path == '/admin/ai/tasks' %}active{% endif %}" href="/admin/ai/tasks">AI任务管理</a>
+                </li>
+                <!-- 美颜任务管理 -->
+                <li class="nav-item">
+                    <a class="nav-link {% if request.endpoint and 'meitu.tasks' in request.endpoint or request.path == '/admin/meitu/tasks' %}active{% endif %}" href="/admin/meitu/tasks">美颜任务管理</a>
+                </li>
+                <!-- 系统配置下拉菜单 -->
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle {% if request.path == '/admin/system-config' or request.path == '/admin/meitu/config' or request.path == '/admin/ai-provider/config' %}active{% endif %}" href="#" id="systemConfigDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        系统配置
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-dark" aria-labelledby="systemConfigDropdown">
+                        <li><a class="dropdown-item {% if request.path == '/admin/system-config' %}active{% endif %}" href="/admin/system-config">
+                            <i class="fas fa-cog me-2"></i>系统配置
+                        </a></li>
+                        <li><a class="dropdown-item {% if request.path == '/admin/meitu/config' %}active{% endif %}" href="/admin/meitu/config">
+                            <i class="fas fa-sparkles me-2"></i>美颜API配置
+                        </a></li>
+                        <li><a class="dropdown-item {% if request.path == '/admin/ai-provider/config' %}active{% endif %}" href="/admin/ai-provider/config">
+                            <i class="fas fa-server me-2"></i>API服务商配置
+                        </a></li>
+                        <li><a class="dropdown-item {% if request.path == '/admin/image-cleanup' %}active{% endif %}" href="/admin/image-cleanup">
+                            <i class="fas fa-trash-alt me-2"></i>过期图片清理
+                        </a></li>
+                        <li><a class="dropdown-item {% if request.path == '/admin/system-config' %}active{% endif %}" href="/admin/system-config#image-path-config">
+                            <i class="fas fa-images me-2"></i>图片路径配置
+                        </a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item {% if request.path == '/admin/print-config' %}active{% endif %}" href="/admin/print-config">
+                            <i class="fas fa-print me-2"></i>打印配置
+                        </a></li>
+                        <li><a class="dropdown-item {% if request.path == '/admin/printer' %}active{% endif %}" href="/admin/printer">
+                            <i class="fas fa-server me-2"></i>打印机管理
+                        </a></li>
+                    </ul>
+                </li>
+                <!-- 小程序下拉菜单 -->
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle {% if request.path == '/admin/coupons' or request.path == '/admin/promotion' or request.path == '/admin/homepage' %}active{% endif %}" href="#" id="miniprogramDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        小程序
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-dark" aria-labelledby="miniprogramDropdown">
+                        <li><a class="dropdown-item {% if request.path == '/admin/coupons' %}active{% endif %}" href="/admin/coupons">
+                            <i class="fas fa-ticket-alt me-2"></i>优惠券管理
+                        </a></li>
+                        <li><a class="dropdown-item {% if request.path == '/admin/promotion' %}active{% endif %}" href="/admin/promotion">
+                            <i class="fas fa-share-alt me-2"></i>小程序用户管理
+                        </a></li>
+                        <li><a class="dropdown-item {% if request.path == '/admin/homepage' %}active{% endif %}" href="/admin/homepage">
+                            <i class="fas fa-home me-2"></i>首页配置
+                        </a></li>
+                    </ul>
+                </li>
+                <!-- 个人中心 -->
+                <li class="nav-item">
+                    <a class="nav-link {% if request.path == '/admin/profile' %}active{% endif %}" href="/admin/profile">
+                        <i class="bi bi-person-circle me-1"></i>个人中心
+                    </a>
+                </li>
+                <!-- 退出登录 -->
+                <li class="nav-item">
+                    <a class="nav-link" href="/logout">退出登录</a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>

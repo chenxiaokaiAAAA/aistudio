@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ account.company_name }} - 加盟商详情</title>
+    <link href="/static/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            padding-top: 80px;
+        }
+        .navbar-custom {
+            background: #0a0a0a !important;
+            border-bottom: 1px solid #1a1a1a;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        }
+        .navbar-brand, .nav-link {
+            color: #e0e0e0 !important;
+        }
+        .nav-link:hover {
+            color: #ffffff !important;
+        }
+        .nav-link.active {
+            color: #ffffff !important;
+            font-weight: 600;
+        }
+        .info-card { border-left: 4px solid #007bff; }
+        .quota-card { border-left: 4px solid #28a745; }
+        .order-card { border-left: 4px solid #ffc107; }
+        .recharge-card { border-left: 4px solid #17a2b8; }
+        .status-active { color: #28a745; }
+        .status-inactive { color: #6c757d; }
+        .status-suspended { color: #dc3545; }
+        /* 自拍机设备管理样式增强 */
+        .card-header h5 {
+            color: #212529;
+            font-weight: 600;
+        }
+        .btn-primary {
+            color: #fff !important;
+            font-weight: 500;
+        }
+        .btn-outline-warning {
+            color: #856404 !important;
+            font-weight: 500;
+        }
+        .btn-outline-danger {
+            color: #721c24 !important;
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body>
+    <!-- 导航栏 -->
+    {% include 'admin/_navbar.html' %}
+
+    <div class="container mt-4">
+        <!-- 页面标题和操作按钮 -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>🏢 {{ account.company_name }} - 账户详情</h2>
+            <div class="btn-group">
+                <a href="/franchisee/admin/accounts/{{ account.id }}/edit" class="btn btn-warning">
+                    <i class="fas fa-edit"></i> 编辑
+                </a>
+                <a href="/franchisee/admin/accounts/{{ account.id }}/recharge" class="btn btn-success">
+                    <i class="fas fa-plus"></i> 充值
+                </a>
+                <button type="button" class="btn btn-info" onclick="previewQrcode({{ account.id }})">
+                    <i class="fas fa-qrcode"></i> 预览二维码
+                </button>
+                <a href="/franchisee/api/generate-qrcode/{{ account.id }}" class="btn btn-outline-primary">
+                    <i class="fas fa-download"></i> 下载二维码
+                </a>
+                <button type="button" class="btn btn-danger" onclick="confirmDelete({{ account.id }}, '{{ account.company_name }}')">
+                    <i class="fas fa-trash"></i> 删除
+                </button>
+                <a href="/franchisee/admin/accounts" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> 返回列表
+                </a>
+            </div>
+        </div>
+
+        <!-- 消息提示 -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="row">
+            <!-- 基本信息 -->
+            <div class="col-md-4">
+                <div class="card info-card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">📋 基本信息</h5>
+                    </div>
+                    <div class="card-body">
+                        <table class="table table-borderless table-sm">
+                            <tr>
+                                <td><strong>用户名:</strong></td>
+                                <td>{{ account.username }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>公司名称:</strong></td>
+                                <td>{{ account.company_name }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>联系人:</strong></td>
+                                <td>{{ account.contact_person }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>联系电话:</strong></td>
+                                <td>{{ account.contact_phone }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>联系邮箱:</strong></td>
+                                <td>{{ account.contact_email or '未设置' }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>状态:</strong></td>
+                                <td>
+                                    {% if account.status == 'active' %}
+                                        <span class="badge bg-success">正常</span>
+                                    {% elif account.status == 'inactive' %}
+                                        <span class="badge bg-secondary">未激活</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">已暂停</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><strong>二维码:</strong></td>
+                                <td>
+                                    <code>{{ account.qr_code }}</code>
+                                    <a href="/franchisee/api/generate-qrcode/{{ account.id }}" class="btn btn-sm btn-outline-primary ms-2">
+                                        <i class="fas fa-download"></i> 下载二维码
+                                    </a>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><strong>创建时间:</strong></td>
+                                <td>{{ account.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                            </tr>
+                        </table>
+                        {% if account.address %}
+                        <div class="mt-3">
+                            <strong>公司地址:</strong>
+                            <p class="text-muted">{{ account.address }}</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- 额度信息 -->
+            <div class="col-md-4">
+                <div class="card quota-card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">💰 额度信息</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="text-center mb-3">
+                            <h3 class="text-success">¥{{ "%.2f"|format(account.remaining_quota) }}</h3>
+                            <p class="text-muted">剩余额度</p>
+                        </div>
+                        <table class="table table-borderless table-sm">
+                            <tr>
+                                <td>总额度:</td>
+                                <td class="text-end"><strong>¥{{ "%.2f"|format(account.total_quota) }}</strong></td>
+                            </tr>
+                            <tr>
+                                <td>已使用:</td>
+                                <td class="text-end text-warning">¥{{ "%.2f"|format(account.used_quota) }}</td>
+                            </tr>
+                            <tr>
+                                <td>使用率:</td>
+                                <td class="text-end">
+                                    {% if account.total_quota > 0 %}
+                                        {{ "%.1f"|format((account.used_quota / account.total_quota) * 100) }}%
+                                    {% else %}
+                                        0%
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        </table>
+                        <div class="progress mb-3">
+                            {% if account.total_quota > 0 %}
+                                {% set usage_percent = (account.used_quota / account.total_quota) * 100 %}
+                            {% else %}
+                                {% set usage_percent = 0 %}
+                            {% endif %}
+                            <div class="progress-bar bg-warning" style="width: {{ usage_percent }}%"></div>
+                        </div>
+                        <div class="d-grid">
+                            <a href="/franchisee/admin/accounts/{{ account.id }}/recharge" class="btn btn-success btn-sm">
+                                <i class="fas fa-plus"></i> 立即充值
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 统计信息 -->
+            <div class="col-md-4">
+                <div class="card order-card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">📊 统计信息</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row text-center">
+                            <div class="col-6">
+                                <h4 class="text-primary">{{ total_orders }}</h4>
+                                <small class="text-muted">总订单数</small>
+                            </div>
+                            <div class="col-6">
+                                <h4 class="text-info">¥{{ "%.2f"|format(total_order_amount) }}</h4>
+                                <small class="text-muted">订单总额</small>
+                            </div>
+                        </div>
+                        <hr>
+                        <div class="row text-center">
+                            <div class="col-12">
+                                <h4 class="text-warning">¥{{ "%.2f"|format(total_deduction) }}</h4>
+                                <small class="text-muted">累计扣除</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 标签页 -->
+        <ul class="nav nav-tabs" id="detailTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="orders-tab" data-bs-toggle="tab" data-bs-target="#orders" type="button" role="tab">
+                    订单记录 ({{ orders|length }})
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="recharge-tab" data-bs-toggle="tab" data-bs-target="#recharge" type="button" role="tab">
+                    充值记录 ({{ recharge_records|length }})
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="machines-tab" data-bs-toggle="tab" data-bs-target="#machines" type="button" role="tab">
+                    自拍机设备 ({{ machines|length }})
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="staff-tab" data-bs-toggle="tab" data-bs-target="#staff" type="button" role="tab">
+                    子用户管理 ({{ staff_users|length }})
+                </button>
+            </li>
+        </ul>
+
+        <div class="tab-content" id="detailTabsContent">
+            <!-- 订单记录 -->
+            <div class="tab-pane fade show active" id="orders" role="tabpanel">
+                <div class="card">
+                    <div class="card-body">
+                        {% if orders %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>订单号</th>
+                                        <th>客户信息</th>
+                                        <th>产品</th>
+                                        <th>金额</th>
+                                        <th>扣除</th>
+                                        <th>状态</th>
+                                        <th>创建时间</th>
+                                        <th>操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for order in orders %}
+                                    <tr>
+                                        <td><code>{{ order.order_number }}</code></td>
+                                        <td>
+                                            {{ order.customer_name }}<br>
+                                            <small class="text-muted">{{ order.customer_phone }}</small>
+                                        </td>
+                                        <td>{{ order.product_name }}</td>
+                                        <td>¥{{ "%.2f"|format(order.price) }}</td>
+                                        <td class="text-warning">¥{{ "%.2f"|format(order.franchisee_deduction) }}</td>
+                                        <td>
+                                            {% if order.status == 'cancelled' %}
+                                                <span class="badge bg-danger">已取消</span>
+                                            {% elif order.status == 'completed' %}
+                                                <span class="badge bg-success">已完成</span>
+                                            {% elif order.status == 'processing' %}
+                                                <span class="badge bg-warning">处理中</span>
+                                            {% elif order.status == 'shipped' %}
+                                                <span class="badge bg-info">已发货</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">{{ order.status }}</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ order.created_at.strftime('%m-%d %H:%M') }}</td>
+                                        <td>
+                                            {% if order.status != 'cancelled' and order.status != 'completed' and order.status != 'shipped' %}
+                                            <button class="btn btn-sm btn-outline-danger" 
+                                                    onclick="cancelOrder({{ order.id }}, '{{ order.order_number }}', {{ order.franchisee_deduction }})">
+                                                <i class="fas fa-times-circle"></i> 取消订单
+                                            </button>
+                                            {% else %}
+                                            <a href="/admin/order/{{ order.id }}" class="btn btn-sm btn-primary">查看</a>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% else %}
+                        <div class="text-center py-4">
+                            <p class="text-muted">暂无订单记录</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- 充值记录 -->
+            <div class="tab-pane fade" id="recharge" role="tabpanel">
+                <div class="card">
+                    <div class="card-body">
+                        {% if recharge_records %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>充值金额</th>
+                                        <th>类型</th>
+                                        <th>操作员</th>
+                                        <th>说明</th>
+                                        <th>时间</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for record in recharge_records %}
+                                    <tr>
+                                        <td>
+                                            <span class="text-success">+¥{{ "%.2f"|format(record.amount) }}</span>
+                                            {% if record.bonus_amount and record.bonus_amount > 0 %}
+                                                <br><small class="text-danger">（含赠送¥{{ "%.2f"|format(record.bonus_amount) }}）</small>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if record.recharge_type == 'manual' %}
+                                                <span class="badge bg-primary">手动充值</span>
+                                            {% elif record.recharge_type == 'refund' %}
+                                                <span class="badge bg-warning">退款</span>
+                                            {% else %}
+                                                <span class="badge bg-info">调整</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ record.admin_user.username }}</td>
+                                        <td>{{ record.description or '无' }}</td>
+                                        <td>{{ record.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% else %}
+                        <div class="text-center py-4">
+                            <p class="text-muted">暂无充值记录</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 自拍机设备 -->
+            <div class="tab-pane fade" id="machines" role="tabpanel">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">📱 自拍机设备管理</h5>
+                        <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addMachineModal">
+                            <i class="fas fa-plus"></i> 添加设备
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        {% if machines %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>设备名称</th>
+                                        <th>序列号</th>
+                                        <th>位置</th>
+                                        <th>状态</th>
+                                        <th>备注</th>
+                                        <th>创建时间</th>
+                                        <th>操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for machine in machines %}
+                                    <tr>
+                                        <td><strong>{{ machine.machine_name }}</strong></td>
+                                        <td><code>{{ machine.machine_serial_number }}</code></td>
+                                        <td>{{ machine.location or '未设置' }}</td>
+                                        <td>
+                                            {% if machine.status == 'active' %}
+                                                <span class="badge bg-success">正常</span>
+                                            {% elif machine.status == 'inactive' %}
+                                                <span class="badge bg-secondary">停用</span>
+                                            {% else %}
+                                                <span class="badge bg-warning">维护中</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ machine.notes or '-' }}</td>
+                                        <td>{{ machine.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                                        <td>
+                                            <button type="button" class="btn btn-sm btn-outline-warning" 
+                                                    onclick="editMachine({{ machine.id }}, '{{ machine.machine_name }}', '{{ machine.machine_serial_number }}', '{{ machine.location or '' }}', '{{ machine.notes or '' }}', '{{ machine.status }}')">
+                                                <i class="fas fa-edit"></i> 编辑
+                                            </button>
+                                            <button type="button" class="btn btn-sm btn-outline-danger" 
+                                                    onclick="confirmDeleteMachine({{ machine.id }}, '{{ machine.machine_name }}')">
+                                                <i class="fas fa-trash"></i> 删除
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% else %}
+                        <div class="text-center py-4">
+                            <p class="text-muted">暂无自拍机设备</p>
+                            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addMachineModal">
+                                <i class="fas fa-plus"></i> 添加第一个设备
+                            </button>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 子用户管理 -->
+            <div class="tab-pane fade" id="staff" role="tabpanel">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">👥 子用户管理（店员权限配置）</h5>
+                        <a href="/staff-permission/franchisee/{{ account.id }}/staff/add" class="btn btn-primary btn-sm">
+                            <i class="fas fa-plus"></i> 添加子用户
+                        </a>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i> 
+                            <strong>说明：</strong>子用户（店员）可以通过手机号或openid进行匹配，配置不同的权限（如查看今天的订单、查看门店图片等）。
+                            建议优先使用手机号进行匹配，更便于管理。
+                        </div>
+                        {% if staff_users %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>姓名</th>
+                                        <th>手机号</th>
+                                        <th>OpenID</th>
+                                        <th>角色</th>
+                                        <th>权限</th>
+                                        <th>状态</th>
+                                        <th>创建时间</th>
+                                        <th>操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for staff in staff_users %}
+                                    <tr>
+                                        <td><strong>{{ staff.name or '-' }}</strong></td>
+                                        <td>{{ staff.phone or '-' }}</td>
+                                        <td><code style="font-size: 0.8rem;">{{ staff.openid[:20] + '...' if staff.openid and staff.openid|length > 20 else (staff.openid or '-') }}</code></td>
+                                        <td>{{ staff.role }}</td>
+                                        <td>
+                                            {% if staff.permissions %}
+                                                {% set perms = staff.permissions|from_json %}
+                                            {% else %}
+                                                {% set perms = {} %}
+                                            {% endif %}
+                                            {% if perms.get('view_today_orders') %}
+                                                <span class="badge bg-info">今日订单</span>
+                                            {% endif %}
+                                            {% if perms.get('view_store_images') %}
+                                                <span class="badge bg-success">门店图片</span>
+                                            {% endif %}
+                                            {% if perms.get('view_all_orders') %}
+                                                <span class="badge bg-primary">全部订单</span>
+                                            {% endif %}
+                                            {% if perms.get('view_statistics') %}
+                                                <span class="badge bg-warning">统计数据</span>
+                                            {% endif %}
+                                            {% if perms.get('groupon_verify') %}
+                                                <span class="badge bg-danger">团购核销</span>
+                                            {% endif %}
+                                            {% if not perms or (not perms.get('view_today_orders') and not perms.get('view_store_images') and not perms.get('view_all_orders') and not perms.get('view_statistics') and not perms.get('groupon_verify')) %}
+                                                <span class="text-muted">无权限</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if staff.status == 'active' %}
+                                                <span class="badge bg-success">正常</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">停用</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ staff.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                                        <td>
+                                            <a href="/staff-permission/franchisee/{{ account.id }}/staff/{{ staff.id }}/edit" class="btn btn-sm btn-outline-warning">
+                                                <i class="fas fa-edit"></i> 编辑
+                                            </a>
+                                            <form method="POST" action="/staff-permission/franchisee/{{ account.id }}/staff/{{ staff.id }}/delete" 
+                                                  style="display: inline;" onsubmit="return confirm('确定要删除该子用户吗？');">
+                                                <button type="submit" class="btn btn-sm btn-outline-danger">
+                                                    <i class="fas fa-trash"></i> 删除
+                                                </button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% else %}
+                        <div class="text-center py-4">
+                            <p class="text-muted">暂无子用户</p>
+                            <a href="/staff-permission/franchisee/{{ account.id }}/staff/add" class="btn btn-primary">
+                                <i class="fas fa-plus"></i> 添加第一个子用户
+                            </a>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 添加设备模态框 -->
+    <div class="modal fade" id="addMachineModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">添加自拍机设备</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form method="POST" action="/franchisee/admin/accounts/{{ account.id }}/machines/add">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="machine_name" class="form-label">设备名称 <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="machine_name" name="machine_name" 
+                                   placeholder="如: SM商城-1号机" required>
+                            <div class="form-text">设备的显示名称</div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="machine_serial_number" class="form-label">设备序列号 <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="machine_serial_number" name="machine_serial_number" 
+                                   placeholder="如: XMSM_001" required>
+                            <div class="form-text">设备的唯一序列号，必须与安卓APP配置的序列号一致</div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="location" class="form-label">设备位置</label>
+                            <input type="text" class="form-control" id="location" name="location" 
+                                   placeholder="如: 1楼大厅">
+                            <div class="form-text">设备安装的具体位置（可选）</div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="notes" class="form-label">备注</label>
+                            <textarea class="form-control" id="notes" name="notes" rows="2" 
+                                      placeholder="设备备注信息（可选）"></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                        <button type="submit" class="btn btn-primary">添加设备</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- 编辑设备模态框 -->
+    <div class="modal fade" id="editMachineModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">编辑自拍机设备</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form id="editMachineForm" method="POST">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="edit_machine_name" class="form-label">设备名称 <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="edit_machine_name" name="machine_name" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="edit_machine_serial_number" class="form-label">设备序列号 <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="edit_machine_serial_number" name="machine_serial_number" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="edit_location" class="form-label">设备位置</label>
+                            <input type="text" class="form-control" id="edit_location" name="location">
+                        </div>
+                        <div class="mb-3">
+                            <label for="edit_status" class="form-label">状态</label>
+                            <select class="form-select" id="edit_status" name="status">
+                                <option value="active">正常</option>
+                                <option value="inactive">停用</option>
+                                <option value="maintenance">维护中</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="edit_notes" class="form-label">备注</label>
+                            <textarea class="form-control" id="edit_notes" name="notes" rows="2"></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                        <button type="submit" class="btn btn-primary">保存修改</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- 二维码预览模态框 -->
+    <div class="modal fade" id="qrcodeModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">二维码预览</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body text-center">
+                    <div id="qrcodeContainer">
+                        <div class="spinner-border" role="status">
+                            <span class="visually-hidden">加载中...</span>
+                        </div>
+                    </div>
+                    <div id="qrcodeInfo" class="mt-3" style="display: none;">
+                        <p class="text-muted"><strong>公司名称：</strong><span id="companyName"></span></p>
+                        <p class="text-muted"><strong>二维码内容：</strong></p>
+                        <p class="small text-break" id="qrContent"></p>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- 取消订单模态框 -->
+    <div class="modal fade" id="cancelOrderModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">取消订单</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body authoritative">
+                    <p>订单号: <strong id="cancelOrderNumber"></strong></p>
+                    <p>将返还金额: <strong class="text-success">¥<span id="cancelOrderAmount"></span></strong></p>
+                    <div class="mb-3">
+                        <label for="cancelReason" class="form-label">取消原因:</label>
+                        <textarea class="form-control" id="cancelReason" rows="3" placeholder="请输入取消订单的原因（可选）"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-danger" onclick="confirmCancelOrder()">确认取消</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+    let cancelOrderData = null;
+    
+    function cancelOrder(orderId, orderNumber, amount) {
+        cancelOrderData = { orderId, orderNumber, amount };
+        document.getElementById('cancelOrderNumber').textContent = orderNumber;
+        document.getElementById('cancelOrderAmount').textContent = amount.toFixed(2);
+        const modal = new bootstrap.Modal(document.getElementById('cancelOrderModal'));
+        modal.show();
+    }
+    
+    function confirmCancelOrder() {
+        if (!cancelOrderData) return;
+        
+        const reason = document.getElementById('cancelReason').value || '管理员取消订单';
+        
+        fetch('/franchisee/api/cancel-order/' + cancelOrderData.orderId, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ reason: reason })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('订单已取消，资金已返还到加盟商账户');
+                location.reload();
+            } else {
+                alert('取消订单失败: ' + data.message);
+            }
+        })
+        .catch(error => {
+            alert('操作失败: ' + error.message);
+        });
+    }
+    
+    // 编辑设备
+    function editMachine(machineId, machineName, serialNumber, location, notes, status) {
+        document.getElementById('edit_machine_name').value = machineName;
+        document.getElementById('edit_machine_serial_number').value = serialNumber;
+        document.getElementById('edit_location').value = location || '';
+        document.getElementById('edit_status').value = status;
+        document.getElementById('edit_notes').value = notes || '';
+        
+        // 设置表单提交地址
+        document.getElementById('editMachineForm').action = `/franchisee/admin/accounts/{{ account.id }}/machines/${machineId}/edit`;
+        
+        // 显示模态框
+        const modal = new bootstrap.Modal(document.getElementById('editMachineModal'));
+        modal.show();
+    }
+    
+    // 确认删除设备
+    function confirmDeleteMachine(machineId, machineName) {
+        if (confirm(`确定要删除设备 "${machineName}" 吗？\n\n注意：如果该设备关联了订单，将无法删除。\n\n此操作不可恢复！`)) {
+            // 创建表单并提交
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = `/franchisee/admin/accounts/{{ account.id }}/machines/${machineId}/delete`;
+            
+            document.body.appendChild(form);
+            form.submit();
+        }
+    }
+    
+    // 确认删除加盟商账户
+    function confirmDelete(accountId, companyName) {
+        if (confirm(`确定要删除加盟商账户 "${companyName}" 吗？\n\n注意：如果该账户关联了订单，将无法删除。\n\n此操作不可恢复！`)) {
+            // 创建表单并提交
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = `/franchisee/admin/accounts/${accountId}/delete`;
+            
+            // 添加CSRF token（如果有）
+            const csrfToken = document.querySelector('meta[name="csrf-token"]');
+            if (csrfToken) {
+                const csrfInput = document.createElement('input');
+                csrfInput.type = 'hidden';
+                csrfInput.name = 'csrf_token';
+                csrfInput.value = csrfToken.content;
+                form.appendChild(csrfInput);
+            }
+            
+            document.body.appendChild(form);
+            form.submit();
+        }
+    }
+    
+    function previewQrcode(accountId) {
+            const modal = new bootstrap.Modal(document.getElementById('qrcodeModal'));
+            const container = document.getElementById('qrcodeContainer');
+            const info = document.getElementById('qrcodeInfo');
+            
+            // 显示加载状态
+            container.innerHTML = '<div class="spinner-border" role="status"><span class="visually-hidden">加载中...</span></div>';
+            info.style.display = 'none';
+            
+            // 显示模态框
+            modal.show();
+            
+            // 获取二维码数据
+            fetch(`/franchisee/admin/accounts/${accountId}/qrcode-preview`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        container.innerHTML = `<img src="${data.qrcode}" class="img-fluid" alt="二维码">`;
+                        document.getElementById('companyName').textContent = data.company_name;
+                        document.getElementById('qrContent').textContent = data.content;
+                        info.style.display = 'block';
+                    } else {
+                        container.innerHTML = `<div class="alert alert-danger">${data.message}</div>`;
+                    }
+                })
+                .catch(error => {
+                    container.innerHTML = `<div class="alert alert-danger">加载失败: ${error.message}</div>`;
+                });
+        }
+    </script>
+</body>
+</html>

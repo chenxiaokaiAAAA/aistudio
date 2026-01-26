@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>打印机管理 - 管理后台</title>
+    <link href="/static/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+        
+        .main-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            margin: 20px auto;
+            padding: 30px;
+            max-width: 1600px;
+        }
+        
+        .page-title {
+            text-align: center;
+            color: #212529;
+            margin-bottom: 30px;
+            font-weight: 600;
+            font-size: 1.8rem;
+        }
+        
+        .filter-section {
+            background: #ffffff;
+            border: 1px solid #dee2e6;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+        
+        .table-section {
+            background: #ffffff;
+            border: 1px solid #dee2e6;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+        
+        .printer-table {
+            width: 100%;
+            margin-top: 20px;
+        }
+        
+        .printer-table th {
+            background: #f8f9fa;
+            font-weight: 600;
+            padding: 12px;
+            text-align: center;
+            border: 1px solid #dee2e6;
+        }
+        
+        .printer-table td {
+            padding: 12px;
+            text-align: center;
+            border: 1px solid #dee2e6;
+            vertical-align: middle;
+        }
+        
+        .printer-table tr:hover {
+            background: #f8f9fa;
+        }
+        
+        .badge {
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 0.85rem;
+        }
+        
+        .badge-success {
+            background: #28a745;
+            color: white;
+        }
+        
+        .badge-warning {
+            background: #ffc107;
+            color: #212529;
+        }
+        
+        .badge-danger {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .badge-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .badge-info {
+            background: #17a2b8;
+            color: white;
+        }
+        
+        .btn-primary {
+            background: #667eea;
+            border: none;
+            border-radius: 6px;
+            padding: 8px 16px;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #5568d3;
+        }
+        
+        .btn-danger {
+            background: #dc3545;
+            border: none;
+            border-radius: 6px;
+            padding: 8px 16px;
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background: #c82333;
+        }
+        
+        .btn-sm {
+            padding: 5px 10px;
+            font-size: 0.875rem;
+        }
+        
+        .pagination {
+            margin-top: 20px;
+        }
+        
+        .alert {
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark" style="background: #667eea;">
+        <div class="container">
+            <a class="navbar-brand" href="/admin/dashboard">管理后台</a>
+            <div class="collapse navbar-collapse">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/logout">退出登录</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="main-container">
+        <h1 class="page-title">
+            <i class="bi bi-printer"></i> 打印机管理
+        </h1>
+        
+        <div id="alertContainer"></div>
+        
+        <!-- 筛选区域 -->
+        <div class="filter-section">
+            <div class="row align-items-end">
+                <div class="col-md-4">
+                    <label for="statusFilter" class="form-label">打印状态筛选</label>
+                    <select class="form-select" id="statusFilter" onchange="loadOrders()">
+                        <option value="">全部状态</option>
+                        <option value="not_sent">未发送</option>
+                        <option value="sending">发送中</option>
+                        <option value="sent_success">发送成功</option>
+                        <option value="sent_failed">发送失败</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <button type="button" class="btn btn-primary" onclick="loadOrders()">
+                        <i class="bi bi-arrow-clockwise"></i> 刷新
+                    </button>
+                    <a href="/admin/print-config" class="btn btn-secondary">
+                        <i class="bi bi-gear"></i> 打印配置
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 表格区域 -->
+        <div class="table-section">
+            <h4 class="mb-3">打印任务列表</h4>
+            <div style="overflow-x: auto;">
+                <table class="table table-bordered printer-table">
+                    <thead>
+                        <tr>
+                            <th>订单号</th>
+                            <th>客户姓名</th>
+                            <th>客户电话</th>
+                            <th>产品名称</th>
+                            <th>规格</th>
+                            <th>数量</th>
+                            <th>价格</th>
+                            <th>打印状态</th>
+                            <th>发送时间</th>
+                            <th>错误信息</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="ordersTableBody">
+                        <tr>
+                            <td colspan="11" class="text-center text-muted">加载中...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- 分页 -->
+            <nav aria-label="分页导航" id="paginationNav" style="display: none;">
+                <ul class="pagination justify-content-center" id="paginationList">
+                </ul>
+            </nav>
+        </div>
+    </div>
+
+    <script src="/static/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let currentPage = 1;
+        let totalPages = 1;
+        
+        // 页面加载时初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            loadOrders();
+        });
+        
+        // 加载打印任务列表
+        function loadOrders(page = 1) {
+            currentPage = page;
+            const statusFilter = document.getElementById('statusFilter').value;
+            
+            let url = `/api/admin/printer/orders?page=${page}&per_page=20`;
+            if (statusFilter) {
+                url += `&status=${statusFilter}`;
+            }
+            
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        renderOrdersTable(data.data);
+                        renderPagination(data.pagination);
+                    } else {
+                        document.getElementById('ordersTableBody').innerHTML = 
+                            '<tr><td colspan="11" class="text-center text-danger">加载失败：' + data.message + '</td></tr>';
+                    }
+                })
+                .catch(error => {
+                    document.getElementById('ordersTableBody').innerHTML = 
+                        '<tr><td colspan="11" class="text-center text-danger">加载失败：' + error.message + '</td></tr>';
+                });
+        }
+        
+        // 渲染订单表格
+        function renderOrdersTable(orders) {
+            const tbody = document.getElementById('ordersTableBody');
+            if (orders.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="11" class="text-center text-muted">暂无打印任务</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = orders.map(order => {
+                const statusBadge = getStatusBadge(order.printer_send_status);
+                const sendTime = order.printer_send_time ? 
+                    new Date(order.printer_send_time).toLocaleString('zh-CN') : '-';
+                const errorMsg = order.printer_error_message ? 
+                    `<span class="text-danger" title="${order.printer_error_message}">${truncateText(order.printer_error_message, 30)}</span>` : 
+                    '-';
+                
+                const resendButton = order.printer_send_status === 'sent_failed' || 
+                                    order.printer_send_status === 'not_sent' ?
+                    `<button class="btn btn-sm btn-primary" onclick="resendOrder(${order.id})">
+                        <i class="bi bi-arrow-repeat"></i> 重新发送
+                    </button>` : 
+                    '<span class="text-muted">-</span>';
+                
+                return `
+                    <tr>
+                        <td>${order.order_number}</td>
+                        <td>${order.customer_name || '-'}</td>
+                        <td>${order.customer_phone || '-'}</td>
+                        <td>${order.product_name || '-'}</td>
+                        <td>${order.size_name || '-'}</td>
+                        <td>${order.quantity || 1}</td>
+                        <td>¥${(order.price || 0).toFixed(2)}</td>
+                        <td>${statusBadge}</td>
+                        <td>${sendTime}</td>
+                        <td>${errorMsg}</td>
+                        <td>${resendButton}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+        
+        // 获取状态徽章
+        function getStatusBadge(status) {
+            const statusMap = {
+                'not_sent': { text: '未发送', class: 'badge-secondary' },
+                'sending': { text: '发送中', class: 'badge-warning' },
+                'sent_success': { text: '发送成功', class: 'badge-success' },
+                'sent_failed': { text: '发送失败', class: 'badge-danger' }
+            };
+            
+            const statusInfo = statusMap[status] || { text: status || '未知', class: 'badge-secondary' };
+            return `<span class="badge ${statusInfo.class}">${statusInfo.text}</span>`;
+        }
+        
+        // 截断文本
+        function truncateText(text, maxLength) {
+            if (text.length <= maxLength) return text;
+            return text.substring(0, maxLength) + '...';
+        }
+        
+        // 渲染分页
+        function renderPagination(pagination) {
+            if (!pagination || pagination.pages <= 1) {
+                document.getElementById('paginationNav').style.display = 'none';
+                return;
+            }
+            
+            document.getElementById('paginationNav').style.display = 'block';
+            const paginationList = document.getElementById('paginationList');
+            totalPages = pagination.pages;
+            
+            let html = '';
+            
+            // 上一页
+            if (pagination.page > 1) {
+                html += `<li class="page-item">
+                    <a class="page-link" href="#" onclick="loadOrders(${pagination.page - 1}); return false;">上一页</a>
+                </li>`;
+            } else {
+                html += `<li class="page-item disabled">
+                    <span class="page-link">上一页</span>
+                </li>`;
+            }
+            
+            // 页码
+            const startPage = Math.max(1, pagination.page - 2);
+            const endPage = Math.min(pagination.pages, pagination.page + 2);
+            
+            if (startPage > 1) {
+                html += `<li class="page-item"><a class="page-link" href="#" onclick="loadOrders(1); return false;">1</a></li>`;
+                if (startPage > 2) {
+                    html += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+                }
+            }
+            
+            for (let i = startPage; i <= endPage; i++) {
+                if (i === pagination.page) {
+                    html += `<li class="page-item active"><span class="page-link">${i}</span></li>`;
+                } else {
+                    html += `<li class="page-item"><a class="page-link" href="#" onclick="loadOrders(${i}); return false;">${i}</a></li>`;
+                }
+            }
+            
+            if (endPage < pagination.pages) {
+                if (endPage < pagination.pages - 1) {
+                    html += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+                }
+                html += `<li class="page-item"><a class="page-link" href="#" onclick="loadOrders(${pagination.pages}); return false;">${pagination.pages}</a></li>`;
+            }
+            
+            // 下一页
+            if (pagination.page < pagination.pages) {
+                html += `<li class="page-item">
+                    <a class="page-link" href="#" onclick="loadOrders(${pagination.page + 1}); return false;">下一页</a>
+                </li>`;
+            } else {
+                html += `<li class="page-item disabled">
+                    <span class="page-link">下一页</span>
+                </li>`;
+            }
+            
+            paginationList.innerHTML = html;
+        }
+        
+        // 重新发送订单
+        function resendOrder(orderId) {
+            if (!confirm('确定要重新发送这个打印任务吗？')) {
+                return;
+            }
+            
+            fetch(`/api/admin/printer/resend/${orderId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    showAlert('success', '打印任务已重新发送！');
+                    loadOrders(currentPage);
+                } else {
+                    showAlert('danger', '重新发送失败：' + data.message);
+                }
+            })
+            .catch(error => {
+                showAlert('danger', '重新发送失败：' + error.message);
+            });
+        }
+        
+        // 显示提示消息
+        function showAlert(type, message) {
+            const container = document.getElementById('alertContainer');
+            container.innerHTML = `
+                <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `;
+            
+            // 3秒后自动消失
+            setTimeout(() => {
+                const alert = container.querySelector('.alert');
+                if (alert) {
+                    bootstrap.Alert.getOrCreateInstance(alert).close();
+                }
+            }, 3000);
+        }
+    </script>
+</body>
+</html>

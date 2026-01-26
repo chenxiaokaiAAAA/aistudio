@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>加盟商管理 - AI拍照管理系统</title>
+    <link href="/static/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            padding-top: 80px;
+        }
+        .navbar-custom {
+            background: #0a0a0a !important;
+            border-bottom: 1px solid #1a1a1a;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        }
+        .navbar-brand, .nav-link {
+            color: #e0e0e0 !important;
+        }
+        .nav-link:hover {
+            color: #ffffff !important;
+        }
+        .nav-link.active {
+            color: #ffffff !important;
+            font-weight: 600;
+        }
+        .status-active { color: #28a745; }
+        .status-inactive { color: #6c757d; }
+        .status-suspended { color: #dc3545; }
+        .quota-info { font-size: 0.9em; }
+        .search-form { background: #f8f9fa; padding: 15px; border-radius: 5px; margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+    <!-- 导航栏 -->
+    {% include 'admin/_navbar.html' %}
+
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-12">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h2>🏢 加盟商管理</h2>
+                    <div>
+                        <button type="button" class="btn btn-outline-primary me-2" onclick="exportMonthlyReport()">
+                            📥 导出月度报表
+                        </button>
+                        <a href="/franchisee/admin/accounts/add" class="btn btn-primary">
+                            <i class="fas fa-plus"></i> 添加加盟商
+                        </a>
+                    </div>
+                </div>
+
+                <!-- 搜索筛选表单 -->
+                <div class="search-form">
+                    <form method="GET" class="row g-3">
+                        <div class="col-md-4">
+                            <select name="status" class="form-select">
+                                <option value="">全部状态</option>
+                                <option value="active" {% if status == 'active' %}selected{% endif %}>正常</option>
+                                <option value="inactive" {% if status == 'inactive' %}selected{% endif %}>未激活</option>
+                                <option value="suspended" {% if status == 'suspended' %}selected{% endif %}>已暂停</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <input type="text" name="search" class="form-control" placeholder="搜索公司名称、联系人、电话..." value="{{ search }}">
+                        </div>
+                        <div class="col-md-2">
+                            <button type="submit" class="btn btn-outline-primary w-100">搜索</button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- 加盟商列表 -->
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">加盟商账户列表 ({{ accounts|length }} 个)</h5>
+                    </div>
+                    <div class="card-body p-0">
+                        {% if accounts %}
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>公司名称</th>
+                                        <th>联系人</th>
+                                        <th>联系电话</th>
+                                        <th>状态</th>
+                                        <th>额度信息</th>
+                                        <th>创建时间</th>
+                                        <th>操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for account in accounts %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ account.company_name }}</strong>
+                                            <br><small class="text-muted">{{ account.username }}</small>
+                                        </td>
+                                        <td>{{ account.contact_person }}</td>
+                                        <td>{{ account.contact_phone }}</td>
+                                        <td>
+                                            {% if account.status == 'active' %}
+                                                <span class="badge bg-success">正常</span>
+                                            {% elif account.status == 'inactive' %}
+                                                <span class="badge bg-secondary">未激活</span>
+                                            {% else %}
+                                                <span class="badge bg-danger">已暂停</span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="quota-info">
+                                            <div>总额度: <strong>¥{{ "%.2f"|format(account.total_quota) }}</strong></div>
+                                            <div>已使用: <span class="text-warning">¥{{ "%.2f"|format(account.used_quota) }}</span></div>
+                                            <div>剩余: <span class="text-success">¥{{ "%.2f"|format(account.remaining_quota) }}</span></div>
+                                        </td>
+                                        <td>{{ account.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm">
+                                                <a href="/franchisee/admin/accounts/{{ account.id }}" class="btn btn-outline-info">详情</a>
+                                                <a href="/franchisee/admin/accounts/{{ account.id }}/edit" class="btn btn-outline-warning">编辑</a>
+                                                <a href="/franchisee/admin/accounts/{{ account.id }}/recharge" class="btn btn-outline-success">充值</a>
+                                                <button type="button" class="btn btn-outline-danger" onclick="confirmDelete({{ account.id }}, '{{ account.company_name }}')">删除</button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% else %}
+                        <div class="text-center py-5">
+                            <div class="text-muted">
+                                <i class="fas fa-building fa-3x mb-3"></i>
+                                <p>暂无加盟商账户</p>
+                                <a href="/franchisee/admin/accounts/add" class="btn btn-primary">添加第一个加盟商</a>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- 返回按钮 -->
+                <div class="mt-4">
+                    <a href="/admin/dashboard" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> 返回管理后台
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // 确认删除加盟商账户
+        function confirmDelete(accountId, companyName) {
+            if (confirm(`确定要删除加盟商账户 "${companyName}" 吗？\n\n注意：如果该账户关联了订单，将无法删除。\n\n此操作不可恢复！`)) {
+                // 创建表单并提交
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = `/franchisee/admin/accounts/${accountId}/delete`;
+                
+                // 添加CSRF token（如果有）
+                const csrfToken = document.querySelector('meta[name="csrf-token"]');
+                if (csrfToken) {
+                    const csrfInput = document.createElement('input');
+                    csrfInput.type = 'hidden';
+                    csrfInput.name = 'csrf_token';
+                    csrfInput.value = csrfToken.content;
+                    form.appendChild(csrfInput);
+                }
+                
+                document.body.appendChild(form);
+                form.submit();
+            }
+        }
+        
+        // 导出月度报表
+        function exportMonthlyReport() {
+            // 获取当前月份
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const defaultMonth = `${year}-${month}`;
+            
+            // 询问用户要导出哪个月
+            const monthInput = prompt(`请输入要导出的月份 (格式: YYYY-MM，默认: ${defaultMonth}):`, defaultMonth);
+            
+            if (monthInput) {
+                // 验证输入格式
+                if (/^\d{4}-\d{2}$/.test(monthInput)) {
+                    const url = `/franchisee/admin/accounts/export?month=${monthInput}`;
+                    window.location.href = url;
+                } else {
+                    alert('月份格式不正确，请输入 YYYY-MM 格式，例如：2025-01');
+                }
+            }
+        }
+    </script>
+</body>
+</html>
+
+
+
+
+
+

@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>加盟商下单 - {{ account.company_name }}</title>
+    <link href="/static/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Microsoft YaHei', sans-serif;
+            padding: 20px 0;
+        }
+        .order-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            margin: 0 auto;
+            max-width: 1000px;
+        }
+        .header-section {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 20px 20px 0 0;
+            text-align: center;
+        }
+        .form-section {
+            padding: 40px;
+        }
+        .quota-info {
+            background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+            border-radius: 15px;
+            padding: 20px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        .quota-info h5 {
+            color: #8b4513;
+            margin-bottom: 10px;
+        }
+        .quota-amount {
+            font-size: 24px;
+            font-weight: bold;
+            color: #d2691e;
+        }
+        .product-selection {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 25px;
+            margin: 20px 0;
+        }
+        .product-card {
+            border: 2px solid #e9ecef;
+            border-radius: 15px;
+            padding: 20px;
+            margin: 10px 0;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: white;
+            text-align: center;
+        }
+        .product-card:hover {
+            border-color: #4facfe;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(79, 172, 254, 0.2);
+        }
+        .product-card.selected {
+            border-color: #4facfe;
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+        }
+        .size-card {
+            border: 1px solid #dee2e6;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: white;
+            text-align: center;
+        }
+        .size-card:hover {
+            border-color: #28a745;
+            background-color: #f8fff8;
+        }
+        .size-card.selected {
+            border-color: #28a745;
+            background-color: #28a745;
+            color: white;
+        }
+        .form-control {
+            border-radius: 10px;
+            border: 2px solid #e9ecef;
+            padding: 12px 15px;
+            transition: all 0.3s ease;
+        }
+        .form-control:focus {
+            border-color: #4facfe;
+            box-shadow: 0 0 0 0.2rem rgba(79, 172, 254, 0.25);
+        }
+        .btn-submit {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            border: none;
+            border-radius: 15px;
+            padding: 15px 40px;
+            font-size: 18px;
+            font-weight: bold;
+            color: white;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        .btn-submit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(79, 172, 254, 0.3);
+        }
+        .btn-back {
+            background: #6c757d;
+            border: none;
+            border-radius: 10px;
+            padding: 10px 20px;
+            color: white;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .btn-back:hover {
+            background: #5a6268;
+            color: white;
+            text-decoration: none;
+        }
+        .price-display {
+            font-size: 18px;
+            font-weight: bold;
+            color: #28a745;
+        }
+        .product-image {
+            width: 80px;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 10px;
+            margin-bottom: 10px;
+        }
+        .style-card {
+            border: 1px solid #dee2e6;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: white;
+            text-align: center;
+        }
+        .style-card:hover {
+            border-color: #ff6b6b;
+            background-color: #fff5f5;
+        }
+        .style-card.selected {
+            border-color: #ff6b6b;
+            background-color: #ff6b6b;
+            color: white;
+        }
+        .style-image {
+            width: 100px;
+            height: 100px;
+            object-fit: cover;
+            border-radius: 10px;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="order-container">
+            <div class="header-section">
+                <h2><i class="fas fa-store"></i> {{ account.company_name }} - 加盟商下单</h2>
+                <p class="mb-0">专业AI拍照机定制服务</p>
+                <div class="mt-3">
+                    <a href="/franchisee/dashboard" class="btn-back">
+                        <i class="fas fa-arrow-left"></i> 返回管理面板
+                    </a>
+                </div>
+            </div>
+
+            <div class="quota-info">
+                <h5><i class="fas fa-wallet"></i> 账户信息</h5>
+                <div class="quota-amount">剩余额度：¥{{ "%.2f"|format(account.remaining_quota) }}</div>
+                <small class="text-muted">已使用：¥{{ "%.2f"|format(account.used_quota) }} | 总额度：¥{{ "%.2f"|format(account.total_quota) }}</small>
+            </div>
+
+            <div class="form-section">
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ 'danger' if category == 'error' else 'success' }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+
+                <form method="POST" enctype="multipart/form-data" id="orderForm">
+                    {% if default_name or default_phone or default_address %}
+                    <div class="mb-3">
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="use_default_info" name="use_default_info">
+                                    <label class="form-check-label" for="use_default_info">
+                                        <strong><i class="fas fa-check-circle"></i> 使用默认信息</strong>
+                                        <small class="text-muted d-block mt-1">
+                                            {% if default_name %}姓名：{{ default_name }}{% endif %}
+                                            {% if default_phone %} | 电话：{{ default_phone }}{% endif %}
+                                            {% if default_address %} | 地址：{{ default_address[:20] }}{% if default_address|length > 20 %}...{% endif %}{% endif %}
+                                        </small>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <label for="customer_name" class="form-label"><i class="fas fa-user"></i> 客户姓名</label>
+                            <input type="text" class="form-control" id="customer_name" name="customer_name" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="customer_phone" class="form-label"><i class="fas fa-phone"></i> 联系电话</label>
+                            <input type="tel" class="form-control" id="customer_phone" name="customer_phone" required>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="full_address" class="form-label"><i class="fas fa-map-marker-alt"></i> 收货地址</label>
+                        <textarea class="form-control" id="full_address" name="full_address" rows="3" placeholder="请填写完整的收货地址，包括省市区县和详细地址" required></textarea>
+                        <div class="form-text">例如：北京市朝阳区建国路88号 或 广东省深圳市南山区科技园南区深大站A出口</div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="customer_note" class="form-label"><i class="fas fa-comment-alt"></i> 备注</label>
+                        <textarea class="form-control" id="customer_note" name="customer_note" rows="3" placeholder="可填写客户要求、特殊说明等信息（选填）"></textarea>
+                    </div>
+
+                    <div class="product-selection">
+                        <h5 class="mb-3"><i class="fas fa-gift"></i> 选择产品</h5>
+                        <div class="row">
+                            {% for product in products %}
+                            <div class="col-md-4 mb-3">
+                                <div class="product-card" data-product-id="{{ product.id }}">
+                                    {% if product.image_url %}
+                                        <img src="{{ product.image_url }}" class="product-image" alt="{{ product.name }}">
+                                    {% else %}
+                                        <div class="product-image bg-light d-flex align-items-center justify-content-center">
+                                            <i class="fas fa-image fa-2x text-muted"></i>
+                                        </div>
+                                    {% endif %}
+                                    <h6>{{ product.name }}</h6>
+                                    <p class="text-muted small">{{ product.description or '专业定制服务' }}</p>
+                                    <input type="radio" name="product_id" value="{{ product.id }}" style="display: none;">
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+
+                        <div id="size-selection" style="display: none;">
+                            <h6 class="mt-4 mb-3"><i class="fas fa-ruler"></i> 选择尺寸</h6>
+                            <div class="row" id="size-cards"></div>
+                            <input type="hidden" name="size_id" id="selected_size_id">
+                        </div>
+
+                        <div id="price-display" class="mt-3 text-center" style="display: none;">
+                            <div class="price-display">
+                                选择的产品价格：<span id="selected-price">¥0.00</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="product-selection" id="style-selection-real">
+                        <h5 class="mb-3"><i class="fas fa-palette"></i> 选择艺术风格</h5>
+                        
+                        {% if style_categories %}
+                            {% for category in style_categories %}
+                            <div class="mb-4">
+                                <h6 class="text-primary mb-3">
+                                    <i class="fas fa-{{ category.icon or 'palette' }}"></i> {{ category.name }}
+                                    {% if category.description %}
+                                    <small class="text-muted">- {{ category.description }}</small>
+                                    {% endif %}
+                                </h6>
+                                <div class="row">
+                                    {% if style_images and style_images[category.id] %}
+                                        {% for image in style_images[category.id] %}
+                                        <div class="col-md-3 mb-3">
+                                            <div class="style-card" data-style-id="{{ image.id }}" data-style-name="{{ image.name }}">
+                                                <img src="{{ image.image_url }}" class="style-image" alt="{{ image.name }}" onerror="this.src='/static/images/placeholder.jpg'">
+                                                <h6>{{ image.name }}</h6>
+                                                {% if image.description %}
+                                                <p class="text-muted small">{{ image.description }}</p>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+                                    {% else %}
+                                        <div class="col-12">
+                                            <p class="text-muted">该分类暂无风格数据</p>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="alert alert-warning">
+                                <p>暂无风格分类数据，请检查数据库配置</p>
+                            </div>
+                        {% endif %}
+                        
+                        <input type="hidden" name="style_id_real" id="selected_style_id_real">
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="images" class="form-label"><i class="fas fa-image"></i> 上传宠物照片（可多选）</label>
+                        <input type="file" class="form-control" id="images" name="images" accept="image/*" multiple required>
+                        <div class="form-text">支持 JPG、PNG 格式，可一次选择多张，会优先以第一张作为封面原图</div>
+                    </div>
+
+                    <div class="mb-4">
+                        <div class="card">
+                            <div class="card-body">
+                                <h6><i class="fas fa-check-circle"></i> 确版选项</h6>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="need_confirmation" name="need_confirmation" value="1" checked>
+                                    <label class="form-check-label" for="need_confirmation">
+                                        <strong>需要确版</strong>
+                                    </label>
+                                </div>
+                                <div class="form-text">
+                                    <small class="text-muted">
+                                        ✓ 勾选确版：订单完成后需要您确认照片效果，确认无误后再制作<br/>
+                                        ✗ 不勾选：订单完成后直接进入制作流程<br/>
+                                        <span class="text-warning">注意：确版后订单会等待您的确认，请及时查看订单状态</span>
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="text-center">
+                        <button type="submit" class="btn btn-submit">
+                            <i class="fas fa-paper-plane"></i> 提交订单
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/bootstrap.bundle.min.js"></script>
+    <script>
+        (function() {
+            'use strict';
+            
+            var productSizes = {{ product_sizes | tojson }};
+            
+            {% if default_name or default_phone or default_address %}
+            var defaultName = {{ default_name | tojson }};
+            var defaultPhone = {{ default_phone | tojson }};
+            var defaultAddress = {{ default_address | tojson }};
+            
+            var useDefaultInfoCheckbox = document.getElementById('use_default_info');
+            var customerNameInput = document.getElementById('customer_name');
+            var customerPhoneInput = document.getElementById('customer_phone');
+            var fullAddressTextarea = document.getElementById('full_address');
+            
+            if (useDefaultInfoCheckbox) {
+                // 勾选复选框时，填充所有默认信息
+                useDefaultInfoCheckbox.addEventListener('change', function() {
+                    if (this.checked) {
+                        // 勾选：填充默认信息
+                        if (customerNameInput && defaultName) {
+                            customerNameInput.value = defaultName;
+                        }
+                        if (customerPhoneInput && defaultPhone) {
+                            customerPhoneInput.value = defaultPhone;
+                        }
+                        if (fullAddressTextarea && defaultAddress) {
+                            fullAddressTextarea.value = defaultAddress;
+                        }
+                    } else {
+                        // 取消勾选：清空所有字段
+                        if (customerNameInput) {
+                            customerNameInput.value = '';
+                        }
+                        if (customerPhoneInput) {
+                            customerPhoneInput.value = '';
+                        }
+                        if (fullAddressTextarea) {
+                            fullAddressTextarea.value = '';
+                        }
+                    }
+                });
+                
+                // 如果用户手动修改了任何字段，自动取消勾选
+                var fields = [
+                    {element: customerNameInput, defaultValue: defaultName},
+                    {element: customerPhoneInput, defaultValue: defaultPhone},
+                    {element: fullAddressTextarea, defaultValue: defaultAddress}
+                ];
+                
+                fields.forEach(function(field) {
+                    if (field.element && field.defaultValue) {
+                        field.element.addEventListener('input', function() {
+                            if (useDefaultInfoCheckbox.checked && this.value !== field.defaultValue) {
+                                useDefaultInfoCheckbox.checked = false;
+                            }
+                        });
+                    }
+                });
+            }
+            {% endif %}
+            
+            var productCards = document.querySelectorAll('.product-card');
+            productCards.forEach(function(card) {
+                card.addEventListener('click', function() {
+                    document.querySelectorAll('.product-card').forEach(function(c) {
+                        c.classList.remove('selected');
+                    });
+                    
+                    this.classList.add('selected');
+                    
+                    var radio = this.querySelector('input[type="radio"]');
+                    if (radio) {
+                        radio.checked = true;
+                    }
+                    
+                    var productId = parseInt(this.dataset.productId);
+                    showSizeSelection(productId);
+                });
+            });
+            
+            function showSizeSelection(productId) {
+                var sizeSelection = document.getElementById('size-selection');
+                var sizeCards = document.getElementById('size-cards');
+                var priceDisplay = document.getElementById('price-display');
+                
+                sizeCards.innerHTML = '';
+                
+                var sizes = productSizes[productId] || [];
+                
+                if (sizes.length > 0) {
+                    sizes.forEach(function(size) {
+                        var sizeCard = document.createElement('div');
+                        sizeCard.className = 'col-md-3';
+                        sizeCard.innerHTML = 
+                            '<div class="size-card" data-size-id="' + size.id + '" data-price="' + size.price + '">' +
+                            '<h6>' + size.size_name + '</h6>' +
+                            '<div class="price">¥' + size.price + '</div>' +
+                            '</div>';
+                        sizeCards.appendChild(sizeCard);
+                    });
+                    
+                    var newSizeCards = sizeCards.querySelectorAll('.size-card');
+                    newSizeCards.forEach(function(card) {
+                        card.addEventListener('click', function() {
+                            document.querySelectorAll('.size-card').forEach(function(c) {
+                                c.classList.remove('selected');
+                            });
+                            
+                            this.classList.add('selected');
+                            
+                            document.getElementById('selected_size_id').value = this.dataset.sizeId;
+                            
+                            var price = this.dataset.price;
+                            document.getElementById('selected-price').textContent = '¥' + price;
+                            priceDisplay.style.display = 'block';
+                        });
+                    });
+                    
+                    sizeSelection.style.display = 'block';
+                } else {
+                    sizeSelection.style.display = 'none';
+                    priceDisplay.style.display = 'none';
+                }
+            }
+            
+            var styleCards = document.querySelectorAll('#style-selection-real .style-card');
+            styleCards.forEach(function(card) {
+                card.addEventListener('click', function() {
+                    document.querySelectorAll('#style-selection-real .style-card').forEach(function(c) {
+                        c.classList.remove('selected');
+                    });
+                    
+                    this.classList.add('selected');
+                    
+                    document.getElementById('selected_style_id_real').value = this.dataset.styleId;
+                });
+            });
+            
+            var orderForm = document.getElementById('orderForm');
+            if (orderForm) {
+                orderForm.addEventListener('submit', function(e) {
+                    var customerName = document.getElementById('customer_name').value.trim();
+                    var customerPhone = document.getElementById('customer_phone').value.trim();
+                    var productId = document.querySelector('input[name="product_id"]:checked');
+                    var sizeId = document.getElementById('selected_size_id').value;
+                    var styleId = document.getElementById('selected_style_id_real').value;
+                    var images = document.getElementById('images').files;
+                    
+                    if (!customerName) {
+                        alert('请输入客户姓名');
+                        e.preventDefault();
+                        return false;
+                    }
+                    
+                    if (!customerPhone) {
+                        alert('请输入联系电话');
+                        e.preventDefault();
+                        return false;
+                    }
+                    
+                    if (!productId) {
+                        alert('请选择产品');
+                        e.preventDefault();
+                        return false;
+                    }
+                    
+                    if (!sizeId) {
+                        alert('请选择产品尺寸');
+                        e.preventDefault();
+                        return false;
+                    }
+                    
+                    if (!styleId) {
+                        alert('请选择艺术风格');
+                        e.preventDefault();
+                        return false;
+                    }
+                    
+                    if (images.length === 0) {
+                        alert('请选择宠物照片');
+                        e.preventDefault();
+                        return false;
+                    }
+                    
+                    for (var i = 0; i < images.length; i++) {
+                        var file = images[i];
+                        var allowedTypes = ['image/jpeg', 'image/jpg', 'image/png'];
+                        if (!allowedTypes.includes(file.type)) {
+                            alert('请选择 JPG 或 PNG 格式的图片');
+                            e.preventDefault();
+                            return false;
+                        }
+                    }
+                });
+            }
+        })();
+    </script>
+</body>
+</html>

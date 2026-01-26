@@ -1,0 +1,114 @@
+<!-- 简化的订单详情页面 - simple_order_detail.html -->
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>订单详情</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .order-info { background: #f5f5f5; padding: 20px; margin: 20px 0; border-radius: 5px; }
+        .order-images { margin: 20px 0; }
+        .order-image { max-width: 200px; margin: 10px; border: 1px solid #ddd; }
+        .form-group { margin: 10px 0; }
+        label { display: block; margin-bottom: 5px; }
+        input, select, textarea { width: 100%; padding: 8px; margin-bottom: 10px; }
+        button { background: #007bff; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+    </style>
+</head>
+<body>
+    <h1>订单详情</h1>
+    
+    <div class="order-info">
+        <h2>订单信息</h2>
+        <p><strong>订单号：</strong>{{ order.order_number }}</p>
+        <p><strong>客户姓名：</strong>{{ order.customer_name }}</p>
+        <p><strong>客户电话：</strong>{{ order.customer_phone }}</p>
+        <p><strong>艺术风格：</strong>{{ order.style_name or '未选择' }}</p>
+        <p><strong>产品类型：</strong>{{ order.product_name or '未选择' }}</p>
+        <p><strong>产品尺寸：</strong>{{ order.size|size_name if order.size else '未选择' }}</p>
+        <p><strong>价格：</strong>¥{{ order.price }}</p>
+        <p><strong>状态：</strong>{{ order.status }}</p>
+        <p><strong>创建时间：</strong>{{ order.created_at }}</p>
+        <p><strong>来源平台：</strong>{{ order.external_platform }}</p>
+        {% if order.customer_note %}
+        <p><strong>客户备注：</strong>{{ order.customer_note }}</p>
+        {% endif %}
+    </div>
+
+    <div class="order-images">
+        <h2>客户上传的图片</h2>
+        {% if images %}
+            {% for image in images %}
+                <div class="position-relative d-inline-block" style="margin: 10px;">
+                    <img src="/media/original/{{ image.path }}" alt="订单图片" class="order-image" style="max-width: 300px; max-height: 300px; border: 2px solid {% if image.is_main %}#28a745{% else %}#ddd{% endif %}; border-radius: 8px;">
+                    {% if image.is_main %}
+                        <span class="badge bg-success position-absolute top-0 start-0 m-2">主图</span>
+                    {% else %}
+                        <span class="badge bg-secondary position-absolute top-0 start-0 m-2">参考图</span>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        {% else %}
+            <p>暂无图片</p>
+        {% endif %}
+    </div>
+
+    <div class="order-images">
+        <h2>制作完成的效果图</h2>
+        {% if order.final_image %}
+            <img src="/media/final/{{ order.final_image }}" alt="效果图" class="order-image" style="max-width: 300px; max-height: 300px; border: 1px solid #ddd; margin: 10px;">
+            <p><strong>效果图文件名：</strong>{{ order.final_image }}</p>
+            <div style="margin: 10px 0;">
+                <a href="/download/final/{{ order.final_image }}" class="btn btn-primary">下载预览版（有水印）</a>
+                <a href="/download/final/clean/{{ order.final_image }}" class="btn btn-success">下载高清版（无水印）</a>
+            </div>
+        {% else %}
+            <p>暂无效果图</p>
+        {% endif %}
+    </div>
+
+    <form method="POST" enctype="multipart/form-data">
+        <h2>更新订单</h2>
+        
+        <div class="form-group">
+            <label for="status">订单状态：</label>
+            <select name="status" id="status">
+                <option value="pending" {% if order.status == 'pending' %}selected{% endif %}>待制作</option>
+                <option value="completed" {% if order.status == 'completed' %}selected{% endif %}>已完成</option>
+                <option value="delivered" {% if order.status == 'delivered' %}selected{% endif %}>已发货</option>
+                <option value="processing" {% if order.status == 'processing' %}selected{% endif %}>处理中</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="size">产品尺寸：</label>
+            <select name="size" id="size">
+                <option value="30x40" {% if order.size == '30x40' %}selected{% endif %}>30x40cm</option>
+                <option value="40x50" {% if order.size == '40x50' %}selected{% endif %}>40x50cm</option>
+                <option value="50x70" {% if order.size == '50x70' %}selected{% endif %}>50x70cm</option>
+                <option value="70x100" {% if order.size == '70x100' %}selected{% endif %}>70x100cm</option>
+                <option value="keychain" {% if order.size == 'keychain' %}selected{% endif %}>钥匙扣</option>
+                <option value="phonecase" {% if order.size == 'phonecase' %}selected{% endif %}>手机壳</option>
+                <option value="pillow" {% if order.size == 'pillow' %}selected{% endif %}>抱枕</option>
+                <option value="painting" {% if order.size == 'painting' %}selected{% endif %}>挂画</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="final_image">上传完成的作品：</label>
+            <input type="file" name="final_image" id="final_image" accept="image/*">
+        </div>
+
+        <div class="form-group">
+            <label for="shipping_info">物流信息：</label>
+            <textarea name="shipping_info" id="shipping_info" rows="3">{{ order.shipping_info or '' }}</textarea>
+        </div>
+
+        <button type="submit">更新订单</button>
+    </form>
+
+    <p><a href="/admin/dashboard">返回订单列表</a></p>
+</body>
+</html>

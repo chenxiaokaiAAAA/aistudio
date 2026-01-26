@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>产品配置同步管理</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .sync-status {
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .status-success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .status-warning {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+        }
+        .status-error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .action-buttons {
+            margin-top: 20px;
+        }
+        .sync-log {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 15px;
+            margin-top: 20px;
+            font-family: monospace;
+            font-size: 14px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-md-12">
+                <h2>产品配置同步管理</h2>
+                <p class="text-muted">管理产品配置与冲印系统的同步状态</p>
+                
+                <!-- 同步状态显示 -->
+                <div class="sync-status" id="syncStatus">
+                    <h5>同步状态</h5>
+                    <p id="statusText">正在检查同步状态...</p>
+                </div>
+                
+                <!-- 操作按钮 -->
+                <div class="action-buttons">
+                    <button type="button" class="btn btn-primary" onclick="manualSync()">
+                        <i class="bi bi-arrow-repeat"></i> 手动同步
+                    </button>
+                    <button type="button" class="btn btn-info" onclick="checkStatus()">
+                        <i class="bi bi-check-circle"></i> 检查状态
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="refreshPage()">
+                        <i class="bi bi-arrow-clockwise"></i> 刷新页面
+                    </button>
+                </div>
+                
+                <!-- 同步日志 -->
+                <div class="sync-log" id="syncLog" style="display: none;">
+                    <h6>同步日志</h6>
+                    <div id="logContent"></div>
+                </div>
+                
+                <!-- 返回按钮 -->
+                <div class="mt-4">
+                    <a href="{{ url_for('admin_sizes') }}" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left"></i> 返回产品配置
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // 页面加载时检查状态
+        document.addEventListener('DOMContentLoaded', function() {
+            checkStatus();
+        });
+        
+        // 检查同步状态
+        function checkStatus() {
+            fetch('/api/sync-status')
+                .then(response => response.json())
+                .then(data => {
+                    const statusDiv = document.getElementById('syncStatus');
+                    const statusText = document.getElementById('statusText');
+                    
+                    if (data.status === 'success') {
+                        if (data.sync_status) {
+                            statusDiv.className = 'sync-status status-success';
+                            statusText.textContent = '✅ 配置同步正常，数据库与冲印系统配置一致';
+                        } else {
+                            statusDiv.className = 'sync-status status-warning';
+                            statusText.textContent = '⚠️ 配置不同步，数据库与冲印系统配置不一致';
+                        }
+                    } else {
+                        statusDiv.className = 'sync-status status-error';
+                        statusText.textContent = '❌ 状态检查失败: ' + data.message;
+                    }
+                })
+                .catch(error => {
+                    const statusDiv = document.getElementById('syncStatus');
+                    const statusText = document.getElementById('statusText');
+                    statusDiv.className = 'sync-status status-error';
+                    statusText.textContent = '❌ 状态检查失败: ' + error.message;
+                });
+        }
+        
+        // 手动同步
+        function manualSync() {
+            const logDiv = document.getElementById('syncLog');
+            const logContent = document.getElementById('logContent');
+            
+            logDiv.style.display = 'block';
+            logContent.innerHTML = '正在执行手动同步...';
+            
+            fetch('/api/manual-sync', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    logContent.innerHTML = '✅ ' + data.message;
+                    setTimeout(() => {
+                        checkStatus();
+                    }, 1000);
+                } else {
+                    logContent.innerHTML = '❌ ' + data.message;
+                }
+            })
+            .catch(error => {
+                logContent.innerHTML = '❌ 同步失败: ' + error.message;
+            });
+        }
+        
+        // 刷新页面
+        function refreshPage() {
+            location.reload();
+        }
+    </script>
+</body>
+</html>
+
+
+
