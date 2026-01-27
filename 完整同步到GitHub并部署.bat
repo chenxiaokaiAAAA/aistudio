@@ -76,6 +76,11 @@ pause
 echo.
 echo [步骤5] 提交更改
 echo.
+REM 确保使用UTF-8编码
+chcp 65001 >nul
+git config i18n.commitencoding utf-8
+git config core.quotepath false
+
 set /p commit_msg="请输入提交信息（直接回车使用默认）: "
 if "%commit_msg%"=="" set commit_msg=更新代码：同步所有文件到GitHub
 
