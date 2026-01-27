@@ -237,24 +237,33 @@ def api_get_system_config():
             elif config.config_key == 'comfyui_timeout':
                 configs['comfyui_timeout'] = config.config_value
         
-        # 获取服务器URL配置（从server_config或数据库）
-        try:
-            from server_config import get_base_url, get_api_base_url, get_media_url, get_static_url
-            configs['server_base_url'] = get_base_url()
-            configs['server_api_url'] = get_api_base_url()
-            configs['server_media_url'] = get_media_url()
-            configs['server_static_url'] = get_static_url()
-        except:
-            # 如果server_config不可用，从数据库获取
-            for config in ai_configs:
-                if config.config_key == 'server_base_url':
-                    configs['server_base_url'] = config.config_value
-                elif config.config_key == 'server_api_url':
-                    configs['server_api_url'] = config.config_value
-                elif config.config_key == 'server_media_url':
-                    configs['server_media_url'] = config.config_value
-                elif config.config_key == 'server_static_url':
-                    configs['server_static_url'] = config.config_value
+        # 获取服务器URL配置（优先从数据库读取，如果数据库没有则从server_config读取）
+        # 先尝试从数据库获取
+        db_url_configs = {}
+        for config in ai_configs:
+            if config.config_key == 'server_base_url':
+                db_url_configs['server_base_url'] = config.config_value
+            elif config.config_key == 'server_api_url':
+                db_url_configs['server_api_url'] = config.config_value
+            elif config.config_key == 'server_media_url':
+                db_url_configs['server_media_url'] = config.config_value
+            elif config.config_key == 'server_static_url':
+                db_url_configs['server_static_url'] = config.config_value
+        
+        # 如果数据库有配置，使用数据库的；否则使用server_config的
+        if db_url_configs:
+            configs.update(db_url_configs)
+        else:
+            # 如果数据库没有配置，从server_config读取
+            try:
+                from server_config import get_base_url, get_api_base_url, get_media_url, get_static_url
+                configs['server_base_url'] = get_base_url()
+                configs['server_api_url'] = get_api_base_url()
+                configs['server_media_url'] = get_media_url()
+                configs['server_static_url'] = get_static_url()
+            except:
+                # 如果server_config也不可用，使用默认值
+                pass
         
         # 获取并发和队列配置
         for config in ai_configs:

@@ -1269,6 +1269,12 @@
 
     <script src="/static/js/bootstrap.bundle.min.js"></script>
     <script>
+        // 安全的样式设置辅助函数
+        function safeSetDisplay(elementId, display) {
+            const el = document.getElementById(elementId);
+            if (el) el.style.display = display;
+        }
+        
         // 全局变量
         let categories = [];
         let images = [];
@@ -1761,10 +1767,18 @@
                     // 优先使用 image_url，如果没有则使用 url
                     const imageUrl = result.image_url || result.url;
                     if (imageUrl) {
-                        document.getElementById('categoryCoverImageUrl').value = imageUrl;
-                        document.getElementById('categoryCoverImagePreview').src = imageUrl;
-                        document.getElementById('categoryCoverImagePreview').style.display = 'block';
-                        document.getElementById('categoryCoverImageUpload').style.display = 'none';
+                        const coverImageUrl = document.getElementById('categoryCoverImageUrl');
+                        const coverImagePreview = document.getElementById('categoryCoverImagePreview');
+                        const coverImageUpload = document.getElementById('categoryCoverImageUpload');
+                        
+                        if (coverImageUrl) coverImageUrl.value = imageUrl;
+                        if (coverImagePreview) {
+                            coverImagePreview.src = imageUrl;
+                            coverImagePreview.style.display = 'block';
+                        }
+                        if (coverImageUpload) {
+                            coverImageUpload.style.display = 'none';
+                        }
                     } else {
                         alert('上传失败: 未返回图片URL');
                     }
@@ -1793,10 +1807,15 @@
                 
                 const result = await response.json();
                 if (result.status === 'success') {
-                    document.getElementById('imageUrl').value = result.image_url;
-                    document.getElementById('imagePreview').src = result.image_url;
-                    document.getElementById('imagePreview').style.display = 'block';
-                    document.getElementById('imageUploadArea').style.display = 'none';
+                    const imageUrlEl = document.getElementById('imageUrl');
+                    const imagePreviewEl = document.getElementById('imagePreview');
+                    const imageUploadAreaEl = document.getElementById('imageUploadArea');
+                    if (imageUrlEl) imageUrlEl.value = result.image_url;
+                    if (imagePreviewEl) {
+                        imagePreviewEl.src = result.image_url;
+                        imagePreviewEl.style.display = 'block';
+                    }
+                    if (imageUploadAreaEl) imageUploadAreaEl.style.display = 'none';
                 } else {
                     alert('上传失败: ' + result.message);
                 }
@@ -2048,13 +2067,17 @@
                 }
                 
                 // 显示封面图片预览
+                const coverPreview = document.getElementById('categoryCoverImagePreview');
+                const coverUpload = document.getElementById('categoryCoverImageUpload');
                 if (category.cover_image) {
-                    document.getElementById('categoryCoverImagePreview').src = category.cover_image;
-                    document.getElementById('categoryCoverImagePreview').style.display = 'block';
-                    document.getElementById('categoryCoverImageUpload').style.display = 'none';
+                    if (coverPreview) {
+                        coverPreview.src = category.cover_image;
+                        coverPreview.style.display = 'block';
+                    }
+                    if (coverUpload) coverUpload.style.display = 'none';
                 } else {
-                    document.getElementById('categoryCoverImagePreview').style.display = 'none';
-                    document.getElementById('categoryCoverImageUpload').style.display = 'block';
+                    if (coverPreview) coverPreview.style.display = 'none';
+                    if (coverUpload) coverUpload.style.display = 'block';
                 }
                 
                 const modal = new bootstrap.Modal(document.getElementById('categoryModal'));
@@ -2717,8 +2740,15 @@
             // 明确清空分类ID，确保是添加新分类而不是更新
             document.getElementById('categoryId').value = '';
             document.getElementById('categoryModalTitle').textContent = '添加分类';
-            document.getElementById('categoryCoverImagePreview').style.display = 'none';
-            document.getElementById('categoryCoverImageUpload').style.display = 'block';
+            // 添加空值检查，避免访问不存在的元素
+            const coverImagePreview = document.getElementById('categoryCoverImagePreview');
+            const coverImageUpload = document.getElementById('categoryCoverImageUpload');
+            if (coverImagePreview) {
+                coverImagePreview.style.display = 'none';
+            }
+            if (coverImageUpload) {
+                coverImageUpload.style.display = 'block';
+            }
         });
 
         // 处理测试图片上传（支持多图）
@@ -3042,27 +3072,40 @@
         document.getElementById('imageModal').addEventListener('hidden.bs.modal', function() {
             document.getElementById('imageForm').reset();
             document.getElementById('imageModalTitle').textContent = '添加图片';
-            document.getElementById('imagePreview').style.display = 'none';
-            document.getElementById('imageUploadArea').style.display = 'block';
+            const imagePreview = document.getElementById('imagePreview');
+            const imageUploadArea = document.getElementById('imageUploadArea');
+            const designImagePreview = document.getElementById('designImagePreview');
+            const designImageUploadArea = document.getElementById('designImageUploadArea');
+            const testImagePreview = document.getElementById('testImagePreview');
+            const testImageUploadArea = document.getElementById('testImageUploadArea');
+            const testResult = document.getElementById('testResult');
+            const testProgress = document.getElementById('testProgress');
+            
+            if (imagePreview) imagePreview.style.display = 'none';
+            if (imageUploadArea) imageUploadArea.style.display = 'block';
             // 清空设计水印预览
-            document.getElementById('designImageUrl').value = '';
-            document.getElementById('designImagePreview').style.display = 'none';
-            document.getElementById('designImageUploadArea').style.display = 'block';
+            const designImageUrl = document.getElementById('designImageUrl');
+            if (designImageUrl) designImageUrl.value = '';
+            if (designImagePreview) designImagePreview.style.display = 'none';
+            if (designImageUploadArea) designImageUploadArea.style.display = 'block';
             // 清空测试相关
             testImageData = null;
-            document.getElementById('testImagePreview').style.display = 'none';
-            document.getElementById('testImageUploadArea').style.display = 'block';
-            document.getElementById('testWorkflowBtn').disabled = true;
-            document.getElementById('testResult').style.display = 'none';
-            document.getElementById('testProgress').style.display = 'none';
+            if (testImagePreview) testImagePreview.style.display = 'none';
+            if (testImageUploadArea) testImageUploadArea.style.display = 'block';
+            const testWorkflowBtn = document.getElementById('testWorkflowBtn');
+            if (testWorkflowBtn) testWorkflowBtn.disabled = true;
+            if (testResult) testResult.style.display = 'none';
+            if (testProgress) testProgress.style.display = 'none';
             // 停止轮询
             if (pollInterval) {
                 clearInterval(pollInterval);
                 pollInterval = null;
             }
             // 清空只读字段
-            document.getElementById('imageCode').value = '';
-            document.getElementById('imageDescription').value = '';
+            const imageCode = document.getElementById('imageCode');
+            const imageDescription = document.getElementById('imageDescription');
+            if (imageCode) imageCode.value = '';
+            if (imageDescription) imageDescription.value = '';
         });
         
         // 添加图片时自动填充当前选中的分类

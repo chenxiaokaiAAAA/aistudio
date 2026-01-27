@@ -32,6 +32,9 @@ accesslog = "logs/access.log"
 errorlog = "logs/error.log"
 loglevel = "info"
 access_log_format = '%(h)s %(l)s %(u)s %(t)s "%(r)s" %(s)s %(b)s "%(f)s" "%(a)s" %(D)s'
+# 同时输出到标准输出（可以通过 journalctl 查看）
+capture_output = True
+enable_stdio_inheritance = True
 
 # 进程管理
 pidfile = "gunicorn.pid"

@@ -77,8 +77,55 @@ class LocalPrinter:
                     'message': f'无法连接到打印机或打印机名无效: {printer_name} ({str(e)})'
                 }
             
-            # 方法1: 使用ShellExecute（适用于本地打印机）
-            logger.info(f"尝试方法1: ShellExecute")
+            # 检测文件类型
+            file_ext = os.path.splitext(image_path)[1].lower()
+            is_text_file = file_ext in ['.txt', '.log', '.csv']
+            
+            # 方法1: 对于文本文件，使用 win32print 直接打印（最可靠）
+            if is_text_file:
+                logger.info(f"检测到文本文件，使用 win32print 直接打印")
+                try:
+                    printer_handle = win32print.OpenPrinter(printer_name)
+                    
+                    # 读取文本内容
+                    with open(image_path, 'r', encoding='utf-8', errors='ignore') as f:
+                        text_content = f.read()
+                    
+                    # 转换为字节（使用 UTF-8 编码）
+                    text_bytes = text_content.encode('utf-8')
+                    
+                    # 开始打印作业
+                    job_info = (os.path.basename(image_path), None, "RAW")
+                    job_id = win32print.StartDocPrinter(printer_handle, 1, job_info)
+                    win32print.StartPagePrinter(printer_handle)
+                    
+                    # 写入文本数据（支持多份打印）
+                    for copy_num in range(copies):
+                        if copies > 1:
+                            logger.info(f"打印第 {copy_num + 1} 份（共 {copies} 份）")
+                        win32print.WritePrinter(printer_handle, text_bytes)
+                        if copy_num < copies - 1:
+                            # 在份数之间添加换页符
+                            win32print.WritePrinter(printer_handle, b'\x0c')  # Form Feed
+                    
+                    win32print.EndPagePrinter(printer_handle)
+                    win32print.EndDocPrinter(printer_handle)
+                    win32print.ClosePrinter(printer_handle)
+                    
+                    logger.info(f"✅ 文本文件打印成功 (win32print): {image_path} -> {printer_name} (共 {copies} 份)")
+                    return {
+                        'success': True,
+                        'message': f'文本文件打印成功（{copies} 份）',
+                        'printer': printer_name,
+                        'file': image_path,
+                        'copies': copies,
+                        'method': 'win32print_text'
+                    }
+                except Exception as e:
+                    logger.warning(f"win32print文本打印失败: {str(e)}，尝试其他方法")
+            
+            # 方法2: 使用ShellExecute（适用于图片和文档）
+            logger.info(f"尝试方法2: ShellExecute")
             try:
                 result_code = win32api.ShellExecute(
                     0,
@@ -91,10 +138,21 @@ class LocalPrinter:
                 logger.info(f"ShellExecute返回码: {result_code}")
                 
                 if result_code > 32:  # 成功时返回大于32的值
-                    logger.info(f"✅ 打印任务已发送 (ShellExecute): {image_path} -> {printer_name}")
+                    # 对于多份打印，需要多次调用
+                    if copies > 1:
+                        logger.info(f"需要打印 {copies} 份，等待后继续...")
+                        import time
+                        for copy_num in range(1, copies):
+                            time.sleep(2)  # 等待2秒后打印下一份
+                            result_code = win32api.ShellExecute(
+                                0, "print", image_path, f'/d:"{printer_name}"', ".", 0
+                            )
+                            logger.info(f"第 {copy_num + 1} 份打印任务已发送，返回码: {result_code}")
+                    
+                    logger.info(f"✅ 打印任务已发送 (ShellExecute): {image_path} -> {printer_name} (共 {copies} 份)")
                     return {
                         'success': True,
-                        'message': '打印任务已发送',
+                        'message': f'打印任务已发送（{copies} 份）',
                         'printer': printer_name,
                         'file': image_path,
                         'copies': copies,
@@ -104,33 +162,33 @@ class LocalPrinter:
             except Exception as e:
                 logger.warning(f"ShellExecute方法失败: {str(e)}")
             
-            # 方法2: 使用win32print直接打印（适用于网络打印机）
-            logger.info(f"尝试方法2: win32print直接打印")
+            # 方法3: 使用win32print直接打印（适用于网络打印机，图片文件）
+            logger.info(f"尝试方法3: win32print直接打印")
             try:
                 # 打开打印机
                 printer_handle = win32print.OpenPrinter(printer_name)
                 
                 # 读取文件内容
                 with open(image_path, 'rb') as f:
-                    image_data = f.read()
+                    file_data = f.read()
                 
-                # 开始打印作业
-                job_info = ("测试打印", None, "RAW")
-                job_id = win32print.StartDocPrinter(printer_handle, 1, job_info)
-                win32print.StartPagePrinter(printer_handle)
+                # 开始打印作业（支持多份）
+                for copy_num in range(copies):
+                    if copies > 1:
+                        logger.info(f"打印第 {copy_num + 1} 份（共 {copies} 份）")
+                    job_info = (os.path.basename(image_path), None, "RAW")
+                    job_id = win32print.StartDocPrinter(printer_handle, 1, job_info)
+                    win32print.StartPagePrinter(printer_handle)
+                    win32print.WritePrinter(printer_handle, file_data)
+                    win32print.EndPagePrinter(printer_handle)
+                    win32print.EndDocPrinter(printer_handle)
                 
-                # 写入打印数据（对于图片，可能需要转换为打印格式）
-                # 注意：直接打印图片数据可能不工作，需要转换为打印机可识别的格式
-                # 这里我们使用更简单的方法：通过系统默认程序打印
-                
-                win32print.EndPagePrinter(printer_handle)
-                win32print.EndDocPrinter(printer_handle)
                 win32print.ClosePrinter(printer_handle)
                 
-                logger.info(f"✅ 打印任务已发送 (win32print): {image_path} -> {printer_name}")
+                logger.info(f"✅ 打印任务已发送 (win32print): {image_path} -> {printer_name} (共 {copies} 份)")
                 return {
                     'success': True,
-                    'message': '打印任务已发送',
+                    'message': f'打印任务已发送（{copies} 份）',
                     'printer': printer_name,
                     'file': image_path,
                     'copies': copies,

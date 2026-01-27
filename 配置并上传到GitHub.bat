@@ -73,6 +73,17 @@ if /i not "%confirm%"=="Y" (
 )
 
 echo [7/7] 提交并推送...
+
+REM 检查Git用户配置
+git config user.name >nul 2>&1
+if errorlevel 1 (
+    echo [配置] 检测到Git用户信息未配置，正在配置...
+    git config --global user.name "chenxiaokaiAAAA"
+    git config --global user.email "chenxiaokaiAAAA@users.noreply.github.com"
+    echo ✓ Git用户信息已配置
+    echo.
+)
+
 set /p commit_msg="请输入提交信息（直接回车使用默认信息）: "
 if "%commit_msg%"=="" (
     set commit_msg=生产环境优化：添加图片路径配置、Gunicorn配置、Nginx配置和部署文档
