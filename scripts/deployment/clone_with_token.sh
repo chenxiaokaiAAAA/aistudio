@@ -5,7 +5,7 @@
 set -e
 
 # GitHub Token
-GITHUB_TOKEN="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"
+GITHUB_TOKEN="YOUR_GITHUB_TOKEN"
 GITHUB_REPO="chenxiaokaiAAAA/aistudio"
 PROJECT_DIR="/root/project_code"
 

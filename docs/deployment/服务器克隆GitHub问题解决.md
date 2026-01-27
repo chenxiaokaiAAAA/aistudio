@@ -24,11 +24,11 @@ curl -I https://github.com
 ### 方案2：使用Token克隆（正确格式）
 
 ```bash
-# 方式1：直接在URL中使用Token
-git clone https://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@github.com/chenxiaokaiAAAA/aistudio.git .
+# 方式1：直接在URL中使用Token（请替换 YOUR_GITHUB_TOKEN）
+git clone https://YOUR_GITHUB_TOKEN@github.com/chenxiaokaiAAAA/aistudio.git .
 
 # 方式2：使用环境变量（更安全）
-export GITHUB_TOKEN="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"
+export GITHUB_TOKEN="YOUR_GITHUB_TOKEN"
 git clone https://${GITHUB_TOKEN}@github.com/chenxiaokaiAAAA/aistudio.git .
 ```
 
@@ -84,7 +84,7 @@ cd /root/project_code
 rm -rf * .git 2>/dev/null
 
 # 使用Token克隆
-git clone https://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@github.com/chenxiaokaiAAAA/aistudio.git .
+git clone https://YOUR_GITHUB_TOKEN@github.com/chenxiaokaiAAAA/aistudio.git .
 
 # 如果还是超时，等待更长时间或使用代理
 ```
@@ -157,7 +157,7 @@ cd /root/project_code
 rm -rf * .git 2>/dev/null  # 清空目录
 
 # 使用完整URL克隆
-git clone https://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@github.com/chenxiaokaiAAAA/aistudio.git .
+git clone https://YOUR_GITHUB_TOKEN@github.com/chenxiaokaiAAAA/aistudio.git .
 
 # 如果还是没反应，按Ctrl+C取消，然后使用本地打包方式
 ```

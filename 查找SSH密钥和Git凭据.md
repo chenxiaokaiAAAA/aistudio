@@ -133,7 +133,7 @@ Get-ChildItem -Path C:\Users\$env:USERNAME -Recurse -Filter "*.pem" -ErrorAction
 
 ```bash
 # 在服务器上克隆代码时使用Token
-git clone https://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@github.com/chenxiaokaiAAAA/aistudio.git .
+git clone https://YOUR_GITHUB_TOKEN@github.com/chenxiaokaiAAAA/aistudio.git .
 ```
 
 #### 方案2：使用密码连接服务器

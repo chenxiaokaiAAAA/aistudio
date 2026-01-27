@@ -1,8 +1,11 @@
 # 使用GitHub Token部署（无需SSH密钥）
 
 ## 您的GitHub Token
+
+**注意**：请将下面的 `YOUR_GITHUB_TOKEN` 替换为您的实际 Token
+
 ```
-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
+YOUR_GITHUB_TOKEN
 ```
 
 ## 部署步骤
@@ -27,7 +30,7 @@ cd /root/project_code
 git clone https://YOUR_TOKEN@github.com/chenxiaokaiAAAA/aistudio.git .
 
 # 或使用环境变量（更安全）
-export GITHUB_TOKEN="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"
+export GITHUB_TOKEN="YOUR_GITHUB_TOKEN"
 git clone https://${GITHUB_TOKEN}@github.com/chenxiaokaiAAAA/aistudio.git .
 ```
 

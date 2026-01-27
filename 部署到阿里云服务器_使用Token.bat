@@ -16,7 +16,7 @@ echo 正在创建服务器端脚本...
 (
 echo #!/bin/bash
 echo # 使用GitHub Token克隆仓库
-echo GITHUB_TOKEN="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"
+echo GITHUB_TOKEN="YOUR_GITHUB_TOKEN"
 echo GITHUB_REPO="chenxiaokaiAAAA/aistudio"
 echo PROJECT_DIR="/root/project_code"
 echo.
@@ -73,7 +73,7 @@ if "%connect_choice%"=="1" (
     echo.
     echo 2. 在服务器上执行:
     echo    cd /root/project_code
-    echo    git clone https://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@github.com/chenxiaokaiAAAA/aistudio.git .
+    echo    git clone https://YOUR_GITHUB_TOKEN@github.com/chenxiaokaiAAAA/aistudio.git .
     echo.
     echo 3. 执行部署脚本:
     echo    chmod +x /root/deploy_aliyun.sh
