@@ -212,7 +212,7 @@ try:
     models_module.set_db(db)
     # 现在导入所有模型类（此时db已经可用）
     from app.models import (
-        Product, ProductSize, ProductSizePetOption, ProductImage, ProductStyleCategory, ProductCustomField,
+        Product, ProductSize, ProductSizePetOption, ProductImage, ProductStyleCategory, ProductCustomField, ProductBonusWorkflow,
         StyleCategory, StyleImage,
         HomepageBanner, WorksGallery, HomepageConfig,
         User, UserVisit,

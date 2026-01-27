@@ -291,12 +291,37 @@ def process_order_images(order_id, order_number=None, style_category_id=None, st
                 OrderImage=OrderImage
             )
             
-            if success:
-                print(f"✅ AI工作流任务创建成功，任务ID: {ai_task.id if ai_task else 'N/A'}")
-                return True, "图片处理流程启动成功"
-            else:
-                print(f"❌ AI工作流任务创建失败: {error_message}")
-                return False, f"AI工作流任务创建失败: {error_message}"
+                if success:
+                    print(f"✅ AI工作流任务创建成功，任务ID: {ai_task.id if ai_task else 'N/A'}")
+                    
+                    # 创建产品的额外赠送工作流任务
+                    try:
+                        from app.services.bonus_workflow_service import create_bonus_workflows_for_order
+                        
+                        bonus_success, bonus_count, bonus_error = create_bonus_workflows_for_order(
+                            order_id=order.id,
+                            db=db,
+                            Order=Order,
+                            Product=test_server_module.Product if hasattr(test_server_module, 'Product') else None,
+                            ProductBonusWorkflow=test_server_module.ProductBonusWorkflow if hasattr(test_server_module, 'ProductBonusWorkflow') else None,
+                            APITemplate=test_server_module.APITemplate if hasattr(test_server_module, 'APITemplate') else None,
+                            StyleImage=test_server_module.StyleImage if hasattr(test_server_module, 'StyleImage') else None,
+                            AITask=test_server_module.AITask if hasattr(test_server_module, 'AITask') else None,
+                            OrderImage=OrderImage
+                        )
+                        
+                        if bonus_success and bonus_count > 0:
+                            print(f"🎁 已创建 {bonus_count} 个赠送工作流任务")
+                        elif bonus_error and "未启用" not in bonus_error and "没有配置" not in bonus_error:
+                            print(f"⚠️  创建赠送工作流任务失败: {bonus_error}")
+                    except Exception as e:
+                        print(f"⚠️  创建赠送工作流任务异常: {str(e)}")
+                        # 不影响主流程
+                    
+                    return True, "图片处理流程启动成功"
+                else:
+                    print(f"❌ AI工作流任务创建失败: {error_message}")
+                    return False, f"AI工作流任务创建失败: {error_message}"
     
     except Exception as e:
         print(f"❌ 处理订单图片失败: {str(e)}")

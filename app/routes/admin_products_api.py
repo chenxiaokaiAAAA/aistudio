@@ -28,6 +28,7 @@ def get_models():
         'ProductStyleCategory': test_server_module.ProductStyleCategory,
         'ProductCustomField': test_server_module.ProductCustomField,
         'StyleCategory': test_server_module.StyleCategory,
+        'StyleImage': test_server_module.StyleImage if hasattr(test_server_module, 'StyleImage') else None,
         'Order': test_server_module.Order,
         'app': test_server_module.app if hasattr(test_server_module, 'app') else current_app
     }
@@ -37,11 +38,17 @@ def get_models():
 @login_required
 def admin_sizes():
     """产品配置管理页面"""
+    print(f"🔵 admin_sizes函数被调用 - 方法: {request.method}")
+    print(f"🔵 请求URL: {request.url}")
+    print(f"🔵 请求路径: {request.path}")
+    
     if current_user.role not in ['admin', 'operator']:
+        print("⚠️ 用户权限不足")
         return redirect(url_for('auth.login'))
     
     models = get_models()
     if not models:
+        print("⚠️ 系统未初始化")
         flash('系统未初始化', 'error')
         return redirect(url_for('auth.login'))
     
@@ -57,7 +64,12 @@ def admin_sizes():
     app = models['app']
     
     if request.method == 'POST':
+        print(f"📥 POST请求到达 - Content-Type: {request.content_type}")
+        print(f"📥 POST请求 - Content-Length: {request.content_length}")
         action = request.form.get('action')
+        print(f"📥 POST请求 - action: {action}")
+        print(f"📋 所有表单字段键: {list(request.form.keys())}")
+        print(f"📋 表单数据数量: {len(request.form)}")
         
         if action == 'add_product_with_sizes':
             # 一次性添加产品和多个尺寸
@@ -295,6 +307,7 @@ def admin_sizes():
         elif action == 'edit_product':
             # 编辑产品
             product_id = int(request.form.get('product_id'))
+            print(f"📝 开始编辑产品 - 产品ID: {product_id}")
             try:
                 product = Product.query.get_or_404(product_id)
                 
@@ -401,6 +414,88 @@ def admin_sizes():
                             sort_order=i
                         )
                         db.session.add(custom_field)
+                
+                # 处理赠送工作流配置（只支持风格图片类型）
+                try:
+                    import sys
+                    if 'test_server' in sys.modules:
+                        test_server_module = sys.modules['test_server']
+                        ProductBonusWorkflow = test_server_module.ProductBonusWorkflow if hasattr(test_server_module, 'ProductBonusWorkflow') else None
+                        
+                        if ProductBonusWorkflow:
+                            # 调试：输出所有表单字段
+                            print(f"📋 所有表单字段键: {list(request.form.keys())}")
+                            
+                            existing_bonus_workflow_ids = request.form.getlist('existing_bonus_workflow_id[]')
+                            bonus_workflow_types = request.form.getlist('bonus_workflow_type[]')
+                            bonus_workflow_style_image_ids = request.form.getlist('bonus_workflow_style_image_id[]')
+                            bonus_workflow_names = request.form.getlist('bonus_workflow_name[]')
+                            bonus_workflow_sort_orders = request.form.getlist('bonus_workflow_sort_order[]')
+                            
+                            print(f"📝 处理赠送工作流配置 - 产品ID: {product_id}")
+                            print(f"  - existing_bonus_workflow_ids: {existing_bonus_workflow_ids}")
+                            print(f"  - bonus_workflow_types: {bonus_workflow_types}")
+                            print(f"  - bonus_workflow_style_image_ids: {bonus_workflow_style_image_ids}")
+                            print(f"  - bonus_workflow_names: {bonus_workflow_names}")
+                            print(f"  - bonus_workflow_sort_orders: {bonus_workflow_sort_orders}")
+                            print(f"  - 工作流类型数量: {len(bonus_workflow_types)}")
+                            print(f"  - 风格图片ID数量: {len(bonus_workflow_style_image_ids)}")
+                            print(f"  - 工作流名称数量: {len(bonus_workflow_names)}")
+                            
+                            # 删除所有旧的赠送工作流配置
+                            deleted_count = ProductBonusWorkflow.query.filter_by(product_id=product_id).delete()
+                            print(f"  - 删除了 {deleted_count} 个旧的赠送工作流配置")
+                            
+                            # 添加新的赠送工作流配置（只处理风格图片类型）
+                            added_count = 0
+                            for i, workflow_type in enumerate(bonus_workflow_types):
+                                print(f"  - 处理工作流 {i+1}: 类型={workflow_type}")
+                                if workflow_type == 'style_image' and i < len(bonus_workflow_style_image_ids):
+                                    try:
+                                        style_image_id = int(bonus_workflow_style_image_ids[i]) if bonus_workflow_style_image_ids[i] else None
+                                    except (ValueError, TypeError):
+                                        style_image_id = None
+                                    
+                                    if style_image_id:
+                                        workflow_name = bonus_workflow_names[i] if i < len(bonus_workflow_names) else None
+                                        try:
+                                            sort_order = int(bonus_workflow_sort_orders[i]) if i < len(bonus_workflow_sort_orders) and bonus_workflow_sort_orders[i] else i
+                                        except (ValueError, TypeError):
+                                            sort_order = i
+                                        
+                                        bonus_workflow = ProductBonusWorkflow(
+                                            product_id=product_id,
+                                            workflow_type='style_image',
+                                            style_image_id=style_image_id,
+                                            workflow_name=workflow_name,
+                                            is_active=True,
+                                            sort_order=sort_order
+                                        )
+                                        db.session.add(bonus_workflow)
+                                        added_count += 1
+                                        print(f"  - ✅ 添加赠送工作流: 风格图片ID={style_image_id}, 名称={workflow_name}, 排序={sort_order}")
+                                    else:
+                                        print(f"  - ⚠️ 跳过工作流 {i+1}: style_image_id无效")
+                                else:
+                                    print(f"  - ⚠️ 跳过工作流 {i+1}: 类型不是style_image或索引超出范围")
+                            
+                            print(f"✅ 共添加了 {added_count} 个赠送工作流配置")
+                            
+                            # 在提交前验证
+                            print(f"🔍 提交前验证: session中有 {len(db.session.new)} 个新对象待提交")
+                            
+                            # 验证保存结果（提交前）
+                            saved_count_before = ProductBonusWorkflow.query.filter_by(product_id=product_id, is_active=True).count()
+                            print(f"🔍 提交前: 数据库中该产品现在有 {saved_count_before} 个赠送工作流配置")
+                            
+                            # 注意：这里不立即commit，等所有数据都准备好后一起commit
+                        else:
+                            print("⚠️ ProductBonusWorkflow模型未找到，跳过赠送工作流处理")
+                except Exception as e:
+                    print(f"❌ 处理赠送工作流配置失败: {str(e)}")
+                    import traceback
+                    traceback.print_exc()
+                    # 不影响主流程，继续执行
                 
                 # 处理尺寸更新
                 existing_size_ids = request.form.getlist('existing_size_id[]')
@@ -547,7 +642,26 @@ def admin_sizes():
                         traceback.print_exc()
                         pass
                 
+                # 提交所有更改（包括赠送工作流）
+                print(f"💾 准备提交数据库更改...")
+                print(f"  - 新对象数量: {len(db.session.new)}")
+                print(f"  - 修改对象数量: {len(db.session.dirty)}")
+                print(f"  - 删除对象数量: {len(db.session.deleted)}")
+                
                 db.session.commit()
+                print(f"✅ 数据库提交成功")
+                
+                # 验证保存结果（提交后）
+                try:
+                    import sys
+                    if 'test_server' in sys.modules:
+                        test_server_module = sys.modules['test_server']
+                        ProductBonusWorkflow = test_server_module.ProductBonusWorkflow if hasattr(test_server_module, 'ProductBonusWorkflow') else None
+                        if ProductBonusWorkflow:
+                            saved_count_after = ProductBonusWorkflow.query.filter_by(product_id=product_id, is_active=True).count()
+                            print(f"🔍 提交后验证: 数据库中该产品现在有 {saved_count_after} 个赠送工作流配置")
+                except Exception as e:
+                    print(f"⚠️ 验证保存结果失败: {str(e)}")
                 
                 # 自动同步到冲印系统配置
                 try:
@@ -637,6 +751,38 @@ def admin_sizes():
     # GET请求：获取所有产品和尺寸
     try:
         products = Product.query.order_by(Product.sort_order.asc(), Product.id.asc()).all()
+        
+        # 为每个产品加载赠送工作流数据（确保backref能正常工作）
+        try:
+            import sys
+            if 'test_server' in sys.modules:
+                test_server_module = sys.modules['test_server']
+                ProductBonusWorkflow = test_server_module.ProductBonusWorkflow if hasattr(test_server_module, 'ProductBonusWorkflow') else None
+                
+                if ProductBonusWorkflow:
+                    # 批量加载所有产品的赠送工作流（避免N+1查询问题）
+                    all_bonus_workflows = ProductBonusWorkflow.query.filter_by(
+                        is_active=True
+                    ).order_by(ProductBonusWorkflow.product_id.asc(), ProductBonusWorkflow.sort_order.asc()).all()
+                    
+                    # 按产品ID分组
+                    bonus_workflows_by_product = {}
+                    for bw in all_bonus_workflows:
+                        if bw.product_id not in bonus_workflows_by_product:
+                            bonus_workflows_by_product[bw.product_id] = []
+                        bonus_workflows_by_product[bw.product_id].append(bw)
+                    
+                    # 为每个产品设置bonus_workflows属性
+                    for product in products:
+                        product.bonus_workflows = bonus_workflows_by_product.get(product.id, [])
+                        print(f"产品 {product.name} (ID: {product.id}) 的赠送工作流数量: {len(product.bonus_workflows)}")
+                        if len(product.bonus_workflows) > 0:
+                            for bw in product.bonus_workflows:
+                                print(f"  - 工作流: {bw.workflow_name or '未命名'} (风格图片ID: {bw.style_image_id})")
+        except Exception as e:
+            print(f"加载赠送工作流数据失败: {str(e)}")
+            import traceback
+            traceback.print_exc()
     except Exception as e:
         # 如果字段不存在，使用原始SQL查询
         print(f"ORM查询失败（可能缺少free_selection_count字段），使用原始SQL: {e}")
@@ -683,9 +829,45 @@ def admin_sizes():
         bindings = ProductStyleCategory.query.filter_by(product_id=product.id).all()
         product_style_bindings[product.id] = [binding.style_category_id for binding in bindings]
     
+    # 获取API模板列表和风格图片列表（用于赠送工作流配置）
+    api_templates = []
+    style_images = []
+    try:
+        import sys
+        if 'test_server' in sys.modules:
+            test_server_module = sys.modules['test_server']
+            if hasattr(test_server_module, 'APITemplate'):
+                APITemplate = test_server_module.APITemplate
+                api_templates = APITemplate.query.filter_by(is_active=True).all()
+            
+            # 直接从models获取StyleImage
+            StyleImage = models.get('StyleImage')
+            if StyleImage:
+                style_images = StyleImage.query.filter_by(is_active=True).order_by(StyleImage.sort_order.asc()).all()
+                print(f"✅ 获取到 {len(style_images)} 个风格图片")
+                # 调试：输出前几个风格图片的信息
+                if len(style_images) > 0:
+                    for img in style_images[:3]:
+                        print(f"  - 风格图片: {img.name} (ID: {img.id}, 分类ID: {img.category_id})")
+            else:
+                print("⚠️ StyleImage模型未找到，尝试从test_server直接获取")
+                # 如果models中没有，尝试从test_server直接获取
+                if hasattr(test_server_module, 'StyleImage'):
+                    StyleImage = test_server_module.StyleImage
+                    style_images = StyleImage.query.filter_by(is_active=True).order_by(StyleImage.sort_order.asc()).all()
+                    print(f"✅ 从test_server获取到 {len(style_images)} 个风格图片")
+                else:
+                    print("❌ 无法获取StyleImage模型")
+    except Exception as e:
+        print(f"获取API模板或风格图片列表失败: {str(e)}")
+        import traceback
+        traceback.print_exc()
+    
     return render_template('admin/sizes.html', 
                          products=products, 
                          product_sizes=product_sizes, 
                          product_images=product_images,
                          style_categories=style_categories,
-                         product_style_bindings=product_style_bindings)
+                         product_style_bindings=product_style_bindings,
+                         api_templates=api_templates,
+                         style_images=style_images)

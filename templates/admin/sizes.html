@@ -1093,6 +1093,77 @@
                                     </div>
                                 </div>
                                 
+                                <!-- 赠送工作流配置 -->
+                                <div class="mt-4 mb-3">
+                                    <div class="d-flex justify-content-between align-items-center mb-3">
+                                        <label class="mb-0"><i class="fas fa-gift"></i> 赠送工作流配置</label>
+                                        <button type="button" class="btn btn-outline-primary btn-sm add-bonus-workflow-btn" data-product-id="{{ product.id }}">+ 添加赠送工作流</button>
+                                    </div>
+                                    <div class="alert alert-info" style="font-size: 0.85rem; padding: 10px; border-left: 4px solid #2196F3;">
+                                        <strong><i class="fas fa-info-circle"></i> 说明：</strong><br>
+                                        配置后，用户下单该产品时，除了主工作流任务外，系统会自动创建配置的赠送工作流任务。<br>
+                                        例如：证件照产品可以赠送2个AI写真主题任务。
+                                    </div>
+                                    <div id="bonusWorkflowsContainer_{{ product.id }}">
+                                        {% if product.bonus_workflows %}
+                                        {% for bonus_workflow in product.bonus_workflows %}
+                                        {% if bonus_workflow.is_active %}
+                                        <div class="bonus-workflow-item mb-3 p-3 border rounded" data-bonus-workflow-id="{{ bonus_workflow.id }}">
+                                            <input type="hidden" name="existing_bonus_workflow_id[]" value="{{ bonus_workflow.id }}">
+                                            <div class="row">
+                                                <div class="col-md-3">
+                                                    <label class="form-label small">工作流类型 <span class="text-danger">*</span></label>
+                                                    <select class="form-control form-control-sm bonus-workflow-type" name="bonus_workflow_type[]" onchange="window.toggleBonusWorkflowOptions(this)">
+                                                        <option value="api_template" {% if bonus_workflow.workflow_type == 'api_template' %}selected{% endif %}>API模板</option>
+                                                        <option value="style_image" {% if bonus_workflow.workflow_type == 'style_image' %}selected{% endif %}>风格图片</option>
+                                                    </select>
+                                                </div>
+                                                <div class="col-md-4 api-template-option" {% if bonus_workflow.workflow_type != 'api_template' %}style="display:none"{% endif %}>
+                                                    <label class="form-label small">API模板 <span class="text-danger">*</span></label>
+                                                    <select class="form-control form-control-sm" name="bonus_workflow_api_template_id[]">
+                                                        <option value="">请选择API模板</option>
+                                                        {% if api_templates %}
+                                                        {% for api_template in api_templates %}
+                                                        <option value="{{ api_template.id }}" {% if bonus_workflow.api_template_id == api_template.id %}selected{% endif %}>
+                                                            {{ api_template.style_image.name if api_template.style_image else (api_template.style_category.name if api_template.style_category else '未命名') }} - {{ api_template.default_prompt or '未命名' }}
+                                                        </option>
+                                                        {% endfor %}
+                                                        {% endif %}
+                                                    </select>
+                                                </div>
+                                                <div class="col-md-4 style-image-option" {% if bonus_workflow.workflow_type != 'style_image' %}style="display:none"{% endif %}>
+                                                    <label class="form-label small">风格图片 <span class="text-danger">*</span></label>
+                                                    <select class="form-control form-control-sm" name="bonus_workflow_style_image_id[]">
+                                                        <option value="">请选择风格图片</option>
+                                                        {% if style_images %}
+                                                        {% for style_image in style_images %}
+                                                        <option value="{{ style_image.id }}" {% if bonus_workflow.style_image_id == style_image.id %}selected{% endif %}>
+                                                            {{ style_image.category.name if style_image.category else '' }} - {{ style_image.name }}
+                                                        </option>
+                                                        {% endfor %}
+                                                        {% endif %}
+                                                    </select>
+                                                </div>
+                                                <div class="col-md-3">
+                                                    <label class="form-label small">工作流名称</label>
+                                                    <input type="text" class="form-control form-control-sm" name="bonus_workflow_name[]" value="{{ bonus_workflow.workflow_name or '' }}" placeholder="如: AI写真-古风主题">
+                                                </div>
+                                                <div class="col-md-1">
+                                                    <label class="form-label small">排序</label>
+                                                    <input type="number" class="form-control form-control-sm" name="bonus_workflow_sort_order[]" value="{{ bonus_workflow.sort_order or 0 }}" min="0">
+                                                </div>
+                                                <div class="col-md-1">
+                                                    <label class="form-label small">操作</label>
+                                                    <button type="button" class="btn btn-outline-danger btn-sm w-100" onclick="window.removeBonusWorkflow(this)">删除</button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {% endif %}
+                                        {% endfor %}
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                
                                 <!-- 尺寸编辑 -->
                                 <div class="d-flex justify-content-between align-items-center mb-2">
                                     <label class="mb-0" style="font-size: 0.85rem;"><i class="fas fa-ruler"></i> 尺寸规格</label>
@@ -1427,6 +1498,281 @@
             }
         }
         
+        // 赠送工作流相关函数
+        window.toggleBonusWorkflowOptions = function(select) {
+            const item = select.closest('.bonus-workflow-item');
+            const apiTemplateOption = item.querySelector('.api-template-option');
+            const styleImageOption = item.querySelector('.style-image-option');
+            
+            if (select.value === 'api_template') {
+                if (apiTemplateOption) apiTemplateOption.style.display = '';
+                if (styleImageOption) styleImageOption.style.display = 'none';
+            } else if (select.value === 'style_image') {
+                if (apiTemplateOption) apiTemplateOption.style.display = 'none';
+                if (styleImageOption) styleImageOption.style.display = '';
+            }
+        };
+        
+        window.removeBonusWorkflow = function(button) {
+            if (confirm('确定要删除这个赠送工作流吗？')) {
+                button.closest('.bonus-workflow-item').remove();
+            }
+        };
+        
+        // 风格图片数据（从模板传递）
+        const styleImagesData = {
+            {% if style_images %}
+            {% for style_image in style_images %}
+            {{ style_image.id }}: {
+                id: {{ style_image.id }},
+                category_id: {{ style_image.category_id }},
+                name: "{{ style_image.name|e }}",
+                category_name: "{{ style_image.category.name if style_image.category else ''|e }}"
+            }{% if not loop.last %},{% endif %}
+            {% endfor %}
+            {% endif %}
+        };
+        
+        // 调试：输出风格图片数据
+        console.log('风格图片数据总数:', Object.keys(styleImagesData).length);
+        if (Object.keys(styleImagesData).length > 0) {
+            console.log('风格图片数据示例:', Object.values(styleImagesData)[0]);
+        }
+        
+        // 添加赠送工作流 - 打开模态框
+        document.addEventListener('click', function(e) {
+            if (e.target.classList.contains('add-bonus-workflow-btn')) {
+                const productId = e.target.getAttribute('data-product-id');
+                console.log('点击添加赠送工作流按钮，产品ID:', productId);
+                
+                if (!productId) {
+                    alert('无法获取产品ID，请刷新页面重试');
+                    return;
+                }
+                
+                // 保存当前产品ID到模态框
+                const productIdInput = document.getElementById('bonusWorkflowProductId');
+                if (productIdInput) {
+                    productIdInput.value = productId;
+                    console.log('已设置产品ID到隐藏字段:', productId);
+                } else {
+                    console.error('找不到bonusWorkflowProductId隐藏字段');
+                }
+                
+                // 验证容器是否存在（在编辑模态框内）
+                const editModal = document.getElementById('editProductModal');
+                let container = null;
+                if (editModal) {
+                    container = editModal.querySelector(`#bonusWorkflowsContainer_${productId}`);
+                    console.log('验证容器是否存在:', container ? '存在' : '不存在');
+                    if (!container) {
+                        // 尝试查找所有容器
+                        const allContainers = editModal.querySelectorAll('[id*="bonusWorkflowsContainer"]');
+                        console.log('找到的容器数量:', allContainers.length);
+                        if (allContainers.length > 0) {
+                            console.log('容器ID列表:', Array.from(allContainers).map(c => c.id));
+                        }
+                    }
+                }
+                
+                // 清空选择
+                document.querySelectorAll('#bonusWorkflowModal input[type="radio"]').forEach(rb => rb.checked = false);
+                document.querySelectorAll('#bonusWorkflowModal input[type="checkbox"]').forEach(cb => cb.checked = false);
+                document.getElementById('styleImagesContainer').innerHTML = '<p class="text-muted">请先选择左侧的风格分类</p>';
+                
+                // 打开模态框
+                const modal = new bootstrap.Modal(document.getElementById('bonusWorkflowModal'));
+                modal.show();
+            }
+        });
+        
+        // 选择风格分类
+        window.selectCategory = function(categoryId) {
+            console.log('选择风格分类:', categoryId);
+            console.log('风格图片数据:', styleImagesData);
+            
+            // 更新选中状态
+            document.querySelectorAll('.category-item').forEach(item => {
+                item.classList.remove('bg-light', 'border-primary');
+            });
+            const selectedItem = document.querySelector(`.category-item[data-category-id="${categoryId}"]`);
+            if (selectedItem) {
+                selectedItem.classList.add('bg-light', 'border-primary');
+            }
+            
+            // 显示该分类下的风格图片
+            const container = document.getElementById('styleImagesContainer');
+            
+            // 检查styleImagesData是否为空
+            if (!styleImagesData || Object.keys(styleImagesData).length === 0) {
+                console.error('风格图片数据为空');
+                container.innerHTML = '<p class="text-danger">风格图片数据未加载，请刷新页面重试</p>';
+                return;
+            }
+            
+            // 转换为数字进行比较
+            const categoryIdNum = parseInt(categoryId);
+            const images = Object.values(styleImagesData).filter(img => {
+                const imgCategoryId = parseInt(img.category_id);
+                console.log(`比较: ${imgCategoryId} === ${categoryIdNum}`, imgCategoryId === categoryIdNum);
+                return imgCategoryId === categoryIdNum;
+            });
+            
+            console.log('过滤后的图片:', images);
+            
+            if (images.length === 0) {
+                container.innerHTML = '<p class="text-muted">该分类下暂无风格图片</p>';
+                return;
+            }
+            
+            let html = '';
+            images.forEach(image => {
+                html += `
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" name="bonus_workflow_style_image_ids[]" value="${image.id}" id="style_image_${image.id}">
+                        <label class="form-check-label" for="style_image_${image.id}" style="cursor: pointer;">
+                            <strong>${image.name}</strong>
+                        </label>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        };
+        
+        // 确认添加赠送工作流
+        window.confirmAddBonusWorkflow = function() {
+            console.log('=== 确认添加赠送工作流 ===');
+            
+            const productId = document.getElementById('bonusWorkflowProductId').value;
+            console.log('产品ID:', productId);
+            
+            if (!productId) {
+                alert('无法获取产品ID，请刷新页面重试');
+                return;
+            }
+            
+            // 优先在编辑模态框内查找容器（因为表单是克隆到模态框中的）
+            const editModal = document.getElementById('editProductModal');
+            let container = null;
+            
+            if (editModal) {
+                // 在编辑模态框内查找（使用querySelector，因为ID是唯一的）
+                container = editModal.querySelector(`#bonusWorkflowsContainer_${productId}`);
+                console.log('在编辑模态框内查找容器:', container ? '找到' : '未找到');
+                
+                // 如果没找到，尝试查找所有bonusWorkflowsContainer
+                if (!container) {
+                    const allContainers = editModal.querySelectorAll('[id^="bonusWorkflowsContainer_"]');
+                    console.log('找到的容器数量:', allContainers.length);
+                    if (allContainers.length > 0) {
+                        console.log('容器ID列表:', Array.from(allContainers).map(c => c.id));
+                    }
+                }
+            }
+            
+            // 如果没找到，尝试全局查找
+            if (!container) {
+                container = document.getElementById(`bonusWorkflowsContainer_${productId}`);
+                console.log('全局查找容器:', container ? '找到' : '未找到');
+            }
+            
+            // 如果还是没找到，尝试在原始编辑表单中查找（可能在页面隐藏区域）
+            if (!container) {
+                const originalEditDiv = document.getElementById(`edit-${productId}`);
+                if (originalEditDiv) {
+                    container = originalEditDiv.querySelector(`#bonusWorkflowsContainer_${productId}`);
+                    console.log('在原始编辑表单中查找容器:', container ? '找到' : '未找到');
+                }
+            }
+            
+            if (!container) {
+                console.error('找不到容器，容器ID:', `bonusWorkflowsContainer_${productId}`);
+                console.error('编辑模态框状态:', editModal ? (editModal.classList.contains('show') ? '已显示' : '未显示') : '不存在');
+                alert(`找不到容器（ID: bonusWorkflowsContainer_${productId}），请确保产品编辑页面已打开并刷新页面重试`);
+                return;
+            }
+            
+            console.log('✅ 找到容器:', container.id);
+            
+            // 获取选中的风格图片
+            const checkboxes = document.querySelectorAll('#bonusWorkflowModal input[name="bonus_workflow_style_image_ids[]"]:checked');
+            console.log('选中的风格图片数量:', checkboxes.length);
+            
+            if (checkboxes.length === 0) {
+                alert('请至少选择一个风格图片');
+                return;
+            }
+            
+            // 添加选中的工作流到列表
+            const currentCount = container.querySelectorAll('.bonus-workflow-item').length;
+            console.log('当前已有工作流数量:', currentCount);
+            
+            let addedCount = 0;
+            checkboxes.forEach((cb, index) => {
+                const imageId = cb.value;
+                console.log(`处理风格图片 ${index + 1}: ID=${imageId}`);
+                
+                const imageData = styleImagesData[imageId];
+                if (!imageData) {
+                    console.error(`找不到风格图片数据: ID=${imageId}`);
+                    return;
+                }
+                
+                console.log('风格图片数据:', imageData);
+                
+                const newItem = document.createElement('div');
+                newItem.className = 'bonus-workflow-item mb-3 p-3 border rounded';
+                newItem.innerHTML = `
+                    <input type="hidden" name="bonus_workflow_type[]" value="style_image">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <label class="form-label small">风格分类</label>
+                            <input type="text" class="form-control form-control-sm" value="${imageData.category_name || ''}" readonly>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small">风格图片 <span class="text-danger">*</span></label>
+                            <input type="hidden" name="bonus_workflow_style_image_id[]" value="${imageData.id}">
+                            <input type="text" class="form-control form-control-sm" value="${imageData.name || ''}" readonly>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label small">工作流名称</label>
+                            <input type="text" class="form-control form-control-sm" name="bonus_workflow_name[]" value="${imageData.name || ''}" placeholder="如: AI写真-古风主题">
+                        </div>
+                        <div class="col-md-1">
+                            <label class="form-label small">排序</label>
+                            <input type="number" class="form-control form-control-sm" name="bonus_workflow_sort_order[]" value="${currentCount + index}" min="0">
+                        </div>
+                        <div class="col-md-1">
+                            <label class="form-label small">操作</label>
+                            <button type="button" class="btn btn-outline-danger btn-sm w-100" onclick="window.removeBonusWorkflow(this)">删除</button>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(newItem);
+                addedCount++;
+                console.log(`✅ 已添加工作流项 ${addedCount}`);
+            });
+            
+            console.log(`总共添加了 ${addedCount} 个工作流项`);
+            
+            // 关闭模态框
+            const modal = bootstrap.Modal.getInstance(document.getElementById('bonusWorkflowModal'));
+            if (modal) {
+                modal.hide();
+            }
+            
+            // 清空选择
+            document.querySelectorAll('#bonusWorkflowModal input[type="radio"]').forEach(rb => rb.checked = false);
+            document.querySelectorAll('#bonusWorkflowModal input[type="checkbox"]').forEach(cb => cb.checked = false);
+            document.getElementById('styleImagesContainer').innerHTML = '<p class="text-muted">请先选择左侧的风格分类</p>';
+            
+            // 滚动到添加的工作流位置
+            if (addedCount > 0 && container.children.length > 0) {
+                const lastItem = container.children[container.children.length - 1];
+                lastItem.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+        };
+        
         // 删除产品确认处理
         document.querySelectorAll('.delete-product-form').forEach(form => {
             form.addEventListener('submit', function(e) {
@@ -1620,19 +1966,29 @@
         
         // 提交编辑表单
         function submitEditForm() {
+            console.log('🚀 submitEditForm函数被调用');
+            
             const modal = document.getElementById('editProductModal');
             if (!modal) {
+                console.error('❌ 找不到模态框');
                 alert('找不到模态框');
                 return;
             }
+            console.log('✅ 找到模态框');
+            
             const modalElement = document.getElementById('editProductModal');
             const productId = modalElement ? modalElement.dataset.productId : null;
+            console.log('产品ID (从dataset):', productId);
             
             const form = modal.querySelector('form');
             if (!form) {
+                console.error('❌ 找不到表单');
                 alert('找不到表单');
                 return;
             }
+            console.log('✅ 找到表单');
+            console.log('表单action:', form.action);
+            console.log('表单method:', form.method);
             
             // 检查是否有文件被选择 - 使用产品ID直接查找，确保找到正确的input
             let fileInput = null;
@@ -1703,6 +2059,25 @@
             // 使用FormData和fetch API提交，确保文件被正确包含
             const formData = new FormData(form);
             
+            // 调试：输出所有表单字段（用于检查赠送工作流数据）
+            console.log('📋 表单中的所有字段:');
+            for (let pair of formData.entries()) {
+                if (!(pair[1] instanceof File)) {
+                    console.log(`  ${pair[0]}: ${pair[1]}`);
+                }
+            }
+            
+            // 特别检查赠送工作流相关字段
+            const bonusWorkflowTypes = formData.getAll('bonus_workflow_type[]');
+            const bonusWorkflowStyleImageIds = formData.getAll('bonus_workflow_style_image_id[]');
+            const bonusWorkflowNames = formData.getAll('bonus_workflow_name[]');
+            const bonusWorkflowSortOrders = formData.getAll('bonus_workflow_sort_order[]');
+            console.log('🎁 赠送工作流字段:');
+            console.log('  - bonus_workflow_type[]:', bonusWorkflowTypes);
+            console.log('  - bonus_workflow_style_image_id[]:', bonusWorkflowStyleImageIds);
+            console.log('  - bonus_workflow_name[]:', bonusWorkflowNames);
+            console.log('  - bonus_workflow_sort_order[]:', bonusWorkflowSortOrders);
+            
             // 确保文件被包含在FormData中
             if (fileInput.files && fileInput.files.length > 0) {
                 // 清除可能存在的旧文件数据
@@ -1739,29 +2114,77 @@
             
             console.log('🚀 使用fetch提交表单到:', submitUrl);
             
+            // 最后验证：确保赠送工作流字段在FormData中
+            const finalBonusWorkflowTypes = formData.getAll('bonus_workflow_type[]');
+            const finalBonusWorkflowStyleImageIds = formData.getAll('bonus_workflow_style_image_id[]');
+            console.log('🔍 提交前最后验证 - 赠送工作流字段:');
+            console.log('  - bonus_workflow_type[] 数量:', finalBonusWorkflowTypes.length, '值:', finalBonusWorkflowTypes);
+            console.log('  - bonus_workflow_style_image_id[] 数量:', finalBonusWorkflowStyleImageIds.length, '值:', finalBonusWorkflowStyleImageIds);
+            
+            // 验证action字段是否存在
+            const actionValue = formData.get('action');
+            console.log('🔍 验证action字段:', actionValue);
+            if (!actionValue || actionValue !== 'edit_product') {
+                console.error('❌ action字段缺失或错误:', actionValue);
+                alert('表单配置错误：action字段缺失或错误，请刷新页面重试');
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = '保存';
+                }
+                return;
+            }
+            
+            // 验证product_id字段是否存在
+            const productIdValue = formData.get('product_id');
+            console.log('🔍 验证product_id字段:', productIdValue);
+            if (!productIdValue) {
+                console.error('❌ product_id字段缺失');
+                alert('表单配置错误：product_id字段缺失，请刷新页面重试');
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = '保存';
+                }
+                return;
+            }
+            
+            console.log('✅ 表单验证通过，开始发送POST请求...');
+            
             // 使用fetch提交表单
             fetch(submitUrl, {
                 method: 'POST',
                 body: formData,
                 // 不设置Content-Type，让浏览器自动设置（包含boundary）
+                // 添加credentials以确保cookie被发送
+                credentials: 'same-origin',
             })
             .then(response => {
                 console.log('📡 服务器响应状态:', response.status, response.statusText);
+                console.log('📡 响应URL:', response.url);
+                console.log('📡 响应类型:', response.type);
+                console.log('📡 是否重定向:', response.redirected);
+                
                 if (response.redirected) {
                     console.log('🔄 重定向到:', response.url);
-                    window.location.href = response.url;
+                    // 使用reload而不是redirect，确保页面完全刷新
+                    window.location.reload();
                 } else if (response.ok) {
                     return response.text().then(html => {
-                        document.open();
-                        document.write(html);
-                        document.close();
+                        console.log('✅ 服务器返回成功，刷新页面');
+                        console.log('📄 响应内容长度:', html.length);
+                        window.location.reload();
                     });
                 } else {
-                    throw new Error(`服务器错误: ${response.status} ${response.statusText}`);
+                    return response.text().then(text => {
+                        console.error('❌ 服务器错误响应:', text);
+                        console.error('❌ 响应状态:', response.status, response.statusText);
+                        alert('提交失败: ' + response.status + ' ' + response.statusText + '\n请查看控制台获取详细信息');
+                        throw new Error(`服务器错误: ${response.status} ${response.statusText}`);
+                    });
                 }
             })
             .catch(error => {
                 console.error('❌ 提交表单时出错:', error);
+                console.error('❌ 错误堆栈:', error.stack);
                 alert('提交失败: ' + error.message + '\n请检查控制台获取更多信息');
                 if (submitBtn) {
                     submitBtn.disabled = false;
@@ -2233,5 +2656,54 @@
             }
         }
     </script>
+    
+    <!-- 添加赠送工作流模态框 -->
+    <div class="modal fade" id="bonusWorkflowModal" tabindex="-1" aria-labelledby="bonusWorkflowModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="bonusWorkflowModalLabel">添加赠送工作流</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="bonusWorkflowProductId" value="">
+                    
+                    <!-- 风格分类和风格图片选择 -->
+                    <div class="row">
+                        <!-- 左侧：风格分类列表 -->
+                        <div class="col-md-4">
+                            <label class="form-label">选择风格分类</label>
+                            <div class="border rounded p-2" style="max-height: 500px; overflow-y: auto;">
+                                {% if style_categories %}
+                                {% for category in style_categories %}
+                                <div class="form-check mb-2 category-item" data-category-id="{{ category.id }}" onclick="window.selectCategory({{ category.id }})" style="cursor: pointer; padding: 8px; border-radius: 4px;">
+                                    <input class="form-check-input" type="radio" name="selected_category_id" value="{{ category.id }}" id="category_{{ category.id }}" onchange="window.selectCategory({{ category.id }})">
+                                    <label class="form-check-label" for="category_{{ category.id }}" style="cursor: pointer;">
+                                        {% if category.icon %}{{ category.icon }} {% endif %}<strong>{{ category.name }}</strong>
+                                    </label>
+                                </div>
+                                {% endfor %}
+                                {% else %}
+                                <p class="text-muted">暂无风格分类</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <!-- 右侧：风格图片列表 -->
+                        <div class="col-md-8">
+                            <label class="form-label">选择风格图片（子主题） <span class="text-danger">*</span></label>
+                            <div class="border rounded p-3" style="max-height: 500px; overflow-y: auto;" id="styleImagesContainer">
+                                <p class="text-muted">请先选择左侧的风格分类</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" onclick="window.confirmAddBonusWorkflow()">确认添加</button>
+                </div>
+            </div>
+        </div>
+    </div>
 </body>
 </html>

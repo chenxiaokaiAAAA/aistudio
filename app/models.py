@@ -38,7 +38,7 @@ def _get_db():
 # 导出所有模型类（包括新增的AI相关模型）
 __all__ = [
     'Product', 'ProductSize', 'ProductSizePetOption', 'ProductImage', 
-    'ProductStyleCategory', 'ProductCustomField',
+    'ProductStyleCategory', 'ProductCustomField', 'ProductBonusWorkflow',
     'StyleCategory', 'StyleImage',
     'HomepageBanner', 'WorksGallery', 'HomepageConfig',
     'User', 'UserVisit',
@@ -158,6 +158,45 @@ class ProductCustomField(db.Model):
     is_required = db.Column(db.Boolean, default=False)  # 是否必填
     sort_order = db.Column(db.Integer, default=0)  # 排序
     created_at = db.Column(db.DateTime, default=datetime.now)
+
+class ProductBonusWorkflow(db.Model):
+    """产品额外赠送工作流配置表"""
+    __tablename__ = 'product_bonus_workflows'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    product_id = db.Column(db.Integer, db.ForeignKey('products.id'), nullable=False)
+    product = db.relationship('Product', backref=db.backref('bonus_workflows', lazy=True, cascade='all, delete-orphan'))
+    
+    # 工作流类型：'api_template' (API模板) 或 'style_image' (风格图片)
+    workflow_type = db.Column(db.String(20), nullable=False, default='api_template')
+    
+    # 关联的API模板ID（当workflow_type='api_template'时使用）
+    api_template_id = db.Column(db.Integer, db.ForeignKey('api_templates.id'), nullable=True)
+    api_template = db.relationship('APITemplate', backref=db.backref('product_bonus_workflows', lazy=True))
+    
+    # 关联的风格图片ID（当workflow_type='style_image'时使用）
+    style_image_id = db.Column(db.Integer, db.ForeignKey('style_image.id'), nullable=True)
+    style_image = db.relationship('StyleImage', backref=db.backref('product_bonus_workflows', lazy=True))
+    
+    # 赠送工作流名称（用于显示）
+    workflow_name = db.Column(db.String(200))  # 如"AI写真-古风主题"
+    workflow_description = db.Column(db.Text)  # 描述
+    
+    # 是否启用
+    is_active = db.Column(db.Boolean, default=True)
+    
+    # 排序
+    sort_order = db.Column(db.Integer, default=0)
+    
+    # 时间信息
+    created_at = db.Column(db.DateTime, default=datetime.now)
+    updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
+    
+    # 确保同一产品不会重复绑定同一工作流
+    __table_args__ = (
+        db.UniqueConstraint('product_id', 'api_template_id', 'workflow_type', name='_product_api_template_uc'),
+        db.UniqueConstraint('product_id', 'style_image_id', 'workflow_type', name='_product_style_image_uc'),
+    )
 
 # ============================================================================
 # 风格相关模型
