@@ -116,6 +116,64 @@ echo    本地代码已推送到 GitHub
 echo ========================================
 echo.
 
+REM 询问是否创建版本标签
+set /p create_tag="是否创建版本标签？(Y/N，直接回车跳过): "
+if /i "%create_tag%"=="Y" (
+    echo.
+    echo [创建版本标签]
+    echo.
+    
+    REM 获取当前日期作为默认版本号（格式：v2026.01.27）
+    for /f "tokens=2 delims==" %%I in ('wmic os get localdatetime /value') do set datetime=%%I
+    set date_str=%datetime:~0,8%
+    set default_version=v%date_str:~0,4%.%date_str:~4,2%.%date_str:~6,2%
+    
+    echo 建议版本号格式：
+    echo   - 日期版本: %default_version% （如：v2026.01.27）
+    echo   - 语义版本: v1.0.1 （主版本.次版本.修订版本）
+    echo.
+    
+    set /p VERSION="请输入版本号（直接回车使用 %default_version%）: "
+    if "%VERSION%"=="" set VERSION=%default_version%
+    
+    REM 确保版本号以 v 开头
+    if not "%VERSION:~0,1%"=="v" set VERSION=v%VERSION%
+    
+    echo.
+    set /p TAG_MESSAGE="请输入版本说明（直接回车使用默认）: "
+    if "%TAG_MESSAGE%"=="" set TAG_MESSAGE=版本 %VERSION%：更新代码
+    
+    echo.
+    echo 正在创建标签...
+    echo   版本号: %VERSION%
+    echo   说明: %TAG_MESSAGE%
+    echo.
+    
+    git tag -a %VERSION% -m "%TAG_MESSAGE%"
+    
+    if %errorlevel% == 0 (
+        echo ✅ 标签创建成功
+        echo.
+        echo 正在推送标签到GitHub...
+        git push origin %VERSION%
+        
+        if %errorlevel% == 0 (
+            echo.
+            echo ✅ 版本标签已成功推送到GitHub
+            echo.
+            echo 📌 提示：可以在GitHub上创建Release：
+            echo   https://github.com/chenxiaokaiAAAA/aistudio/releases/new
+            echo   选择标签: %VERSION%
+        ) else (
+            echo [警告] 标签推送失败，但标签已创建
+            echo 稍后可以运行: git push origin %VERSION%
+        )
+    ) else (
+        echo [警告] 创建标签失败，继续部署流程...
+    )
+    echo.
+)
+
 set /p deploy_confirm="是否现在部署到阿里云服务器？(Y/N): "
 if /i not "%deploy_confirm%"=="Y" (
     echo.
