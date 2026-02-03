@@ -83,7 +83,15 @@ def check_remote_rsync():
     
     try:
         # 使用 shell=True 执行命令（与用户手动执行方式一致）
-        result = subprocess.run(ssh_cmd, shell=True, capture_output=True, text=True, timeout=15)
+        result = subprocess.run(
+            ssh_cmd, 
+            shell=True, 
+            capture_output=True, 
+            text=True,
+            encoding='utf-8',
+            errors='replace',
+            timeout=15
+        )
         
         # 调试信息（可选，如果需要可以取消注释）
         # print(f"[DEBUG] Return code: {result.returncode}")
@@ -149,7 +157,15 @@ def install_remote_rsync():
     )
     
     try:
-        result = subprocess.run(detect_cmd, shell=True, capture_output=True, text=True, timeout=10)
+        result = subprocess.run(
+            detect_cmd, 
+            shell=True, 
+            capture_output=True, 
+            text=True,
+            encoding='utf-8',
+            errors='replace',
+            timeout=10
+        )
         system_type = result.stdout.strip().lower()
         
         if system_type == "ubuntu" or system_type == "debian":
@@ -183,7 +199,15 @@ def install_remote_rsync():
         print(f"   检测到系统类型: {system_type}")
         print("   正在安装 rsync（需要 root 权限）...")
         
-        install_result = subprocess.run(install_cmd, shell=True, capture_output=True, text=True, timeout=300)
+        install_result = subprocess.run(
+            install_cmd, 
+            shell=True, 
+            capture_output=True, 
+            text=True,
+            encoding='utf-8',
+            errors='replace',
+            timeout=300
+        )
         
         if install_result.returncode == 0:
             print("✅ rsync 安装成功！")
@@ -425,7 +449,15 @@ def count_remote_files(remote_dir, show_debug=False):
         print(f"    [调试] 执行统计命令: {cmd}")
     
     try:
-        result = subprocess.run(cmd, shell=True, capture_output=True, text=True, timeout=30)
+        result = subprocess.run(
+            cmd, 
+            shell=True, 
+            capture_output=True, 
+            text=True,
+            encoding='utf-8',
+            errors='replace',
+            timeout=30
+        )
         if show_debug:
             print(f"    [调试] 返回码: {result.returncode}")
             print(f"    [调试] 输出: {result.stdout}")
@@ -443,7 +475,15 @@ def count_remote_files(remote_dir, show_debug=False):
         # 如果命令失败，尝试更简单的方法
         # 先检查目录是否存在
         check_cmd = f'ssh -i "{ssh_key}" -o StrictHostKeyChecking=no -o ConnectTimeout=10 -o BatchMode=yes {REMOTE_USER}@{REMOTE_HOST} "test -d \'{escaped_path}\' && echo exists || echo not_exists"'
-        check_result = subprocess.run(check_cmd, shell=True, capture_output=True, text=True, timeout=10)
+        check_result = subprocess.run(
+            check_cmd, 
+            shell=True, 
+            capture_output=True, 
+            text=True,
+            encoding='utf-8',
+            errors='replace',
+            timeout=10
+        )
         if check_result.returncode == 0 and 'not_exists' in check_result.stdout:
             return 0  # 目录不存在，文件数为0
         
@@ -924,37 +964,80 @@ def sync_code_via_git():
     
     # 检查是否有未提交的更改
     try:
-        result = subprocess.run(["git", "status", "--porcelain"], 
-                              capture_output=True, text=True, cwd=LOCAL_PROJECT_PATH)
-        if result.stdout.strip():
+        # 使用UTF-8编码，避免Windows GBK编码问题
+        result = subprocess.run(
+            ["git", "status", "--porcelain"], 
+            capture_output=True, 
+            text=True,
+            encoding='utf-8',
+            errors='replace',
+            cwd=LOCAL_PROJECT_PATH
+        )
+        if result.stdout and result.stdout.strip():
             print("⚠️  检测到未提交的更改")
             commit = input("是否提交并推送? (Y/N): ").strip().upper()
             if commit == "Y":
                 # 添加文件
-                subprocess.run(["git", "add", "."], cwd=LOCAL_PROJECT_PATH)
+                subprocess.run(
+                    ["git", "add", "."], 
+                    cwd=LOCAL_PROJECT_PATH,
+                    encoding='utf-8',
+                    errors='replace'
+                )
                 # 提交
                 commit_msg = input("请输入提交信息（直接回车使用默认）: ").strip()
                 if not commit_msg:
                     commit_msg = f"Update code: sync to server {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
-                subprocess.run(["git", "commit", "-m", commit_msg], cwd=LOCAL_PROJECT_PATH)
+                subprocess.run(
+                    ["git", "commit", "-m", commit_msg], 
+                    cwd=LOCAL_PROJECT_PATH,
+                    encoding='utf-8',
+                    errors='replace'
+                )
                 # 推送
-                subprocess.run(["git", "push", "origin", "master"], cwd=LOCAL_PROJECT_PATH)
-                if subprocess.run(["git", "push", "origin", "main"], cwd=LOCAL_PROJECT_PATH).returncode != 0:
+                subprocess.run(
+                    ["git", "push", "origin", "master"], 
+                    cwd=LOCAL_PROJECT_PATH,
+                    encoding='utf-8',
+                    errors='replace'
+                )
+                if subprocess.run(
+                    ["git", "push", "origin", "main"], 
+                    cwd=LOCAL_PROJECT_PATH,
+                    encoding='utf-8',
+                    errors='replace'
+                ).returncode != 0:
                     pass
                 print("✅ 代码已推送到GitHub")
     except Exception as e:
         print(f"⚠️  Git操作失败: {e}")
+        import traceback
+        traceback.print_exc()
     
     # 在服务器上拉取最新代码
     print("🔄 在服务器上拉取最新代码...")
     # SSH 命令使用 PEM 文件（SSH 不支持 PPK，需要 PEM）
     ssh_key = PEM_PATH if os.path.exists(PEM_PATH) else KEY_PATH
-    ssh_cmd = f"ssh -i {ssh_key} -o StrictHostKeyChecking=no {REMOTE_USER}@{REMOTE_HOST} 'cd {REMOTE_PROJECT_PATH} && git pull origin master 2>&1 || git pull origin main 2>&1'"
-    result = subprocess.run(ssh_cmd, shell=True, capture_output=True, text=True)
-    if result.returncode == 0:
-        print("✅ 服务器代码已更新")
-    else:
-        print(f"⚠️  服务器代码更新可能失败: {result.stderr}")
+    ssh_cmd = f"ssh -i \"{ssh_key}\" -o StrictHostKeyChecking=no {REMOTE_USER}@{REMOTE_HOST} 'cd {REMOTE_PROJECT_PATH} && git pull origin master 2>&1 || git pull origin main 2>&1'"
+    try:
+        result = subprocess.run(
+            ssh_cmd, 
+            shell=True, 
+            capture_output=True, 
+            text=True,
+            encoding='utf-8',
+            errors='replace'
+        )
+        if result.returncode == 0:
+            print("✅ 服务器代码已更新")
+            if result.stdout:
+                print(f"   输出: {result.stdout.strip()[:200]}")
+        else:
+            error_msg = result.stderr if result.stderr else (result.stdout if result.stdout else "未知错误")
+            print(f"⚠️  服务器代码更新可能失败: {error_msg[:200]}")
+    except Exception as e:
+        print(f"⚠️  SSH连接失败: {e}")
+        print("   提示: 请检查SSH密钥权限和服务器连接")
 
 def main():
     print(f"\n{'='*50}")
@@ -1183,8 +1266,15 @@ def main():
     if restart == "Y":
         # SSH 命令使用 PEM 文件（SSH 不支持 PPK，需要 PEM）
         ssh_key = PEM_PATH if os.path.exists(PEM_PATH) else KEY_PATH
-        ssh_cmd = f"ssh -i {ssh_key} -o StrictHostKeyChecking=no {REMOTE_USER}@{REMOTE_HOST} 'systemctl restart aistudio'"
-        result = subprocess.run(ssh_cmd, shell=True, capture_output=True, text=True)
+        ssh_cmd = f'ssh -i "{ssh_key}" -o StrictHostKeyChecking=no {REMOTE_USER}@{REMOTE_HOST} "systemctl restart aistudio"'
+        result = subprocess.run(
+            ssh_cmd, 
+            shell=True, 
+            capture_output=True, 
+            text=True,
+            encoding='utf-8',
+            errors='replace'
+        )
         if result.returncode == 0:
             print("✅ 服务已重启")
         else:

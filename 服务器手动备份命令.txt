@@ -1,0 +1,90 @@
+========================================
+服务器手动备份命令
+========================================
+
+【步骤1】连接到服务器
+在本地Windows命令行执行：
+  ssh -i "aliyun-key\aistudio.pem" root@121.43.143.59
+
+或者运行：
+  连接服务器.bat
+
+
+【步骤2】在服务器上执行备份命令
+
+方法一：使用备份脚本（推荐）
+cd /root/project_code
+bash scripts/deployment/服务器备份脚本.sh
+
+
+方法二：手动执行备份命令
+cd /root
+
+# 创建备份目录（带时间戳）
+BACKUP_DIR="project_code_backup_$(date +%Y%m%d_%H%M%S)"
+mkdir -p "$BACKUP_DIR"
+
+echo "开始备份到: $BACKUP_DIR"
+
+# 备份项目代码
+if [ -d "project_code" ]; then
+    cp -r project_code/* "$BACKUP_DIR/" 2>/dev/null || true
+    echo "✅ 代码备份完成"
+fi
+
+# 备份数据库
+if [ -f "project_code/instance/pet_painting.db" ]; then
+    mkdir -p "$BACKUP_DIR/instance"
+    cp project_code/instance/pet_painting.db "$BACKUP_DIR/instance/pet_painting.db"
+    DB_SIZE=$(du -h "$BACKUP_DIR/instance/pet_painting.db" | cut -f1)
+    echo "✅ 数据库已备份 ($DB_SIZE)"
+fi
+
+# 备份图片目录
+for dir in uploads final_works hd_images; do
+    if [ -d "project_code/$dir" ]; then
+        FILE_COUNT=$(find "project_code/$dir" -type f 2>/dev/null | wc -l)
+        if [ "$FILE_COUNT" -gt 0 ]; then
+            cp -r "project_code/$dir" "$BACKUP_DIR/" 2>/dev/null || true
+            echo "✅ $dir 已备份 ($FILE_COUNT 个文件)"
+        fi
+    fi
+done
+
+# 显示备份信息
+BACKUP_SIZE=$(du -sh "$BACKUP_DIR" | cut -f1)
+echo ""
+echo "========================================"
+echo "✅ 备份完成"
+echo "备份目录: $BACKUP_DIR"
+echo "备份大小: $BACKUP_SIZE"
+echo "备份位置: /root/$BACKUP_DIR"
+echo "========================================"
+
+# 列出所有备份
+echo ""
+echo "当前所有备份："
+ls -lah /root | grep project_code_backup
+
+
+【步骤3】备份完成后，退出服务器
+exit
+
+
+【步骤4】在本地同步代码和数据
+运行: 快速同步到阿里云.bat
+选择: 4 (同步所有)
+
+
+========================================
+快速参考
+========================================
+
+连接服务器:
+  ssh -i "aliyun-key\aistudio.pem" root@121.43.143.59
+
+查看备份:
+  ls -lah /root | grep project_code_backup
+
+恢复备份（如果需要）:
+  bash scripts/deployment/服务器恢复脚本.sh project_code_backup_20260203_201327
