@@ -4,44 +4,33 @@
 """
 from flask import Blueprint, render_template, request, redirect, url_for, jsonify, flash
 from flask_login import login_required, current_user
-from datetime import datetime
+from datetime import datetime, timedelta
 import sys
 import os
 import json
+import uuid
+import time
+import qrcode
+import base64
+from io import BytesIO
 from sqlalchemy import and_, or_
+
+from app.utils.admin_helpers import get_models
+from app.utils.decorators import admin_required
 
 # 创建蓝图
 photo_selection_bp = Blueprint('photo_selection', __name__)
 
-
-def get_models():
-    """获取数据库模型（延迟导入）"""
-    if 'test_server' not in sys.modules:
-        return None
-    test_server_module = sys.modules['test_server']
-    return {
-        'db': test_server_module.db,
-        'Order': test_server_module.Order,
-        'AITask': test_server_module.AITask,
-        'Product': test_server_module.Product,
-        'ProductSize': test_server_module.ProductSize,
-        'ShopProduct': getattr(test_server_module, 'ShopProduct', None),
-        'ShopProductSize': getattr(test_server_module, 'ShopProductSize', None),
-        'ShopOrder': getattr(test_server_module, 'ShopOrder', None),
-        'StyleCategory': test_server_module.StyleCategory,
-        'StyleImage': test_server_module.StyleImage,
-        'PrintSizeConfig': getattr(test_server_module, 'PrintSizeConfig', None),
-    }
+# 临时token存储（实际生产环境建议使用Redis）
+_selection_tokens = {}
+# 短token到完整token的映射
+_short_token_map = {}
 
 
 @photo_selection_bp.route('/admin/photo-selection')
-@login_required
 def photo_selection_list():
     """选片页面 - 订单列表"""
-    if current_user.role not in ['admin', 'operator']:
-        return redirect(url_for('auth.login'))
-    
-    models = get_models()
+    models = get_models(['Order', 'AITask'])
     if not models:
         flash('系统未初始化', 'error')
         return redirect(url_for('auth.login'))
@@ -49,8 +38,36 @@ def photo_selection_list():
     Order = models['Order']
     AITask = models['AITask']
     
-    # 获取所有订单（排除未支付订单）
-    orders = Order.query.filter(Order.status != 'unpaid').order_by(Order.created_at.desc()).all()
+    # 检查用户权限：如果是加盟商，只能查看自己的订单
+    from flask import session
+    from flask_login import current_user
+    
+    session_franchisee_id = session.get('franchisee_id')
+    
+    # 获取筛选参数
+    franchisee_id = request.args.get('franchisee_id', type=int)
+    
+    # 如果session中有加盟商ID，说明是加盟商登录
+    if session_franchisee_id:
+        # 加盟商只能查看自己的订单，忽略URL参数中的franchisee_id
+        franchisee_id = session_franchisee_id
+    else:
+        # 管理员需要登录且是admin或operator角色
+        if not current_user.is_authenticated:
+            return redirect(url_for('auth.login'))
+        if current_user.role not in ['admin', 'operator']:
+            flash('权限不足', 'error')
+            return redirect(url_for('auth.login'))
+    
+    # 构建查询
+    query = Order.query.filter(Order.status != 'unpaid')
+    
+    # 如果指定了加盟商ID，则只显示该加盟商的订单
+    if franchisee_id:
+        query = query.filter(Order.franchisee_id == franchisee_id)
+    
+    # 获取订单列表
+    orders = query.order_by(Order.created_at.desc()).all()
     
     # 获取应用实例以访问配置
     from flask import current_app
@@ -141,22 +158,35 @@ def photo_selection_list():
             'status': order.status,
             'status_text': status_map.get(order.status, order.status or '未知'),
             'product_name': order.product_name or '',
+            'franchisee_id': getattr(order, 'franchisee_id', None),
             'all_tasks_completed': all_completed,
             'effect_images_count': effect_images_count,
-            'created_at': order.created_at
+            'created_at': order.created_at,
+            'franchisee_id': getattr(order, 'franchisee_id', None)
         })
     
-    return render_template('admin/photo_selection_list.html', orders=orders_data)
+    # 获取加盟商信息（如果指定了加盟商ID）
+    franchisee_info = None
+    if franchisee_id:
+        FranchiseeAccount = models.get('FranchiseeAccount')
+        if FranchiseeAccount:
+            franchisee = FranchiseeAccount.query.get(franchisee_id)
+            if franchisee:
+                franchisee_info = {
+                    'id': franchisee.id,
+                    'company_name': franchisee.company_name
+                }
+    
+    return render_template('admin/photo_selection_list.html', 
+                         orders=orders_data, 
+                         franchisee_id=franchisee_id,
+                         franchisee_info=franchisee_info)
 
 
 @photo_selection_bp.route('/admin/photo-selection/<int:order_id>')
-@login_required
 def photo_selection_detail(order_id):
     """选片页面 - 选片详情"""
-    if current_user.role not in ['admin', 'operator']:
-        return redirect(url_for('auth.login'))
-    
-    models = get_models()
+    models = get_models(['Order', 'AITask', 'Product', 'ProductSize', 'ShopProduct', 'ShopProductSize', 'StyleCategory', 'StyleImage', 'PrintSizeConfig'])
     if not models:
         flash('系统未初始化', 'error')
         return redirect(url_for('photo_selection.photo_selection_list'))
@@ -169,6 +199,25 @@ def photo_selection_detail(order_id):
     ShopProductSize = models['ShopProductSize']
     
     order = Order.query.get_or_404(order_id)
+    
+    # 检查用户权限：如果是加盟商，只能查看自己的订单
+    from flask import session
+    from flask_login import current_user
+    
+    session_franchisee_id = session.get('franchisee_id')
+    
+    # 如果session中有加盟商ID，检查订单是否属于该加盟商
+    if session_franchisee_id:
+        if getattr(order, 'franchisee_id', None) != session_franchisee_id:
+            flash('无权访问此订单', 'error')
+            return redirect(url_for('photo_selection.photo_selection_list', franchisee_id=session_franchisee_id))
+    else:
+        # 管理员需要登录且是admin或operator角色
+        if not current_user.is_authenticated:
+            return redirect(url_for('auth.login'))
+        if current_user.role not in ['admin', 'operator']:
+            flash('权限不足', 'error')
+            return redirect(url_for('auth.login'))
     
     # 获取应用实例
     from flask import current_app
@@ -486,13 +535,9 @@ def photo_selection_detail(order_id):
 
 
 @photo_selection_bp.route('/admin/photo-selection/<int:order_id>/submit', methods=['POST'])
-@login_required
 def photo_selection_submit(order_id):
     """提交选片结果"""
-    if current_user.role not in ['admin', 'operator']:
-        return jsonify({'success': False, 'message': '权限不足'}), 403
-    
-    models = get_models()
+    models = get_models(['Order', 'AITask', 'Product', 'ProductSize', 'ShopProduct', 'ShopProductSize', 'db'])
     if not models:
         return jsonify({'success': False, 'message': '系统未初始化'}), 500
     
@@ -521,6 +566,23 @@ def photo_selection_submit(order_id):
         
         # 获取订单
         order = Order.query.get_or_404(order_id)
+        
+        # 检查用户权限：如果是加盟商，只能操作自己的订单
+        from flask import session
+        from flask_login import current_user
+        
+        session_franchisee_id = session.get('franchisee_id')
+        
+        # 如果session中有加盟商ID，检查订单是否属于该加盟商
+        if session_franchisee_id:
+            if getattr(order, 'franchisee_id', None) != session_franchisee_id:
+                return jsonify({'success': False, 'message': '无权操作此订单'}), 403
+        else:
+            # 管理员需要登录且是admin或operator角色
+            if not current_user.is_authenticated:
+                return jsonify({'success': False, 'message': '未登录'}), 401
+            if current_user.role not in ['admin', 'operator']:
+                return jsonify({'success': False, 'message': '权限不足'}), 403
         
         # 获取产品的免费选片张数和额外照片价格
         free_selection_count = 1  # 默认1张
@@ -1030,10 +1092,9 @@ def photo_selection_confirm(order_id):
 
 @photo_selection_bp.route('/admin/photo-selection/<int:order_id>/review')
 @login_required
+@admin_required
 def photo_selection_review(order_id):
     """产品详情页 - 确认选片和支付"""
-    if current_user.role not in ['admin', 'operator']:
-        return redirect(url_for('auth.login'))
     
     models = get_models()
     if not models:
@@ -1173,10 +1234,9 @@ def check_payment_status(order_id):
 
 @photo_selection_bp.route('/admin/photo-selection/<int:order_id>/skip-payment', methods=['POST'])
 @login_required
+@admin_required
 def skip_payment(order_id):
     """跳过支付（测试模式）"""
-    if current_user.role not in ['admin', 'operator']:
-        return jsonify({'success': False, 'message': '权限不足'}), 403
     
     models = get_models()
     if not models:
@@ -1389,18 +1449,18 @@ def start_print(order_id):
                             from urllib.parse import quote
                             try:
                                 from printer_config import PRINTER_SYSTEM_CONFIG
-                                file_access_base_url = PRINTER_SYSTEM_CONFIG.get('file_access_base_url', 'http://moeart.cc')
+                                file_access_base_url = PRINTER_SYSTEM_CONFIG.get('file_access_base_url', 'http://photogooo')
                             except:
                                 # 从配置表获取
                                 try:
                                     AIConfig = models.get('AIConfig')
                                     if AIConfig:
                                         file_url_config = AIConfig.query.filter_by(config_key='printer_file_access_base_url').first()
-                                        file_access_base_url = file_url_config.config_value if file_url_config else 'http://moeart.cc'
+                                        file_access_base_url = file_url_config.config_value if file_url_config else 'http://photogooo'
                                     else:
-                                        file_access_base_url = 'http://moeart.cc'
+                                        file_access_base_url = 'http://photogooo'
                                 except:
-                                    file_access_base_url = 'http://moeart.cc'
+                                    file_access_base_url = 'http://photogooo'
                             
                             # 打印时使用原图，确保image_path不是缩略图
                             original_image_path = image_path
@@ -1513,3 +1573,351 @@ def start_print(order_id):
         import traceback
         traceback.print_exc()
         return jsonify({'success': False, 'message': f'启动打印失败: {str(e)}'}), 500
+
+
+@photo_selection_bp.route('/admin/photo-selection/generate-qrcode', methods=['POST'])
+def generate_selection_qrcode():
+    """生成选片登录二维码"""
+    try:
+        from flask import session
+        from flask_login import current_user
+        
+        # 检查用户权限：加盟商或管理员
+        session_franchisee_id = session.get('franchisee_id')
+        
+        if not session_franchisee_id and (not current_user.is_authenticated or current_user.role not in ['admin', 'operator']):
+            return jsonify({'success': False, 'message': '权限不足'}), 403
+        
+        # 获取加盟商ID（如果是加盟商登录，使用session中的ID；如果是管理员，从请求参数获取）
+        data = request.get_json() or {}
+        franchisee_id = session_franchisee_id or data.get('franchisee_id')
+        
+        if not franchisee_id:
+            return jsonify({'success': False, 'message': '缺少加盟商ID'}), 400
+        
+        # 生成临时token（有效期5分钟）
+        token = str(uuid.uuid4())
+        expires_at = datetime.now() + timedelta(minutes=5)
+        
+        _selection_tokens[token] = {
+            'franchisee_id': franchisee_id,
+            'created_at': datetime.now(),
+            'expires_at': expires_at,
+            'used': False
+        }
+        
+        # 清理过期的token
+        current_time = datetime.now()
+        expired_tokens = [k for k, v in _selection_tokens.items() if v['expires_at'] < current_time]
+        for expired_token in expired_tokens:
+            del _selection_tokens[expired_token]
+        
+        # 使用微信小程序码API生成小程序码（推荐方式）
+        # 获取微信access_token
+        from app.routes.qrcode_api import get_access_token
+        access_token = get_access_token()
+        
+        if access_token:
+            try:
+                # 使用微信小程序码API
+                import requests
+                url = f'https://api.weixin.qq.com/wxa/getwxacodeunlimit?access_token={access_token}'
+                
+                # 构建参数：scene参数使用短格式（微信限制32字符）
+                # 使用短格式：st=token的前16个字符（去掉连字符）
+                # 例如：st=44199906ed1849f0 (16字符) 或 st=44199906ed1849f0 (16字符)
+                short_token = token.replace('-', '')[:16]  # 去掉连字符，取前16个字符
+                scene = f'st={short_token}'  # st=selection_token的缩写
+                
+                # 验证长度
+                if len(scene) > 32:
+                    # 如果还是太长，进一步缩短
+                    short_token = token.replace('-', '')[:12]
+                    scene = f'st={short_token}'
+                
+                print(f"调用微信小程序码API生成二维码，scene: {scene} (长度: {len(scene)}字符)")
+                print(f"完整token: {token} (将映射到短token: {short_token})")
+                
+                # 存储短token到完整token的映射（用于验证时查找）
+                _short_token_map[short_token] = token
+                
+                # 尝试不同的环境版本和页面路径
+                # 先尝试体验版（trial），如果失败再尝试正式版（release）
+                # 如果指定页面失败，可以尝试使用首页（index）
+                attempts = [
+                    {'page': 'pages/orders/orders', 'env_version': 'trial'},  # 体验版
+                    {'page': 'pages/index/index', 'env_version': 'trial'},   # 体验版首页
+                    {'page': 'pages/orders/orders', 'env_version': 'release'},  # 正式版
+                    {'page': 'pages/index/index', 'env_version': 'release'},   # 正式版首页
+                ]
+                
+                response = None
+                last_error = None
+                success = False
+                
+                for attempt in attempts:
+                    params = {
+                        'scene': scene,
+                        'page': attempt['page'],
+                        'env_version': attempt['env_version'],
+                        'width': 300,
+                        'auto_color': False,
+                        'line_color': {"r": 0, "g": 0, "b": 0}
+                    }
+                    
+                    print(f"尝试生成小程序码: page={attempt['page']}, env_version={attempt['env_version']}, scene={params['scene']}")
+                    try:
+                        response = requests.post(url, json=params, timeout=(10, 30))
+                        
+                        if response.status_code == 200:
+                            content_type = response.headers.get('content-type', '')
+                            
+                            if 'application/json' in content_type:
+                                # 如果返回JSON，说明有错误
+                                error_data = response.json()
+                                print(f"⚠️ 尝试失败: {error_data.get('errmsg', '未知错误')}")
+                                last_error = error_data.get('errmsg', '未知错误')
+                                continue  # 尝试下一个配置
+                            else:
+                                # 成功生成图片
+                                print(f"✅ 使用配置成功生成: page={attempt['page']}, env_version={attempt['env_version']}")
+                                success = True
+                                break  # 成功，退出循环
+                    except Exception as e:
+                        print(f"⚠️ 请求异常: {str(e)}")
+                        last_error = str(e)
+                        continue
+                
+                if not success:
+                    # 所有尝试都失败，抛出异常
+                    raise Exception(f'生成小程序码失败: {last_error or "所有配置尝试均失败"}')
+                
+                # 如果成功，response已经在循环中设置
+                # 转换为base64
+                img_base64 = base64.b64encode(response.content).decode('utf-8')
+                print("✅ 使用微信小程序码API生成成功")
+                    
+            except Exception as e:
+                print(f"⚠️ 使用微信小程序码API失败，回退到普通二维码: {e}")
+                # 回退到普通二维码
+                # 构建小程序页面路径（用于普通二维码）
+                qrcode_content = f"pages/orders/orders?selection_token={token}"
+                
+                # 生成二维码图片
+                qr = qrcode.QRCode(
+                    version=1,
+                    error_correction=qrcode.constants.ERROR_CORRECT_L,
+                    box_size=10,
+                    border=4,
+                )
+                qr.add_data(qrcode_content)
+                qr.make(fit=True)
+                
+                img = qr.make_image(fill_color="black", back_color="white")
+                buffer = BytesIO()
+                img.save(buffer, format='PNG')
+                buffer.seek(0)
+                
+                # 转换为base64
+                img_base64 = base64.b64encode(buffer.getvalue()).decode('utf-8')
+        else:
+            # 如果没有access_token，使用普通二维码
+            print("⚠️ 无法获取access_token，使用普通二维码")
+            qrcode_content = f"pages/orders/orders?selection_token={token}"
+            
+            # 生成二维码图片
+            qr = qrcode.QRCode(
+                version=1,
+                error_correction=qrcode.constants.ERROR_CORRECT_L,
+                box_size=10,
+                border=4,
+            )
+            qr.add_data(qrcode_content)
+            qr.make(fit=True)
+            
+            img = qr.make_image(fill_color="black", back_color="white")
+            buffer = BytesIO()
+            img.save(buffer, format='PNG')
+            buffer.seek(0)
+            
+            # 转换为base64
+            img_base64 = base64.b64encode(buffer.getvalue()).decode('utf-8')
+        
+        return jsonify({
+            'success': True,
+            'token': token,
+            'qrcode': f"data:image/png;base64,{img_base64}",
+            'expires_at': expires_at.isoformat(),
+            'qrcode_content': qrcode_content
+        })
+        
+    except Exception as e:
+        print(f"生成选片二维码失败: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'message': f'生成二维码失败: {str(e)}'}), 500
+
+
+@photo_selection_bp.route('/api/photo-selection/verify-token', methods=['POST'])
+def verify_selection_token():
+    """验证选片登录token"""
+    try:
+        data = request.get_json()
+        token = data.get('token')
+        openid = data.get('openid')  # 小程序用户的openid
+        
+        if not token:
+            return jsonify({'success': False, 'message': '缺少token'}), 400
+        
+        # 严格检查openid，不允许匿名用户
+        if not openid or openid == 'anonymous' or len(openid) < 10:
+            return jsonify({'success': False, 'message': '请先登录'}), 401
+        
+        # 检查token是否存在且未过期
+        # 支持短token格式（从scene参数中解析的短token）
+        full_token = token
+        # 如果是短token，查找对应的完整token
+        if token in _short_token_map:
+            full_token = _short_token_map[token]
+            print(f"✅ 短token映射: {token} -> {full_token}")
+        
+        if full_token not in _selection_tokens:
+            return jsonify({'success': False, 'message': 'token不存在或已过期'}), 400
+        
+        token_info = _selection_tokens[full_token]
+        
+        # 检查是否已使用
+        if token_info.get('used'):
+            return jsonify({'success': False, 'message': 'token已使用'}), 400
+        
+        # 检查是否过期
+        if token_info['expires_at'] < datetime.now():
+            del _selection_tokens[full_token]
+            # 同时删除短token映射
+            if token in _short_token_map:
+                del _short_token_map[token]
+            return jsonify({'success': False, 'message': 'token已过期'}), 400
+        
+        # 获取加盟商ID
+        franchisee_id = token_info['franchisee_id']
+        
+        # 获取该加盟商的所有订单（通过openid匹配）
+        models = get_models(['Order'])
+        if not models:
+            return jsonify({'success': False, 'message': '系统未初始化'}), 500
+        
+        Order = models['Order']
+        
+        # 查询该用户的订单（通过openid匹配，且属于该加盟商）
+        orders = Order.query.filter(
+            Order.openid == openid,
+            Order.franchisee_id == franchisee_id,
+            Order.status != 'unpaid'
+        ).order_by(Order.created_at.desc()).all()
+        
+        # 标记token为已使用
+        token_info['used'] = True
+        token_info['used_at'] = datetime.now()
+        token_info['used_by_openid'] = openid
+        
+        # 同时删除短token映射（一次性使用）
+        if token in _short_token_map:
+            del _short_token_map[token]
+        
+        # 构建订单列表数据
+        orders_data = []
+        for order in orders:
+            orders_data.append({
+                'id': order.id,
+                'order_number': order.order_number,
+                'customer_name': order.customer_name or '',
+                'customer_phone': order.customer_phone or '',
+                'status': order.status,
+                'created_at': order.created_at.isoformat() if order.created_at else None
+            })
+        
+        return jsonify({
+            'success': True,
+            'franchisee_id': franchisee_id,
+            'orders': orders_data,
+            'message': '验证成功'
+        })
+        
+    except Exception as e:
+        print(f"验证选片token失败: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'message': f'验证失败: {str(e)}'}), 500
+
+
+@photo_selection_bp.route('/api/photo-selection/search-orders', methods=['POST'])
+def search_orders_for_selection():
+    """通过手机号或订单号查询订单（用于选片）"""
+    try:
+        data = request.get_json() or {}
+        phone = data.get('phone', '').strip()
+        order_number = data.get('order_number', '').strip()
+        franchisee_id = data.get('franchisee_id')
+        
+        if not phone and not order_number:
+            return jsonify({'success': False, 'message': '请提供手机号或订单号'}), 400
+        
+        if not franchisee_id:
+            return jsonify({'success': False, 'message': '缺少加盟商ID'}), 400
+        
+        models = get_models(['Order'])
+        if not models:
+            return jsonify({'success': False, 'message': '系统未初始化'}), 500
+        
+        Order = models['Order']
+        
+        # 构建查询条件
+        query = Order.query.filter(
+            Order.franchisee_id == franchisee_id,
+            Order.status != 'unpaid'
+        )
+        
+        # 根据手机号或订单号查询
+        if phone:
+            # 验证手机号格式
+            if not phone.isdigit() or len(phone) != 11:
+                return jsonify({'success': False, 'message': '手机号格式不正确（应为11位数字）'}), 400
+            query = query.filter(Order.customer_phone == phone)
+        
+        if order_number:
+            query = query.filter(Order.order_number.like(f'%{order_number}%'))
+        
+        # 查询订单
+        orders = query.order_by(Order.created_at.desc()).limit(50).all()  # 最多返回50条
+        
+        if not orders:
+            return jsonify({
+                'success': False,
+                'message': '未找到符合条件的订单'
+            }), 404
+        
+        # 构建订单列表数据
+        orders_data = []
+        for order in orders:
+            orders_data.append({
+                'id': order.id,
+                'order_number': order.order_number,
+                'customer_name': order.customer_name or '',
+                'customer_phone': order.customer_phone or '',
+                'status': order.status,
+                'created_at': order.created_at.isoformat() if order.created_at else None
+            })
+        
+        return jsonify({
+            'success': True,
+            'franchisee_id': franchisee_id,
+            'orders': orders_data,
+            'count': len(orders_data),
+            'message': f'找到 {len(orders_data)} 个订单'
+        })
+        
+    except Exception as e:
+        print(f"查询订单失败: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'message': f'查询失败: {str(e)}'}), 500

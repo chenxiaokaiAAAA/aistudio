@@ -58,7 +58,8 @@ def check_staff_permission(openid, user_id, phone=None):
             if staff_user:
                 try:
                     permissions = json.loads(staff_user.permissions) if staff_user.permissions else {}
-                    if permissions.get('groupon_verify'):
+                    # 检查是否有团购核销或退款申请权限
+                    if permissions.get('groupon_verify') or permissions.get('refund_request'):
                         return True
                 except:
                     pass
@@ -72,7 +73,8 @@ def check_staff_permission(openid, user_id, phone=None):
             if staff_user:
                 try:
                     permissions = json.loads(staff_user.permissions) if staff_user.permissions else {}
-                    if permissions.get('groupon_verify'):
+                    # 检查是否有团购核销或退款申请权限
+                    if permissions.get('groupon_verify') or permissions.get('refund_request'):
                         return True
                 except:
                     pass
@@ -86,7 +88,8 @@ def check_staff_permission(openid, user_id, phone=None):
             if staff_user:
                 try:
                     permissions = json.loads(staff_user.permissions) if staff_user.permissions else {}
-                    if permissions.get('groupon_verify'):
+                    # 检查是否有团购核销或退款申请权限
+                    if permissions.get('groupon_verify') or permissions.get('refund_request'):
                         return True
                 except:
                     pass
@@ -118,9 +121,13 @@ def miniprogram_verify_groupon():
         data = request.get_json()
         openid = data.get('openid')
         user_id = data.get('user_id')
+        phone = data.get('phone', '')  # 获取手机号参数
         
-        # 检查权限
-        if not check_staff_permission(openid, user_id):
+        print(f"小程序团购核销 - openid: {openid}, user_id: {user_id}, phone: {phone}")
+        
+        # 检查权限（传入手机号）
+        if not check_staff_permission(openid, user_id, phone):
+            print(f"权限检查失败 - openid: {openid}, user_id: {user_id}, phone: {phone}")
             return jsonify({
                 'status': 'error',
                 'message': '权限不足，只有店员可以操作'
@@ -138,7 +145,7 @@ def miniprogram_verify_groupon():
         db = models['db']
         
         # 验证必填字段
-        required_fields = ['groupon_order_id', 'verify_amount', 'customer_phone']
+        required_fields = ['groupon_order_id', 'customer_phone']
         for field in required_fields:
             if field not in data or not data[field]:
                 return jsonify({
@@ -147,10 +154,63 @@ def miniprogram_verify_groupon():
                 }), 400
         
         groupon_order_id = data['groupon_order_id']
-        verify_amount = float(data['verify_amount'])
         customer_phone = data['customer_phone']
         customer_name = data.get('customer_name', '')
         expire_days = int(data.get('expire_days', 30))
+        
+        # 获取核销金额（优先使用套餐配置，否则使用手动输入的金额）
+        verify_amount = None
+        platform = data.get('platform', '')
+        package_id = data.get('package_id')
+        
+        package = None
+        if package_id:
+            # 从套餐配置获取金额
+            GrouponPackage = models.get('GrouponPackage')
+            if GrouponPackage:
+                # 确保package_id是整数
+                try:
+                    package_id_int = int(package_id) if package_id else None
+                    if package_id_int:
+                        package = GrouponPackage.query.get(package_id_int)
+                        if package:
+                            verify_amount = float(package.package_amount)
+                            platform = package.platform
+                        else:
+                            return jsonify({
+                                'status': 'error',
+                                'message': '套餐不存在'
+                            }), 400
+                    else:
+                        return jsonify({
+                            'status': 'error',
+                            'message': '套餐ID无效'
+                        }), 400
+                except (ValueError, TypeError) as e:
+                    print(f"套餐ID转换失败: {e}, package_id={package_id}")
+                    return jsonify({
+                        'status': 'error',
+                        'message': f'套餐ID格式错误: {str(e)}'
+                    }), 400
+            else:
+                return jsonify({
+                    'status': 'error',
+                    'message': '套餐配置模型未初始化'
+                }), 500
+        elif 'verify_amount' in data:
+            # 兼容旧方式：手动输入金额
+            verify_amount = float(data['verify_amount'])
+        else:
+            return jsonify({
+                'status': 'error',
+                'message': '请选择套餐或输入核销金额'
+            }), 400
+        
+        if verify_amount <= 0:
+            return jsonify({
+                'status': 'error',
+                'message': '核销金额必须大于0'
+            }), 400
         
         # 检查是否已存在该团购订单的优惠券
         existing_coupon = Coupon.query.filter_by(
@@ -168,6 +228,21 @@ def miniprogram_verify_groupon():
         random_code = generate_random_code(8)
         while Coupon.query.filter_by(code=random_code).first():
             random_code = generate_random_code(8)
+        
+        # 获取店员信息（小程序核销时）
+        StaffUser = models.get('StaffUser')
+        staff_user = None
+        staff_user_id = None
+        franchisee_id = None
+        creator_name = ''
+        creator_type = 'staff'
+        
+        if StaffUser and phone:
+            staff_user = StaffUser.query.filter_by(phone=phone, status='active').first()
+            if staff_user:
+                staff_user_id = staff_user.id
+                franchisee_id = staff_user.franchisee_id
+                creator_name = f"{staff_user.name}（店员）"
         
         # 创建优惠券
         now = datetime.now()
@@ -190,6 +265,33 @@ def miniprogram_verify_groupon():
             is_random_code=True
         )
         
+        # 保存创建人信息
+        if hasattr(coupon, 'franchisee_id'):
+            coupon.franchisee_id = franchisee_id
+        if hasattr(coupon, 'staff_user_id'):
+            coupon.staff_user_id = staff_user_id
+        if hasattr(coupon, 'creator_type'):
+            coupon.creator_type = creator_type
+        if hasattr(coupon, 'creator_name'):
+            coupon.creator_name = creator_name
+        
+        # 保存平台和套餐信息
+        if hasattr(coupon, 'groupon_platform'):
+            coupon.groupon_platform = platform
+        if hasattr(coupon, 'groupon_package_id') and package:
+            try:
+                coupon.groupon_package_id = int(package.id)
+            except (ValueError, TypeError) as e:
+                print(f"保存套餐ID失败: {e}, package.id={package.id}")
+                # 如果转换失败，至少保存平台信息
+                pass
+        
+        # 如果Coupon模型有customer_phone字段，保存客户手机号
+        if hasattr(coupon, 'customer_phone'):
+            coupon.customer_phone = customer_phone
+        if hasattr(coupon, 'customer_name'):
+            coupon.customer_name = customer_name
+        
         db.session.add(coupon)
         db.session.flush()
         
@@ -197,6 +299,28 @@ def miniprogram_verify_groupon():
         qr_data = f"coupon_code:{random_code}"
         qr_code_url = generate_qr_code(qr_data)
         coupon.qr_code_url = qr_code_url
+        
+        # 如果用户已注册且手机号匹配，自动保存优惠券到账户
+        User = models.get('User')
+        auto_saved = False
+        if User and customer_phone:
+            user = User.query.filter_by(phone=customer_phone).first()
+            if user:
+                # 检查是否已领取
+                existing_user_coupon = UserCoupon.query.filter_by(
+                    user_id=user.user_id,
+                    coupon_id=coupon.id
+                ).first()
+                if not existing_user_coupon:
+                    user_coupon = UserCoupon(
+                        user_id=user.user_id,
+                        coupon_id=coupon.id,
+                        coupon_code=random_code,
+                        expire_time=coupon.end_time,
+                        status='active'
+                    )
+                    db.session.add(user_coupon)
+                    auto_saved = True
         
         db.session.commit()
         
@@ -209,7 +333,8 @@ def miniprogram_verify_groupon():
                 'coupon_name': coupon.name,
                 'verify_amount': verify_amount,
                 'qr_code_url': qr_code_url,
-                'expire_time': coupon.end_time.strftime('%Y-%m-%d %H:%M:%S')
+                'expire_time': coupon.end_time.strftime('%Y-%m-%d %H:%M:%S'),
+                'auto_saved': auto_saved
             }
         })
         
@@ -246,4 +371,92 @@ def check_staff():
         return jsonify({
             'status': 'error',
             'message': f'检查权限失败: {str(e)}'
+        }), 500
+
+@bp.route('/groupon/packages', methods=['GET'])
+def get_groupon_packages():
+    """获取团购套餐列表（小程序用）"""
+    try:
+        platform = request.args.get('platform', '').strip()
+        
+        models = get_models()
+        if not models:
+            return jsonify({
+                'status': 'error',
+                'message': '数据库模型未初始化'
+            }), 500
+        
+        # 尝试获取GrouponPackage模型
+        GrouponPackage = models.get('GrouponPackage')
+        if not GrouponPackage:
+            # 如果模型字典中没有，尝试直接从test_server获取
+            try:
+                import sys
+                test_server = sys.modules.get('test_server')
+                if test_server and hasattr(test_server, 'GrouponPackage'):
+                    GrouponPackage = test_server.GrouponPackage
+                else:
+                    return jsonify({
+                        'status': 'error',
+                        'message': '团购套餐模型未初始化'
+                    }), 500
+            except:
+                return jsonify({
+                    'status': 'error',
+                    'message': '团购套餐模型未初始化'
+                }), 500
+        
+        # 平台值映射（小程序使用英文，数据库可能使用中文）
+        platform_map = {
+            'meituan': '美团',
+            'douyin': '抖音',
+            'dianping': '大众点评',
+            'other': '其他'
+        }
+        
+        # 查询套餐（如果指定了平台，则过滤）
+        query = GrouponPackage.query.filter_by(status='active')
+        if platform:
+            # 先尝试直接匹配，如果失败则尝试映射
+            mapped_platform = platform_map.get(platform, platform)
+            # 尝试两种格式
+            from sqlalchemy import or_
+            query = query.filter(
+                or_(
+                    GrouponPackage.platform == platform,
+                    GrouponPackage.platform == mapped_platform
+                )
+            )
+            print(f"查询套餐 - 平台: {platform}, 映射后: {mapped_platform}")
+        
+        packages = query.order_by(
+            GrouponPackage.sort_order.asc(),
+            GrouponPackage.id.asc()
+        ).all()
+        
+        print(f"查询到 {len(packages)} 个套餐")
+        
+        result = []
+        for pkg in packages:
+            result.append({
+                'id': pkg.id,
+                'platform': pkg.platform,
+                'package_name': pkg.package_name,
+                'package_amount': float(pkg.package_amount),
+                'description': pkg.description or ''
+            })
+        
+        print(f"返回套餐数据: {result}")
+        
+        return jsonify({
+            'status': 'success',
+            'data': result
+        })
+        
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'status': 'error',
+            'message': f'获取套餐列表失败: {str(e)}'
         }), 500

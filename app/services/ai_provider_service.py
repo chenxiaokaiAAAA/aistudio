@@ -1607,7 +1607,25 @@ def create_api_task(style_image_id, prompt, image_size='1K', aspect_ratio='auto'
         
         # 关键修复：对于gemini-native类型，request_data可能不包含图片信息（因为图片在payload中）
         # 需要从response对象中获取包含图片信息的request_data_for_log
-        request_params_for_log = request_data
+        request_params_for_log = request_data.copy() if isinstance(request_data, dict) else request_data
+        
+        # 确保 request_params_for_log 包含所有图片URL（用于前端显示）
+        # 对于 nano-banana 类型，urls 字段在 call_api_with_config 中已添加到 request_data
+        # 但为了确保完整性，我们再次检查并添加
+        if api_config.api_type in ['nano-banana', 'nano-banana-edits'] and uploaded_images:
+            if isinstance(request_params_for_log, dict):
+                # 确保 urls 字段存在且包含所有图片
+                if 'urls' not in request_params_for_log or not request_params_for_log.get('urls'):
+                    request_params_for_log['urls'] = uploaded_images
+                else:
+                    # 如果已有 urls，确保包含所有图片（合并去重）
+                    existing_urls = request_params_for_log.get('urls', [])
+                    if not isinstance(existing_urls, list):
+                        existing_urls = [existing_urls] if existing_urls else []
+                    all_urls = list(dict.fromkeys(existing_urls + uploaded_images))  # 保持顺序并去重
+                    request_params_for_log['urls'] = all_urls
+                print(f"✅ [nano-banana] 确保 request_params 包含所有图片URL: {len(request_params_for_log.get('urls', []))} 张")
+        
         if response and hasattr(response, 'request_data_for_log'):
             request_params_for_log = response.request_data_for_log
             print(f"✅ [gemini-native] 使用包含图片信息的request_params（从response获取）")

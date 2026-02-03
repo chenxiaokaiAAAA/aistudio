@@ -110,46 +110,22 @@
                     <div class="row">
                         <div class="col-md-6">
                             <div class="form-check mb-3">
-                                <input class="form-check-input" type="checkbox" id="view_today_orders" name="view_today_orders"
-                                       {% if permissions.get('view_today_orders') %}checked{% endif %}>
-                                <label class="form-check-label" for="view_today_orders">
-                                    <strong>查看今天的订单</strong>
-                                </label>
-                                <div class="form-text">可以查看该加盟商今天的订单记录</div>
-                            </div>
-                            <div class="form-check mb-3">
-                                <input class="form-check-input" type="checkbox" id="view_store_images" name="view_store_images"
-                                       {% if permissions.get('view_store_images') %}checked{% endif %}>
-                                <label class="form-check-label" for="view_store_images">
-                                    <strong>查看门店用户生成的图片</strong>
-                                </label>
-                                <div class="form-text">可以查看该门店用户生成的图片</div>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-check mb-3">
-                                <input class="form-check-input" type="checkbox" id="view_all_orders" name="view_all_orders"
-                                       {% if permissions.get('view_all_orders') %}checked{% endif %}>
-                                <label class="form-check-label" for="view_all_orders">
-                                    <strong>查看全部订单</strong>
-                                </label>
-                                <div class="form-text">可以查看该加盟商的所有订单记录</div>
-                            </div>
-                            <div class="form-check mb-3">
-                                <input class="form-check-input" type="checkbox" id="view_statistics" name="view_statistics"
-                                       {% if permissions.get('view_statistics') %}checked{% endif %}>
-                                <label class="form-check-label" for="view_statistics">
-                                    <strong>查看统计数据</strong>
-                                </label>
-                                <div class="form-text">可以查看该加盟商的统计数据</div>
-                            </div>
-                            <div class="form-check mb-3">
                                 <input class="form-check-input" type="checkbox" id="groupon_verify" name="groupon_verify"
                                        {% if permissions.get('groupon_verify') %}checked{% endif %}>
                                 <label class="form-check-label" for="groupon_verify">
                                     <strong>团购核销</strong>
                                 </label>
                                 <div class="form-text">可以在小程序中生成团购核销优惠券</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-check mb-3">
+                                <input class="form-check-input" type="checkbox" id="refund_request" name="refund_request"
+                                       {% if permissions.get('refund_request') %}checked{% endif %}>
+                                <label class="form-check-label" for="refund_request">
+                                    <strong>退款申请</strong>
+                                </label>
+                                <div class="form-text">针对异常订单申请退款</div>
                             </div>
                         </div>
                     </div>

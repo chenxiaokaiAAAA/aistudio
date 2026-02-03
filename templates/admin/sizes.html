@@ -688,6 +688,65 @@
         .bg-light {
             background-color: #f8f9fa !important;
         }
+        
+        /* 三栏布局样式 */
+        .category-list-item {
+            padding: 12px 15px;
+            margin-bottom: 8px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 2px solid transparent;
+        }
+        
+        .category-list-item:hover {
+            background-color: #f8f9fa;
+            border-color: #667eea;
+        }
+        
+        .category-list-item.active {
+            background-color: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+        
+        .category-list-item.active .text-muted {
+            color: rgba(255, 255, 255, 0.8) !important;
+        }
+        
+        .subcategory-list-item {
+            padding: 10px 15px;
+            margin-bottom: 6px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 2px solid transparent;
+            background-color: #f8f9fa;
+        }
+        
+        .subcategory-list-item:hover {
+            background-color: #e9ecef;
+            border-color: #667eea;
+        }
+        
+        .subcategory-list-item.active {
+            background-color: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+        
+        .product-card-item {
+            transition: all 0.3s;
+        }
+        
+        .product-card-item:hover {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            transform: translateY(-2px);
+        }
+        
+        .product-card-item.hidden {
+            display: none !important;
+        }
     </style>
 </head>
 <body>
@@ -696,16 +755,152 @@
 
     <div class="main-container">
         <div class="d-flex justify-content-between align-items-center mb-4">
-            <h1 class="page-title mb-0">产品配置管理</h1>
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="page-title mb-0 d-inline-block">产品配置管理</h1>
+                    <span class="badge bg-warning text-dark ms-2">旧版页面</span>
+                </div>
+                <a href="/admin/products" class="btn btn-primary">
+                    <i class="fas fa-th me-2"></i>使用新版产品管理
+                </a>
+            </div>
             <div>
+                <button type="button" class="btn btn-primary me-2" data-bs-toggle="modal" data-bs-target="#addCategoryModal">
+                    <i class="fas fa-plus"></i> 添加一级分类
+                </button>
+                <button type="button" class="btn btn-success me-2" data-bs-toggle="modal" data-bs-target="#addProductModal" id="addProductBtn">
+                    <i class="fas fa-plus"></i> 添加产品
+                </button>
                 <button type="button" class="btn btn-outline-primary" onclick="alert('同步功能暂未开放')">
                     <i class="bi bi-arrow-repeat"></i> 同步管理
                 </button>
             </div>
         </div>
         
-        <!-- 添加产品卡片 -->
-        <div class="add-product-card">
+        <!-- 三栏布局：一级分类 / 二级分类 / 产品 -->
+        <div class="row g-3" style="min-height: calc(100vh - 300px);">
+            <!-- 左侧：一级分类列表 -->
+            <div class="col-lg-3">
+                <div class="card h-100">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0">一级分类</h6>
+                        <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addCategoryModal">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                    </div>
+                    <div class="card-body" style="max-height: calc(100vh - 350px); overflow-y: auto;">
+                        <div id="categoryList">
+                            {% for category in product_categories %}
+                            <div class="category-list-item {% if loop.first %}active{% endif %}" 
+                                 data-category-id="{{ category.id }}"
+                                 onclick="selectCategory({{ category.id }})">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <strong>{% if category.icon %}{{ category.icon }} {% endif %}{{ category.name }}</strong>
+                                        <small class="text-muted d-block">{{ category.code }}</small>
+                                    </div>
+                                    <button class="btn btn-sm btn-outline-secondary" onclick="event.stopPropagation(); editCategory({{ category.id }})">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            {% else %}
+                            <div class="text-center text-muted py-5">
+                                <i class="fas fa-folder-open fa-2x mb-3"></i>
+                                <p>暂无一级分类</p>
+                                <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addCategoryModal">
+                                    添加一级分类
+                                </button>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 中间：二级分类列表 -->
+            <div class="col-lg-3">
+                <div class="card h-100">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0">
+                            <span id="currentCategoryName">二级分类</span>
+                            <small class="text-muted" id="subcategoryCount">(0)</small>
+                        </h6>
+                        <button class="btn btn-sm btn-outline-success" id="addSubcategoryBtn" onclick="openAddSubcategoryModal()" style="display: none;">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                    </div>
+                    <div class="card-body" style="max-height: calc(100vh - 350px); overflow-y: auto;">
+                        <div id="subcategoryList">
+                            <div class="text-center text-muted py-5">
+                                <i class="fas fa-info-circle fa-2x mb-3"></i>
+                                <p>请先选择一级分类</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 右侧：产品列表 -->
+            <div class="col-lg-6">
+                <div class="card h-100">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0">
+                            <span id="currentProductTitle">产品列表</span>
+                            <small class="text-muted" id="productCount">({{ products|length }})</small>
+                        </h6>
+                    </div>
+                    <div class="card-body" style="max-height: calc(100vh - 350px); overflow-y: auto;">
+                        <div id="productList">
+                            <!-- 产品列表将通过JavaScript动态过滤显示 -->
+                            {% for product in products %}
+                            <div class="product-card-item mb-3 p-3 border rounded" data-product-id="{{ product.id }}" 
+                                 data-category-id="{{ product.category_id or '' }}" 
+                                 data-subcategory-id="{{ product.subcategory_id or '' }}">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div class="flex-grow-1">
+                                        <div class="d-flex align-items-center mb-2">
+                                            {% if product.image_url %}
+                                            <img src="{{ product.image_url }}" alt="{{ product.name }}" 
+                                                 style="width: 60px; height: 60px; object-fit: cover; border-radius: 8px; margin-right: 15px;">
+                                            {% else %}
+                                            <div style="width: 60px; height: 60px; background: #f0f0f0; border-radius: 8px; margin-right: 15px; display: flex; align-items: center; justify-content: center;">
+                                                <i class="fas fa-image text-muted"></i>
+                                            </div>
+                                            {% endif %}
+                                            <div>
+                                                <h6 class="mb-0">{{ product.name }}</h6>
+                                                <small class="text-muted">{{ product.code }}</small>
+                                            </div>
+                                        </div>
+                                        {% if product.description %}
+                                        <p class="text-muted mb-2" style="font-size: 0.9rem;">{{ product.description }}</p>
+                                        {% endif %}
+                                        <div class="d-flex gap-2">
+                                            <button class="btn btn-sm btn-primary" onclick="editProduct({{ product.id }})">
+                                                <i class="fas fa-edit"></i> 编辑
+                                            </button>
+                                            <button class="btn btn-sm btn-info" onclick="viewProductSizes({{ product.id }})">
+                                                <i class="fas fa-ruler"></i> 尺寸管理
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% else %}
+                            <div class="text-center text-muted py-5">
+                                <i class="fas fa-box-open fa-2x mb-3"></i>
+                                <p>暂无产品</p>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 添加产品卡片（隐藏，改为模态框） -->
+        <div class="add-product-card" style="display: none;">
             <h4 class="mb-4">添加新产品</h4>
             <form method="POST" action="{{ url_for('admin_products.admin_sizes') }}" enctype="multipart/form-data" id="productForm">
                 <input type="hidden" name="action" value="add_product_with_sizes">
@@ -758,6 +953,33 @@
                                 <span id="file-name" class="hidden"></span>
                             </button>
                             <small class="text-muted d-block mt-1">支持多图上传，最多4张</small>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 产品分类选择 -->
+                <div class="row mt-3">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label>一级分类 <small class="text-muted">(如：证件照、水杯、挂件等)</small></label>
+                            <select class="form-control" name="category_id" id="add_category_select" onchange="updateAddSubcategories()">
+                                <option value="">-- 请选择一级分类 --</option>
+                                {% for category in product_categories %}
+                                <option value="{{ category.id }}">
+                                    {% if category.icon %}{{ category.icon }} {% endif %}{{ category.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                            <small class="text-muted">选择产品所属的一级分类</small>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label>二级分类 <small class="text-muted">(可选)</small></label>
+                            <select class="form-control" name="subcategory_id" id="add_subcategory_select">
+                                <option value="">-- 请选择二级分类 --</option>
+                            </select>
+                            <small class="text-muted">选择产品所属的二级分类（需先选择一级分类）</small>
                         </div>
                     </div>
                 </div>
@@ -981,32 +1203,77 @@
                                     </div>
                                 </div>
                                 
+                                <!-- 产品分类选择 -->
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <label>一级分类 <small class="text-muted">(如：证件照、水杯、挂件等)</small></label>
+                                        <select class="form-control" name="category_id" id="category_select_{{ product.id }}" onchange="updateSubcategories({{ product.id }})">
+                                            <option value="">-- 请选择一级分类 --</option>
+                                            {% for category in product_categories %}
+                                            <option value="{{ category.id }}" {% if product.category_id == category.id %}selected{% endif %}>
+                                                {% if category.icon %}{{ category.icon }} {% endif %}{{ category.name }}
+                                            </option>
+                                            {% endfor %}
+                                        </select>
+                                        <small class="text-muted">选择产品所属的一级分类</small>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label>二级分类 <small class="text-muted">(可选)</small></label>
+                                        <select class="form-control" name="subcategory_id" id="subcategory_select_{{ product.id }}">
+                                            <option value="">-- 请选择二级分类 --</option>
+                                            {% if product.category_id and subcategories_by_category.get(product.category_id) %}
+                                                {% for subcat in subcategories_by_category[product.category_id] %}
+                                                <option value="{{ subcat.id }}" {% if product.subcategory_id == subcat.id %}selected{% endif %}>
+                                                    {% if subcat.icon %}{{ subcat.icon }} {% endif %}{{ subcat.name }}
+                                                </option>
+                                                {% endfor %}
+                                            {% endif %}
+                                        </select>
+                                        <small class="text-muted">选择产品所属的二级分类（需先选择一级分类）</small>
+                                    </div>
+                                </div>
+                                
                                 <!-- 图片上传 -->
                                 <div class="row mb-3">
                                     <div class="col-md-6">
-                                        <label>更新图片</label>
+                                        <label>更新封面图（留空则不更新）</label>
+                                        <button type="button" class="btn btn-upload" onclick="document.getElementById('edit_cover_image_{{ product.id }}').click()">
+                                            <input type="file" id="edit_cover_image_{{ product.id }}" name="product_image" accept="image/*" class="file-input">
+                                            <span id="edit-cover-upload-text-{{ product.id }}">点击上传封面图</span>
+                                            <span id="edit-cover-file-name-{{ product.id }}" class="hidden"></span>
+                                        </button>
+                                        <small class="text-muted d-block mt-1">产品封面图，将显示在产品列表中</small>
+                                        {% if product.image_url %}
+                                        <div class="mt-2">
+                                            <label class="small text-muted">当前封面图：</label>
+                                            <img src="{{ product.image_url }}" alt="封面图" style="max-width: 150px; max-height: 150px; border-radius: 5px; object-fit: cover; border: 1px solid #ddd;">
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label>更新多图（追加新图片）</label>
                                         <button type="button" class="btn btn-upload" onclick="document.getElementById('edit_images_{{ product.id }}').click()">
                                             <input type="file" id="edit_images_{{ product.id }}" name="product_images[]" accept="image/*" class="file-input" multiple>
                                             <span id="edit-upload-text-{{ product.id }}">点击上传多图</span>
                                             <span id="edit-file-name-{{ product.id }}" class="hidden"></span>
                                         </button>
                                         <small class="text-muted d-block mt-1">支持多图上传，最多4张</small>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label>当前图片</label>
-                                        {% set product_imgs = product_images | selectattr('product_id', 'equalto', product.id) | list %}
-                                        {% if product_imgs %}
-                                        <div class="d-flex flex-wrap gap-2">
-                                            {% for img in product_imgs %}
-                                            <div class="position-relative">
-                                                <img src="{{ img.image_url }}" alt="产品图片" style="width: 60px; height: 60px; border-radius: 5px; object-fit: cover;">
-                                                <button type="button" class="btn btn-sm btn-danger position-absolute delete-product-image-btn" style="top: -5px; right: -5px; width: 20px; height: 20px; padding: 0; font-size: 0.7rem;" data-image-id="{{ img.id }}">×</button>
+                                        <div class="mt-2">
+                                            <label class="small text-muted">当前图片：</label>
+                                            {% set product_imgs = product_images | selectattr('product_id', 'equalto', product.id) | list %}
+                                            {% if product_imgs %}
+                                            <div class="d-flex flex-wrap gap-2">
+                                                {% for img in product_imgs %}
+                                                <div class="position-relative">
+                                                    <img src="{{ img.image_url }}" alt="产品图片" style="width: 60px; height: 60px; border-radius: 5px; object-fit: cover;">
+                                                    <button type="button" class="btn btn-sm btn-danger position-absolute delete-product-image-btn" style="top: -5px; right: -5px; width: 20px; height: 20px; padding: 0; font-size: 0.7rem;" data-image-id="{{ img.id }}">×</button>
+                                                </div>
+                                                {% endfor %}
                                             </div>
-                                            {% endfor %}
+                                            {% else %}
+                                            <small class="text-muted">暂无图片</small>
+                                            {% endif %}
                                         </div>
-                                        {% else %}
-                                        <small class="text-muted">暂无图片</small>
-                                        {% endif %}
                                     </div>
                                 </div>
                                 
@@ -1018,11 +1285,15 @@
                                         {% for category in style_categories %}
                                         <div class="col-md-4 mb-2">
                                             <div class="form-check">
+                                                {% set bound_ids = product_style_bindings.get(product.id, []) %}
+                                                {% set category_id_int = category.id|int %}
+                                                {% set is_checked = bound_ids and category_id_int in bound_ids %}
+                                                <!-- DEBUG: 产品ID={{ product.id }}, 分类ID={{ category.id }}({{ category_id_int }}), 绑定列表={{ bound_ids }}, 是否选中={{ is_checked }} -->
                                                 <input class="form-check-input" type="checkbox" 
                                                        name="style_category_ids[]" 
                                                        value="{{ category.id }}" 
                                                        id="style_cat_{{ product.id }}_{{ category.id }}"
-                                                       {% if product_style_bindings.get(product.id, []) and category.id in product_style_bindings[product.id] %}checked{% endif %}>
+                                                       {% if is_checked %}checked="checked"{% endif %}>
                                                 <label class="form-check-label" for="style_cat_{{ product.id }}_{{ category.id }}">
                                                     {{ category.name }}
                                                     {% if category.icon %}{{ category.icon }}{% endif %}
@@ -1076,7 +1347,71 @@
                                                     </select>
                                                 </div>
                                                 <div class="col-md-4">
-                                                    <input type="text" class="form-control field-options" name="custom_field_options[]" value="{{ field.field_options }}" placeholder="选项（下拉选择时用逗号分隔，如：红色,蓝色,绿色）" {% if field.field_type != 'select' %}style="display:none"{% endif %}>
+                                                    <!-- 简单模式：兼容旧的逗号分隔格式 -->
+                                                    <input type="text" class="form-control field-options-simple" name="custom_field_options_simple[]" value="{{ field.field_options if field.field_type != 'select' or not field.field_options or (field.field_options and not field.field_options.startswith('[')) else '' }}" placeholder="选项（下拉选择时用逗号分隔，如：红色,蓝色,绿色）" {% if field.field_type != 'select' %}style="display:none"{% else %}style="display:none"{% endif %}>
+                                                    <!-- 高级模式：支持选项图片配置 -->
+                                                    <div class="field-options-manager" {% if field.field_type != 'select' %}style="display:none"{% endif %}>
+                                                        <small class="text-muted d-block mb-2">为每个选项配置名称和图片（图片将显示在小程序主图位置）</small>
+                                                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="window.addOptionItem(this)">
+                                                            <i class="fas fa-plus"></i> 添加选项
+                                                        </button>
+                                                        <div class="options-list mt-2" data-field-id="{{ field.id }}">
+                                                            {% if field.field_type == 'select' and field.field_options %}
+                                                                {% if field.field_options.startswith('[') %}
+                                                                    {% set options_data = field.field_options | from_json %}
+                                                                    {% for option in options_data %}
+                                                                        <div class="option-item mb-2 p-2 border rounded">
+                                                                            <div class="row align-items-center">
+                                                                                <div class="col-md-4">
+                                                                                    <input type="text" class="form-control form-control-sm option-name" value="{{ option.name }}" placeholder="选项名称" required>
+                                                                                </div>
+                                                                                <div class="col-md-5">
+                                                                                    <input type="file" class="form-control form-control-sm option-image" accept="image/*" onchange="window.handleOptionImageChange(this)">
+                                                                                    <input type="hidden" class="option-image-url" value="{{ option.image_url or '' }}">
+                                                                                    <div class="option-image-preview mt-1">
+                                                                                        {% if option.image_url %}
+                                                                                            <img src="{{ option.image_url }}" alt="选项图片" style="max-width: 60px; max-height: 60px; border-radius: 4px; border: 1px solid #ddd;">
+                                                                                        {% else %}
+                                                                                            <small class="text-muted">未上传图片</small>
+                                                                                        {% endif %}
+                                                                                    </div>
+                                                                                </div>
+                                                                                <div class="col-md-2">
+                                                                                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="window.removeOptionItem(this)">
+                                                                                        <i class="fas fa-trash"></i>
+                                                                                    </button>
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
+                                                                    {% endfor %}
+                                                                {% else %}
+                                                                    {% set options_list = field.field_options.split(',') %}
+                                                                    {% for option_name in options_list %}
+                                                                        <div class="option-item mb-2 p-2 border rounded">
+                                                                            <div class="row align-items-center">
+                                                                                <div class="col-md-4">
+                                                                                    <input type="text" class="form-control form-control-sm option-name" value="{{ option_name.strip() }}" placeholder="选项名称" required>
+                                                                                </div>
+                                                                                <div class="col-md-5">
+                                                                                    <input type="file" class="form-control form-control-sm option-image" accept="image/*" onchange="window.handleOptionImageChange(this)">
+                                                                                    <input type="hidden" class="option-image-url" value="">
+                                                                                    <div class="option-image-preview mt-1">
+                                                                                        <small class="text-muted">未上传图片</small>
+                                                                                    </div>
+                                                                                </div>
+                                                                                <div class="col-md-2">
+                                                                                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="window.removeOptionItem(this)">
+                                                                                        <i class="fas fa-trash"></i>
+                                                                                    </button>
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
+                                                                    {% endfor %}
+                                                                {% endif %}
+                                                            {% endif %}
+                                                        </div>
+                                                        <input type="hidden" class="field-options-json" name="custom_field_options[]" value="">
+                                                    </div>
                                                 </div>
                                                 <div class="col-md-2">
                                                     <div class="form-check">
@@ -1287,6 +1622,68 @@
 
     <script src="/static/js/bootstrap.bundle.min.js"></script>
     <script>
+        // 二级分类数据（从后端传递）
+        const subcategoriesByCategory = {{ subcategories_by_category | tojson | safe }};
+        
+        // 更新二级分类选项（编辑模式）
+        function updateSubcategories(productId) {
+            const categorySelect = document.getElementById(`category_select_${productId}`);
+            const subcategorySelect = document.getElementById(`subcategory_select_${productId}`);
+            
+            if (!categorySelect || !subcategorySelect) {
+                console.error('找不到分类选择元素，productId:', productId);
+                return;
+            }
+            
+            const selectedCategoryId = categorySelect.value;
+            
+            // 清空二级分类选项
+            subcategorySelect.innerHTML = '<option value="">-- 请选择二级分类 --</option>';
+            
+            // 如果有选择一级分类，添加对应的二级分类选项
+            if (selectedCategoryId) {
+                const categoryId = parseInt(selectedCategoryId);
+                const subcategories = subcategoriesByCategory[categoryId] || [];
+                
+                subcategories.forEach(subcat => {
+                    const option = document.createElement('option');
+                    option.value = subcat.id;
+                    const displayText = (subcat.icon ? subcat.icon + ' ' : '') + subcat.name;
+                    option.textContent = displayText;
+                    subcategorySelect.appendChild(option);
+                });
+            }
+        }
+        
+        // 更新二级分类选项（添加产品模式）
+        function updateAddSubcategories() {
+            const categorySelect = document.getElementById('add_category_select');
+            const subcategorySelect = document.getElementById('add_subcategory_select');
+            
+            if (!categorySelect || !subcategorySelect) {
+                console.error('找不到添加产品的分类选择元素');
+                return;
+            }
+            
+            const selectedCategoryId = categorySelect.value;
+            
+            // 清空二级分类选项
+            subcategorySelect.innerHTML = '<option value="">-- 请选择二级分类 --</option>';
+            
+            // 如果有选择一级分类，添加对应的二级分类选项
+            if (selectedCategoryId) {
+                const categoryId = parseInt(selectedCategoryId);
+                const subcategories = subcategoriesByCategory[categoryId] || [];
+                
+                subcategories.forEach(subcat => {
+                    const option = document.createElement('option');
+                    option.value = subcat.id;
+                    const displayText = (subcat.icon ? subcat.icon + ' ' : '') + subcat.name;
+                    option.textContent = displayText;
+                    subcategorySelect.appendChild(option);
+                });
+            }
+        }
         
         let sizeCounter = 0;
         
@@ -1429,7 +1826,16 @@
                         </select>
                     </div>
                     <div class="col-md-4">
-                        <input type="text" class="form-control field-options" name="custom_field_options[]" placeholder="选项（下拉选择时用逗号分隔，如：红底,蓝底,白底）" style="display:none">
+                        <input type="text" class="form-control field-options-simple" name="custom_field_options_simple[]" placeholder="选项（下拉选择时用逗号分隔，如：红底,蓝底,白底）" style="display:none">
+                        <div class="field-options-manager" style="display:none">
+                            <small class="text-muted d-block mb-2">为每个选项配置名称和图片（图片将显示在小程序主图位置）</small>
+                            <button type="button" class="btn btn-sm btn-outline-primary" onclick="window.addOptionItem(this)">
+                                <i class="fas fa-plus"></i> 添加选项
+                            </button>
+                            <div class="options-list mt-2">
+                            </div>
+                            <input type="hidden" class="field-options-json" name="custom_field_options[]" value="">
+                        </div>
                     </div>
                     <div class="col-md-2">
                         <div class="form-check">
@@ -1474,19 +1880,172 @@
                 console.error('找不到字段项');
                 return;
             }
-            const optionsInput = fieldItem.querySelector('.field-options');
-            if (!optionsInput) {
-                console.error('找不到选项输入框');
+            const simpleInput = fieldItem.querySelector('.field-options-simple');
+            const optionsManager = fieldItem.querySelector('.field-options-manager');
+            
+            if (select.value === 'select') {
+                // 显示选项管理器，隐藏简单输入框
+                if (simpleInput) simpleInput.style.display = 'none';
+                if (optionsManager) optionsManager.style.display = 'block';
+            } else {
+                // 隐藏选项管理器，显示简单输入框（虽然也用不到）
+                if (simpleInput) simpleInput.style.display = 'none';
+                if (optionsManager) optionsManager.style.display = 'none';
+            }
+        }
+        
+        // 添加选项项
+        window.addOptionItem = function(button) {
+            const optionsList = button.nextElementSibling;
+            if (!optionsList || !optionsList.classList.contains('options-list')) {
+                console.error('找不到选项列表容器');
                 return;
             }
-            if (select.value === 'select') {
-                optionsInput.style.display = 'block';
-                optionsInput.required = true;
-            } else {
-                optionsInput.style.display = 'none';
-                optionsInput.required = false;
-                optionsInput.value = '';
+            
+            const optionItem = document.createElement('div');
+            optionItem.className = 'option-item mb-2 p-2 border rounded';
+            optionItem.innerHTML = `
+                <div class="row align-items-center">
+                    <div class="col-md-4">
+                        <input type="text" class="form-control form-control-sm option-name" placeholder="选项名称" required>
+                    </div>
+                    <div class="col-md-5">
+                        <input type="file" class="form-control form-control-sm option-image" accept="image/*" onchange="window.handleOptionImageChange(this)">
+                        <input type="hidden" class="option-image-url" value="">
+                        <div class="option-image-preview mt-1">
+                            <small class="text-muted">未上传图片</small>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <button type="button" class="btn btn-sm btn-outline-danger" onclick="window.removeOptionItem(this)">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+            optionsList.appendChild(optionItem);
+        }
+        
+        // 删除选项项
+        window.removeOptionItem = function(button) {
+            const optionItem = button.closest('.option-item');
+            if (optionItem) {
+                optionItem.remove();
+                // 更新隐藏的JSON字段
+                updateFieldOptionsJSON(optionItem.closest('.options-list'));
             }
+        }
+        
+        // 处理选项图片选择
+        window.handleOptionImageChange = function(input) {
+            const file = input.files[0];
+            const preview = input.closest('.row').querySelector('.option-image-preview');
+            const imageUrlInput = input.closest('.row').querySelector('.option-image-url');
+            
+            if (file) {
+                // 创建预览
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    preview.innerHTML = `<img src="${e.target.result}" alt="选项图片" style="max-width: 60px; max-height: 60px; border-radius: 4px; border: 1px solid #ddd;">`;
+                };
+                reader.readAsDataURL(file);
+            } else {
+                // 如果没有选择文件，显示现有图片或提示
+                const existingUrl = imageUrlInput ? imageUrlInput.value : '';
+                if (existingUrl) {
+                    preview.innerHTML = `<img src="${existingUrl}" alt="选项图片" style="max-width: 60px; max-height: 60px; border-radius: 4px; border: 1px solid #ddd;">`;
+                } else {
+                    preview.innerHTML = '<small class="text-muted">未上传图片</small>';
+                }
+            }
+        }
+        
+        // 更新字段选项JSON（在提交前调用）
+        function updateFieldOptionsJSON(optionsList, fieldIndex) {
+            if (!optionsList) return;
+            
+            const fieldItem = optionsList.closest('.custom-field-item');
+            if (!fieldItem) return;
+            
+            const jsonInput = fieldItem.querySelector('.field-options-json');
+            if (!jsonInput) return;
+            
+            const optionItems = optionsList.querySelectorAll('.option-item');
+            const options = [];
+            
+            console.log(`  📋 找到 ${optionItems.length} 个选项项`);
+            
+            optionItems.forEach((item, optionIndex) => {
+                const nameInput = item.querySelector('.option-name');
+                const imageInput = item.querySelector('.option-image');
+                const imageUrlInput = item.querySelector('.option-image-url');
+                
+                console.log(`  📝 处理选项 ${optionIndex}:`, {
+                    nameInput: nameInput ? nameInput.value : '未找到',
+                    hasImageFile: imageInput && imageInput.files && imageInput.files.length > 0,
+                    imageUrl: imageUrlInput ? imageUrlInput.value : '未找到'
+                });
+                
+                if (nameInput && nameInput.value.trim()) {
+                    const option = {
+                        name: nameInput.value.trim()
+                    };
+                    
+                    // 如果有新上传的图片文件，为文件input分配唯一名称
+                    if (imageInput && imageInput.files && imageInput.files.length > 0) {
+                        // 为文件input分配唯一名称，格式：option_image_${fieldIndex}_${optionIndex}
+                        const newName = `option_image_${fieldIndex}_${optionIndex}`;
+                        imageInput.name = newName;
+                        option._hasNewImage = true;
+                        console.log(`    📷 设置选项图片input名称: ${newName} (字段${fieldIndex}, 选项${optionIndex})`);
+                    } else if (imageUrlInput && imageUrlInput.value) {
+                        // 使用现有的图片URL
+                        option.image_url = imageUrlInput.value;
+                        console.log(`    📷 使用现有图片URL: ${option.image_url}`);
+                    }
+                    
+                    options.push(option);
+                    console.log(`    ✅ 选项已添加:`, option);
+                } else {
+                    console.log(`    ⚠️ 选项 ${optionIndex} 名称为空，跳过`);
+                }
+            });
+            
+            const jsonValue = JSON.stringify(options);
+            jsonInput.value = jsonValue;
+            console.log(`✅ 字段 ${fieldIndex} 的选项JSON已更新:`, jsonValue);
+            console.log(`  📋 JSON输入框的值:`, jsonInput.value);
+            console.log(`  📋 JSON输入框的name:`, jsonInput.name);
+        }
+        
+        // 在表单提交前，更新所有字段的选项JSON
+        function updateAllFieldOptionsJSON(form) {
+            // 如果没有传入表单，尝试查找
+            if (!form) {
+                form = document.querySelector('form[method="POST"]');
+            }
+            if (!form) {
+                console.error('找不到表单');
+                return;
+            }
+            
+            const allFieldItems = form.querySelectorAll('.custom-field-item');
+            console.log(`📋 找到 ${allFieldItems.length} 个自定义字段`);
+            
+            if (allFieldItems.length === 0) {
+                console.log('ℹ️ 没有自定义字段需要处理');
+                return;
+            }
+            
+            allFieldItems.forEach((fieldItem, fieldIndex) => {
+                const optionsList = fieldItem.querySelector('.options-list');
+                if (optionsList) {
+                    console.log(`📝 处理字段 ${fieldIndex} 的选项`);
+                    updateFieldOptionsJSON(optionsList, fieldIndex);
+                } else {
+                    console.log(`⚠️ 字段 ${fieldIndex} 没有选项列表`);
+                }
+            });
         }
         
         // 删除自定义字段（确保在全局作用域）
@@ -1846,6 +2405,23 @@
             modalBody.innerHTML = '';
             modalBody.appendChild(formClone);
             
+            // 调试：检查复选框状态（强制输出到控制台）
+            try {
+                const checkboxes = formClone.querySelectorAll('input[name="style_category_ids[]"]');
+                console.log('🔍 克隆后的复选框数量:', checkboxes.length);
+                checkboxes.forEach((cb, index) => {
+                    const info = `复选框[${index}]: ID=${cb.id}, value=${cb.value}, checked=${cb.checked}, hasCheckedAttr=${cb.hasAttribute('checked')}`;
+                    console.log('  -', info);
+                    // 如果应该有checked但实际没有，强制设置
+                    if (cb.hasAttribute('checked') && !cb.checked) {
+                        console.warn('⚠️ 发现checked属性但复选框未选中，强制设置:', cb.id);
+                        cb.checked = true;
+                    }
+                });
+            } catch (e) {
+                console.error('❌ 检查复选框状态时出错:', e);
+            }
+            
             // 确保input元素和相关的span元素的ID正确
             const fileInput = formClone.querySelector(`input[type="file"]`);
             if (fileInput) {
@@ -1936,6 +2512,7 @@
                     initCalled = true;
                     console.log('模态框已完全显示，开始初始化图片上传功能，productId:', productId);
                     setupEditImageUpload(productId);
+                    setupEditCoverImageUpload(productId);
                 }
             }
             modalElement.addEventListener('shown.bs.modal', initImageUpload);
@@ -1947,6 +2524,7 @@
                 if (!initCalled) {
                     console.log('备用初始化（setTimeout），productId:', productId);
                     setupEditImageUpload(productId);
+                    setupEditCoverImageUpload(productId);
                 }
             }, 800);
             
@@ -2013,18 +2591,28 @@
                 filesCount: inp.files ? inp.files.length : 0
             })));
             
+            // 查找封面图input
+            const coverImageInput = productId ? document.getElementById(`edit_cover_image_${productId}`) : null;
+            if (coverImageInput) {
+                console.log('📷 找到封面图input，ID:', coverImageInput.id, 'name:', coverImageInput.name);
+                if (coverImageInput.files && coverImageInput.files.length > 0) {
+                    console.log('✅ 封面图已选择:', coverImageInput.files[0].name);
+                } else {
+                    console.log('ℹ️ 封面图未选择（留空则不更新）');
+                }
+            }
+            
             if (fileInput) {
-                console.log('✅ 找到文件input，ID:', fileInput.id, 'name:', fileInput.name);
+                console.log('✅ 找到多图input，ID:', fileInput.id, 'name:', fileInput.name);
                 console.log('📁 文件input的files属性:', fileInput.files);
                 console.log('📊 文件数量:', fileInput.files ? fileInput.files.length : 0);
                 console.log('💾 文件input的value:', fileInput.value);
                 
                 if (fileInput.files && fileInput.files.length > 0) {
-                    console.log('✅ 准备提交表单，包含', fileInput.files.length, '个文件');
+                    console.log('✅ 准备提交表单，包含', fileInput.files.length, '个多图文件');
                     console.log('📝 文件列表:', Array.from(fileInput.files).map(f => f.name));
                 } else {
-                    console.warn('⚠️ 文件input存在但没有选择文件');
-                    console.log('💡 提示：如果刚才选择了文件但这里显示为空，可能是文件input被重置了');
+                    console.log('ℹ️ 多图未选择（留空则不更新）');
                 }
                 
                 // 确保文件input的name正确
@@ -2033,9 +2621,7 @@
                     console.log('🔧 已设置文件input的name为product_images[]');
                 }
             } else {
-                console.error('❌ 找不到文件input元素');
-                alert('错误：找不到文件上传输入框，请刷新页面重试');
-                return;
+                console.log('ℹ️ 未找到多图input（可能未选择多图）');
             }
             
             // 确保表单有正确的enctype
@@ -2056,15 +2642,72 @@
             }
             console.log('🔗 提交URL:', submitUrl);
             
+            // 在创建FormData之前，先更新所有字段的选项JSON并设置文件input的name
+            console.log('🔄 开始更新所有字段的选项JSON...');
+            updateAllFieldOptionsJSON(form);
+            
+            // 收集所有选项图片文件，确保它们被包含在FormData中
+            const allOptionImageInputs = form.querySelectorAll('.option-image');
+            console.log(`📋 找到 ${allOptionImageInputs.length} 个选项图片input`);
+            const optionImageFiles = [];
+            allOptionImageInputs.forEach((input, index) => {
+                if (input.files && input.files.length > 0) {
+                    // 确保input有正确的name（updateFieldOptionsJSON应该已经设置了，但这里再检查一次）
+                    if (!input.name || !input.name.startsWith('option_image_')) {
+                        // 找到这个input所属的字段索引
+                        const fieldItem = input.closest('.custom-field-item');
+                        const allFieldItems = form.querySelectorAll('.custom-field-item');
+                        const fieldIndex = Array.from(allFieldItems).indexOf(fieldItem);
+                        
+                        // 找到这个选项在字段中的索引
+                        const optionItem = input.closest('.option-item');
+                        const optionsList = fieldItem.querySelector('.options-list');
+                        const optionItems = optionsList ? Array.from(optionsList.querySelectorAll('.option-item')) : [];
+                        const optionIndex = optionItems.indexOf(optionItem);
+                        
+                        input.name = `option_image_${fieldIndex}_${optionIndex}`;
+                        console.log(`🔧 为选项图片input设置name: ${input.name}`);
+                    }
+                    optionImageFiles.push({
+                        name: input.name,
+                        file: input.files[0]
+                    });
+                    console.log(`📷 找到选项图片: ${input.name} -> ${input.files[0].name} (${input.files[0].size} bytes)`);
+                } else {
+                    console.log(`ℹ️ 选项图片input ${index} 未选择文件`);
+                }
+            });
+            
+            if (optionImageFiles.length > 0) {
+                console.log(`✅ 共找到 ${optionImageFiles.length} 个选项图片文件需要上传`);
+            } else {
+                console.log('ℹ️ 没有选项图片文件需要上传');
+            }
+            
             // 使用FormData和fetch API提交，确保文件被正确包含
             const formData = new FormData(form);
             
+            // 手动添加选项图片文件到FormData（确保它们被包含）
+            optionImageFiles.forEach(item => {
+                formData.delete(item.name); // 先删除可能存在的旧数据
+                formData.append(item.name, item.file);
+                console.log(`📷 已添加选项图片到FormData: ${item.name} -> ${item.file.name}`);
+            });
+            
             // 调试：输出所有表单字段（用于检查赠送工作流数据）
             console.log('📋 表单中的所有字段:');
+            const formDataFiles = [];
             for (let pair of formData.entries()) {
-                if (!(pair[1] instanceof File)) {
+                if (pair[1] instanceof File) {
+                    formDataFiles.push(`${pair[0]}: ${pair[1].name} (${pair[1].size} bytes)`);
+                } else {
                     console.log(`  ${pair[0]}: ${pair[1]}`);
                 }
+            }
+            if (formDataFiles.length > 0) {
+                console.log('📁 FormData中的文件:', formDataFiles);
+            } else {
+                console.log('📁 FormData中暂无文件');
             }
             
             // 特别检查赠送工作流相关字段
@@ -2079,21 +2722,50 @@
             console.log('  - bonus_workflow_sort_order[]:', bonusWorkflowSortOrders);
             
             // 确保文件被包含在FormData中
-            if (fileInput.files && fileInput.files.length > 0) {
+            // 处理封面图
+            console.log('🔍 检查封面图input:', {
+                exists: !!coverImageInput,
+                inForm: coverImageInput ? form.contains(coverImageInput) : false,
+                hasFiles: coverImageInput && coverImageInput.files ? coverImageInput.files.length > 0 : false,
+                fileName: coverImageInput && coverImageInput.files && coverImageInput.files.length > 0 ? coverImageInput.files[0].name : '无'
+            });
+            
+            if (coverImageInput && coverImageInput.files && coverImageInput.files.length > 0) {
+                // 先删除可能存在的旧数据
+                formData.delete('product_image');
+                // 添加新的封面图文件
+                formData.append('product_image', coverImageInput.files[0]);
+                console.log('📷 已添加封面图到FormData:', coverImageInput.files[0].name, '大小:', coverImageInput.files[0].size, 'bytes');
+                
+                // 验证FormData中确实有封面图
+                const coverImageInFormData = formData.get('product_image');
+                if (coverImageInFormData instanceof File) {
+                    console.log('✅ FormData验证: 封面图文件已包含，文件名:', coverImageInFormData.name);
+                } else {
+                    console.error('❌ FormData验证失败: 封面图文件未正确包含');
+                }
+            } else {
+                console.log('ℹ️ 封面图未选择（留空则不更新封面图）');
+                // 确保删除空的product_image字段，避免后端误判
+                formData.delete('product_image');
+            }
+            
+            // 处理多图
+            if (fileInput && fileInput.files && fileInput.files.length > 0) {
                 // 清除可能存在的旧文件数据
                 formData.delete('product_images[]');
                 // 添加所有选中的文件
                 for (let i = 0; i < fileInput.files.length; i++) {
                     formData.append('product_images[]', fileInput.files[i]);
-                    console.log('📎 已添加文件到FormData:', fileInput.files[i].name, '大小:', fileInput.files[i].size, 'bytes');
+                    console.log('📎 已添加多图到FormData:', fileInput.files[i].name, '大小:', fileInput.files[i].size, 'bytes');
                 }
-                console.log('✅ FormData中已包含', fileInput.files.length, '个文件');
+                console.log('✅ FormData中已包含', fileInput.files.length, '个多图文件');
                 
                 // 验证FormData中确实有文件
                 const filesInFormData = formData.getAll('product_images[]');
-                console.log('🔍 FormData验证: 包含', filesInFormData.length, '个文件');
+                console.log('🔍 FormData验证: 包含', filesInFormData.length, '个多图文件');
             } else {
-                console.log('ℹ️ 没有选择新文件，将只更新产品信息（不更新图片）');
+                console.log('ℹ️ 没有选择新多图，将只更新产品信息（不更新多图）');
             }
             
             // 显示加载状态
@@ -2292,6 +2964,7 @@
                 // 初始化编辑模式的图片上传
                 try {
                     setupEditImageUpload(productId);
+                    setupEditCoverImageUpload(productId);
                 } catch (e) {
                     console.error('setupEditImageUpload error:', e);
                 }
@@ -2497,6 +3170,37 @@
             }
         });
         
+        // 编辑模式封面图上传处理
+        function setupEditCoverImageUpload(productId) {
+            const coverImageInput = document.getElementById(`edit_cover_image_${productId}`);
+            if (!coverImageInput) {
+                console.error('找不到封面图上传input元素，productId:', productId);
+                return;
+            }
+            
+            const coverUploadText = document.getElementById(`edit-cover-upload-text-${productId}`);
+            const coverUploadButton = coverImageInput.closest('.btn-upload');
+            
+            coverImageInput.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    if (coverUploadText) {
+                        coverUploadText.textContent = `已选择: ${file.name}`;
+                    }
+                    if (coverUploadButton) {
+                        coverUploadButton.classList.add('has-file');
+                    }
+                } else {
+                    if (coverUploadText) {
+                        coverUploadText.textContent = '点击上传封面图';
+                    }
+                    if (coverUploadButton) {
+                        coverUploadButton.classList.remove('has-file');
+                    }
+                }
+            });
+        }
+        
         // 编辑模式图片上传处理 - 使用全局document.getElementById，完全复制添加产品的方式
         function setupEditImageUpload(productId) {
             // 直接通过ID查找，不依赖modalBody，就像添加产品那样使用document.getElementById
@@ -2655,6 +3359,229 @@
                 form.submit();
             }
         }
+        
+        // ==================== 产品分类管理 ====================
+        
+        // 编辑分类
+        function editCategory(categoryId) {
+            fetch(`/api/admin/product-categories/${categoryId}`)
+                .then(response => response.json())
+                .then(result => {
+                    if (result.status === 'success') {
+                        const category = result.data;
+                        console.log('获取到的分类数据:', category); // 调试日志
+                        console.log('style_redirect_page 值:', category.style_redirect_page); // 调试日志
+                        
+                        // 先设置 categoryId，这样模态框的 show.bs.modal 事件就不会重置表单
+                        document.getElementById('categoryId').value = category.id;
+                        
+                        // 然后设置其他字段
+                        document.getElementById('categoryModalTitle').textContent = '编辑一级分类';
+                        document.getElementById('categoryName').value = category.name || '';
+                        document.getElementById('categoryCode').value = category.code || '';
+                        document.getElementById('categoryIcon').value = category.icon || '';
+                        document.getElementById('categoryImageUrl').value = category.image_url || '';
+                        document.getElementById('categorySortOrder').value = category.sort_order || 0;
+                        document.getElementById('categoryIsActive').checked = category.is_active !== false;
+                        // 确保 style_redirect_page 字段被正确设置
+                        const styleRedirectPageValue = category.style_redirect_page || '';
+                        document.getElementById('categoryStyleRedirectPage').value = styleRedirectPageValue;
+                        console.log('设置 categoryStyleRedirectPage 值为:', styleRedirectPageValue); // 调试日志
+                        
+                        // 显示图片预览
+                        const preview = document.getElementById('categoryImagePreview');
+                        const uploadArea = document.getElementById('categoryImageUploadArea');
+                        if (category.image_url) {
+                            preview.src = category.image_url;
+                            preview.style.display = 'block';
+                            uploadArea.style.display = 'none';
+                        } else {
+                            preview.style.display = 'none';
+                            uploadArea.style.display = 'block';
+                        }
+                        
+                        // 延迟显示模态框，确保所有值都已设置
+                        setTimeout(() => {
+                            new bootstrap.Modal(document.getElementById('addCategoryModal')).show();
+                        }, 100);
+                    } else {
+                        alert('获取分类信息失败: ' + result.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('获取分类信息失败:', error);
+                    alert('获取分类信息失败，请重试');
+                });
+        }
+        
+        // 保存分类 - 确保是全局函数
+        window.saveCategory = async function saveCategory() {
+            console.log('=== saveCategory 函数被调用 ===');
+            
+            const form = document.getElementById('categoryForm');
+            if (!form) {
+                console.error('找不到 categoryForm 表单');
+                alert('找不到表单，请刷新页面重试');
+                return;
+            }
+            
+            // 获取所有字段值
+            const categoryName = document.getElementById('categoryName')?.value || '';
+            const categoryCode = document.getElementById('categoryCode')?.value || '';
+            const categoryIcon = document.getElementById('categoryIcon')?.value || '';
+            const categoryImageUrl = document.getElementById('categoryImageUrl')?.value || '';
+            const categorySortOrder = parseInt(document.getElementById('categorySortOrder')?.value) || 0;
+            const categoryIsActive = document.getElementById('categoryIsActive')?.checked || false;
+            
+            // 获取跳转页面字段的值 - 确保总是获取到值
+            const styleRedirectPageElement = document.getElementById('categoryStyleRedirectPage');
+            let styleRedirectPageValue = null;
+            if (styleRedirectPageElement) {
+                const rawValue = styleRedirectPageElement.value.trim();
+                // 如果值不为空，使用原值；如果为空字符串，设置为 null
+                styleRedirectPageValue = rawValue ? rawValue : null;
+                console.log('✅ 找到 categoryStyleRedirectPage 元素，原始值:', styleRedirectPageElement.value, '处理后:', styleRedirectPageValue);
+            } else {
+                console.error('❌ 找不到 categoryStyleRedirectPage 元素！');
+                console.error('尝试查找所有包含 style 的元素:', document.querySelectorAll('[id*="style"], [name*="style"]'));
+                console.error('模态框内容:', document.getElementById('addCategoryModal')?.innerHTML?.substring(0, 500));
+                // 即使元素不存在，也要设置字段为 null，确保字段存在
+                styleRedirectPageValue = null;
+            }
+            
+            // 构建数据对象 - 确保 style_redirect_page 字段始终存在
+            const data = {
+                name: categoryName,
+                code: categoryCode,
+                icon: categoryIcon,
+                image_url: categoryImageUrl,
+                sort_order: categorySortOrder,
+                is_active: categoryIsActive,
+                style_redirect_page: styleRedirectPageValue  // 明确设置，确保字段存在
+            };
+            
+            console.log('构建的 data 对象:', data);
+            console.log('data.style_redirect_page 值:', data.style_redirect_page);
+            console.log('data 对象是否包含 style_redirect_page:', 'style_redirect_page' in data);
+            
+            const categoryId = document.getElementById('categoryId').value;
+            if (categoryId) {
+                data.id = parseInt(categoryId);
+            }
+            
+            // 详细的调试日志
+            console.log('=== 保存分类调试信息 ===');
+            console.log('categoryStyleRedirectPage 元素:', styleRedirectPageElement);
+            console.log('元素值:', styleRedirectPageElement ? styleRedirectPageElement.value : 'N/A');
+            console.log('处理后的值:', styleRedirectPageValue);
+            console.log('最终 data.style_redirect_page:', data.style_redirect_page);
+            console.log('完整数据对象:', data);
+            console.log('JSON 字符串:', JSON.stringify(data));
+            console.log('========================');
+            
+            try {
+                const url = categoryId ? `/api/admin/product-categories/${categoryId}` : '/api/admin/product-categories';
+                const method = categoryId ? 'PUT' : 'POST';
+                
+                // 强制确保 style_redirect_page 字段存在（即使为 null 也要包含）
+                // 重新获取一次值，确保不会丢失
+                const styleRedirectPageElement = document.getElementById('categoryStyleRedirectPage');
+                if (styleRedirectPageElement) {
+                    const rawValue = styleRedirectPageElement.value.trim();
+                    data.style_redirect_page = rawValue ? rawValue : null;
+                } else {
+                    data.style_redirect_page = null;
+                }
+                
+                // 再次强制检查，确保字段存在
+                if (!('style_redirect_page' in data)) {
+                    console.warn('警告：style_redirect_page 字段不存在，强制添加');
+                    data.style_redirect_page = null;
+                }
+                
+                // 最终验证
+                console.log('发送前的最终数据:', data);
+                console.log('data.style_redirect_page 值:', data.style_redirect_page);
+                console.log('data 对象是否包含 style_redirect_page:', 'style_redirect_page' in data);
+                const finalJsonString = JSON.stringify(data);
+                console.log('发送前的 JSON:', finalJsonString);
+                console.log('JSON 中是否包含 style_redirect_page:', finalJsonString.includes('style_redirect_page'));
+                const matchResult = finalJsonString.match(/"style_redirect_page"\s*:\s*([^,}]+)/);
+                console.log('JSON 中 style_redirect_page 的值:', matchResult ? matchResult[1] : '未找到');
+                
+                const response = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: finalJsonString
+                });
+                
+                const result = await response.json();
+                if (result.status === 'success') {
+                    bootstrap.Modal.getInstance(document.getElementById('addCategoryModal')).hide();
+                    alert('保存成功');
+                    location.reload(); // 刷新页面以更新分类列表
+                } else {
+                    alert('保存失败: ' + result.message);
+                }
+            } catch (error) {
+                console.error('保存分类失败:', error);
+                alert('保存失败，请重试');
+            }
+        }
+        
+        // 上传分类图片
+        async function uploadCategoryImage(input) {
+            if (!input.files || input.files.length === 0) {
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('image', input.files[0]);
+            
+            try {
+                const response = await fetch('/api/admin/product-categories/upload-image', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                if (result.status === 'success') {
+                    const imageUrl = result.data.image_url;
+                    document.getElementById('categoryImageUrl').value = imageUrl;
+                    
+                    // 显示预览
+                    const preview = document.getElementById('categoryImagePreview');
+                    const uploadArea = document.getElementById('categoryImageUploadArea');
+                    preview.src = imageUrl;
+                    preview.style.display = 'block';
+                    uploadArea.style.display = 'none';
+                } else {
+                    alert('上传失败: ' + result.message);
+                }
+            } catch (error) {
+                console.error('上传图片失败:', error);
+                alert('上传失败，请重试');
+            }
+        }
+        
+        // 重置分类表单（添加新分类时）
+        document.getElementById('addCategoryModal').addEventListener('show.bs.modal', function() {
+            const categoryId = document.getElementById('categoryId').value;
+            if (!categoryId) {
+                // 添加新分类，重置表单
+                document.getElementById('categoryModalTitle').textContent = '添加一级分类';
+                document.getElementById('categoryForm').reset();
+                document.getElementById('categoryId').value = '';
+                document.getElementById('categoryImageUrl').value = '';
+                document.getElementById('categoryStyleRedirectPage').value = ''; // 确保重置跳转页面字段
+                document.getElementById('categoryIsActive').checked = true;
+                document.getElementById('categorySortOrder').value = 0;
+                document.getElementById('categoryImagePreview').style.display = 'none';
+                document.getElementById('categoryImageUploadArea').style.display = 'block';
+            }
+        });
     </script>
     
     <!-- 添加赠送工作流模态框 -->

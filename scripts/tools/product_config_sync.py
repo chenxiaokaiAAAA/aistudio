@@ -149,7 +149,7 @@ PRINTER_SYSTEM_CONFIG = {{
     'shop_name': '测试',  # 影楼名称（测试环境）
     'auth_token': 'YOUR_AUTH_TOKEN',  # 如果API需要认证，这里填写Token
     'callback_url': 'https://dev-camera-api.photogo520.com/open/xmdm/express/notify',  # 快递信息回调地址
-    'file_access_base_url': 'http://moeart.cc',  # 外部可访问的文件基础URL
+    'file_access_base_url': 'http://photogooo',  # 外部可访问的文件基础URL
     'use_oss': True,  # 是否使用阿里云OSS存储
     'oss_bucket_domain': 'https://pet-painting-images.oss-cn-shenzhen.aliyuncs.com',  # OSS存储桶域名
     'timeout': 30,  # 请求超时时间（秒）

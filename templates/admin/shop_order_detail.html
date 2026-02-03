@@ -147,7 +147,7 @@
                             <td class="text-muted">关联订单:</td>
                             <td>
                                 {% if original_order %}
-                                    <a href="{{ url_for('admin_orders.admin_order_detail', order_id=original_order.id) }}" class="badge bg-info">
+                                    <a href="{{ url_for('admin_orders.admin_orders_detail.admin_order_detail', order_id=original_order.id) }}" class="badge bg-info">
                                         {{ original_order.order_number }}
                                     </a>
                                 {% else %}

@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>权限配置 - 加盟商管理</title>
+    <link href="/static/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            padding-top: 80px;
+        }
+        .franchisee-section {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            background: #fff;
+        }
+        .franchisee-header {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .permission-item {
+            padding: 8px;
+            border-bottom: 1px solid #eee;
+        }
+        .permission-item:last-child {
+            border-bottom: none;
+        }
+        .staff-section {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+    </style>
+</head>
+<body>
+    {% include 'admin/_navbar.html' %}
+
+    <div class="container mt-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h3><i class="fas fa-cog"></i> 权限配置 - 加盟商及子用户</h3>
+            <a href="/franchisee/admin/accounts" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> 返回列表
+            </a>
+        </div>
+
+        <form id="permissionsForm" method="POST">
+            {% for item in franchisee_data %}
+            <div class="franchisee-section">
+                <div class="franchisee-header">
+                    <h5><i class="fas fa-building"></i> {{ item.franchisee.company_name }}</h5>
+                    <small class="text-muted">用户名: {{ item.franchisee.username }}</small>
+                </div>
+                
+                <!-- 加盟商账户权限 -->
+                <div class="mb-4">
+                    <h6 class="mb-3">加盟商账户权限</h6>
+                    
+                    <!-- 管理后台权限 -->
+                    <div class="mb-3">
+                        <strong>管理后台权限：</strong>
+                        <div class="ms-3">
+                            {% for perm in admin_permissions %}
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="checkbox" 
+                                       name="account_permissions[{{ item.franchisee.id }}][admin][{{ perm.key }}]"
+                                       id="account_{{ item.franchisee.id }}_admin_{{ perm.key }}"
+                                       {% if item.account_permissions.admin.get(perm.key) %}checked{% endif %}>
+                                <label class="form-check-label" for="account_{{ item.franchisee.id }}_admin_{{ perm.key }}">
+                                    {{ perm.name }}
+                                </label>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    
+                    <!-- 小程序权限 -->
+                    <div class="mb-3">
+                        <strong>小程序权限：</strong>
+                        <div class="ms-3">
+                            {% for perm in miniprogram_permissions %}
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="checkbox" 
+                                       name="account_permissions[{{ item.franchisee.id }}][miniprogram][{{ perm.key }}]"
+                                       id="account_{{ item.franchisee.id }}_miniprogram_{{ perm.key }}"
+                                       {% if item.account_permissions.miniprogram.get(perm.key) %}checked{% endif %}>
+                                <label class="form-check-label" for="account_{{ item.franchisee.id }}_miniprogram_{{ perm.key }}">
+                                    {{ perm.name }}
+                                </label>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 子用户权限 -->
+                {% if item.staff_users %}
+                <div class="staff-section">
+                    <h6 class="mb-3">子用户权限</h6>
+                    
+                    {% for staff in item.staff_users %}
+                    <div class="card mb-3">
+                        <div class="card-header">
+                            <strong>{{ staff.name or staff.phone or staff.openid }}</strong>
+                            <span class="badge {% if staff.status == 'active' %}bg-success{% else %}bg-secondary{% endif %} ms-2">
+                                {{ '正常' if staff.status == 'active' else '停用' }}
+                            </span>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <strong>管理后台权限：</strong>
+                                    <div class="ms-2 mt-2">
+                                        {% for perm in admin_permissions %}
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" 
+                                                   name="staff_permissions[{{ staff.id }}][admin][{{ perm.key }}]"
+                                                   id="staff_{{ staff.id }}_admin_{{ perm.key }}"
+                                                   {% if item.staff_permissions_dict[staff.id].admin.get(perm.key) %}checked{% endif %}>
+                                            <label class="form-check-label" for="staff_{{ staff.id }}_admin_{{ perm.key }}">
+                                                {{ perm.name }}
+                                            </label>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <strong>小程序权限：</strong>
+                                    <div class="ms-2 mt-2">
+                                        {% for perm in miniprogram_permissions %}
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" 
+                                                   name="staff_permissions[{{ staff.id }}][miniprogram][{{ perm.key }}]"
+                                                   id="staff_{{ staff.id }}_miniprogram_{{ perm.key }}"
+                                                   {% if item.staff_permissions_dict[staff.id].miniprogram.get(perm.key) %}checked{% endif %}>
+                                            <label class="form-check-label" for="staff_{{ staff.id }}_miniprogram_{{ perm.key }}">
+                                                {{ perm.name }}
+                                            </label>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i> 该加盟商暂无子用户
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+
+            <div class="text-center mt-4">
+                <button type="submit" class="btn btn-primary btn-lg">
+                    <i class="fas fa-save"></i> 保存所有权限配置
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <script src="/static/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.getElementById('permissionsForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // 收集表单数据
+            const formData = new FormData(this);
+            const data = {};
+            
+            // 处理加盟商权限
+            data.account_permissions = {};
+            formData.forEach((value, key) => {
+                if (key.startsWith('account_permissions[')) {
+                    const matches = key.match(/account_permissions\[(\d+)\]\[(admin|miniprogram)\]\[(.*?)\]/);
+                    if (matches) {
+                        const accountId = matches[1];
+                        const type = matches[2];
+                        const permKey = matches[3];
+                        if (!data.account_permissions[accountId]) {
+                            data.account_permissions[accountId] = {admin: {}, miniprogram: {}};
+                        }
+                        data.account_permissions[accountId][type][permKey] = true;
+                    }
+                } else if (key.startsWith('staff_permissions[')) {
+                    const matches = key.match(/staff_permissions\[(\d+)\]\[(admin|miniprogram)\]\[(.*?)\]/);
+                    if (matches) {
+                        const staffId = matches[1];
+                        const type = matches[2];
+                        const permKey = matches[3];
+                        if (!data.staff_permissions) data.staff_permissions = {};
+                        if (!data.staff_permissions[staffId]) {
+                            data.staff_permissions[staffId] = {admin: {}, miniprogram: {}};
+                        }
+                        data.staff_permissions[staffId][type][permKey] = true;
+                    }
+                }
+            });
+            
+            // 发送请求
+            fetch(this.action, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    alert('权限配置已保存');
+                    window.location.href = '/franchisee/admin/accounts';
+                } else {
+                    alert('保存失败: ' + (data.message || '未知错误'));
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('保存失败，请重试');
+            });
+        });
+    </script>
+</body>
+</html>

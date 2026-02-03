@@ -2,30 +2,29 @@
 """
 美图API配置管理路由
 """
-from flask import Blueprint, request, jsonify, render_template
+from flask import Blueprint, request, jsonify, render_template, redirect, url_for
 from flask_login import login_required, current_user
 from datetime import datetime
+
+from app.utils.admin_helpers import get_models
+from app.utils.decorators import admin_required, admin_api_required
 
 meitu_bp = Blueprint('meitu', __name__, url_prefix='/admin/meitu')
 
 
 @meitu_bp.route('/config')
 @login_required
+@admin_required
 def meitu_config():
     """美图API配置页面"""
-    if current_user.role not in ['admin', 'operator']:
-        from flask import redirect, url_for
-        return redirect(url_for('auth.login'))
     return render_template('admin/meitu_api_config.html')
 
 
 @meitu_bp.route('/tasks')
 @login_required
+@admin_required
 def meitu_tasks():
     """美颜任务管理页面"""
-    if current_user.role not in ['admin', 'operator']:
-        from flask import redirect, url_for
-        return redirect(url_for('auth.login'))
     return render_template('admin/meitu_tasks.html')
 
 
@@ -35,19 +34,16 @@ def meitu_tasks():
 
 @meitu_bp.route('/api/config', methods=['GET'])
 @login_required
+@admin_api_required
 def get_meitu_config():
     """获取美图API配置"""
     try:
-        if current_user.role not in ['admin', 'operator']:
-            return jsonify({'status': 'error', 'message': '权限不足'}), 403
-        
-        import sys
-        if 'test_server' not in sys.modules:
+        models = get_models(['MeituAPIConfig', 'db'])
+        if not models:
             return jsonify({'status': 'error', 'message': '数据库未初始化'}), 500
         
-        test_server_module = sys.modules['test_server']
-        db = test_server_module.db
-        MeituAPIConfig = test_server_module.MeituAPIConfig
+        db = models['db']
+        MeituAPIConfig = models['MeituAPIConfig']
         
         # 优先使用原始SQL查询，避免SQLAlchemy自动访问不存在的列
         config = None
@@ -176,23 +172,20 @@ def get_meitu_config():
 
 @meitu_bp.route('/api/config', methods=['POST'])
 @login_required
+@admin_api_required
 def save_meitu_config():
     """保存美图API配置"""
     try:
-        if current_user.role != 'admin':
-            return jsonify({'status': 'error', 'message': '权限不足'}), 403
-        
         data = request.get_json()
         if not data:
             return jsonify({'status': 'error', 'message': '请求数据为空'}), 400
         
-        import sys
-        if 'test_server' not in sys.modules:
+        models = get_models(['MeituAPIConfig', 'db'])
+        if not models:
             return jsonify({'status': 'error', 'message': '数据库未初始化'}), 500
         
-        test_server_module = sys.modules['test_server']
-        db = test_server_module.db
-        MeituAPIConfig = test_server_module.MeituAPIConfig
+        db = models['db']
+        MeituAPIConfig = models['MeituAPIConfig']
         
         # 查找现有配置（优先使用原始SQL，避免列不存在的问题）
         config = None
@@ -396,18 +389,15 @@ def save_meitu_config():
 
 @meitu_bp.route('/api/presets', methods=['GET'])
 @login_required
+@admin_api_required
 def get_meitu_presets():
     """获取美图API预设列表"""
     try:
-        if current_user.role not in ['admin', 'operator']:
-            return jsonify({'status': 'error', 'message': '权限不足'}), 403
-        
-        import sys
-        if 'test_server' not in sys.modules:
+        models = get_models(['MeituAPIPreset', 'db'])
+        if not models:
             return jsonify({'status': 'error', 'message': '数据库未初始化'}), 500
         
-        test_server_module = sys.modules['test_server']
-        MeituAPIPreset = test_server_module.MeituAPIPreset
+        MeituAPIPreset = models['MeituAPIPreset']
         
         presets = MeituAPIPreset.query.all()
         preset_list = []
@@ -451,18 +441,15 @@ def get_meitu_presets():
 
 @meitu_bp.route('/api/presets/<int:preset_id>', methods=['GET'])
 @login_required
+@admin_api_required
 def get_meitu_preset(preset_id):
     """获取单个预设详情"""
     try:
-        if current_user.role not in ['admin', 'operator']:
-            return jsonify({'status': 'error', 'message': '权限不足'}), 403
-        
-        import sys
-        if 'test_server' not in sys.modules:
+        models = get_models(['MeituAPIPreset', 'db'])
+        if not models:
             return jsonify({'status': 'error', 'message': '数据库未初始化'}), 500
         
-        test_server_module = sys.modules['test_server']
-        MeituAPIPreset = test_server_module.MeituAPIPreset
+        MeituAPIPreset = models['MeituAPIPreset']
         
         preset = MeituAPIPreset.query.get(preset_id)
         if not preset:
@@ -491,23 +478,20 @@ def get_meitu_preset(preset_id):
 
 @meitu_bp.route('/api/presets', methods=['POST'])
 @login_required
+@admin_api_required
 def create_meitu_preset():
     """创建美图API预设"""
     try:
-        if current_user.role != 'admin':
-            return jsonify({'status': 'error', 'message': '权限不足'}), 403
-        
         data = request.get_json()
         if not data:
             return jsonify({'status': 'error', 'message': '请求数据为空'}), 400
         
-        import sys
-        if 'test_server' not in sys.modules:
+        models = get_models(['MeituAPIPreset', 'db'])
+        if not models:
             return jsonify({'status': 'error', 'message': '数据库未初始化'}), 500
         
-        test_server_module = sys.modules['test_server']
-        db = test_server_module.db
-        MeituAPIPreset = test_server_module.MeituAPIPreset
+        db = models['db']
+        MeituAPIPreset = models['MeituAPIPreset']
         
         # 验证：必须指定分类或图片之一，但不能同时指定
         style_category_id = data.get('style_category_id')
@@ -550,23 +534,20 @@ def create_meitu_preset():
 
 @meitu_bp.route('/api/presets/<int:preset_id>', methods=['PUT'])
 @login_required
+@admin_api_required
 def update_meitu_preset(preset_id):
     """更新美图API预设"""
     try:
-        if current_user.role != 'admin':
-            return jsonify({'status': 'error', 'message': '权限不足'}), 403
-        
         data = request.get_json()
         if not data:
             return jsonify({'status': 'error', 'message': '请求数据为空'}), 400
         
-        import sys
-        if 'test_server' not in sys.modules:
+        models = get_models(['MeituAPIPreset', 'db'])
+        if not models:
             return jsonify({'status': 'error', 'message': '数据库未初始化'}), 500
         
-        test_server_module = sys.modules['test_server']
-        db = test_server_module.db
-        MeituAPIPreset = test_server_module.MeituAPIPreset
+        db = models['db']
+        MeituAPIPreset = models['MeituAPIPreset']
         
         preset = MeituAPIPreset.query.get(preset_id)
         if not preset:
@@ -680,19 +661,16 @@ def get_style_images():
 
 @meitu_bp.route('/api/presets/<int:preset_id>', methods=['DELETE'])
 @login_required
+@admin_api_required
 def delete_meitu_preset(preset_id):
     """删除美图API预设"""
     try:
-        if current_user.role != 'admin':
-            return jsonify({'status': 'error', 'message': '权限不足'}), 403
-        
-        import sys
-        if 'test_server' not in sys.modules:
+        models = get_models(['MeituAPIPreset', 'db'])
+        if not models:
             return jsonify({'status': 'error', 'message': '数据库未初始化'}), 500
         
-        test_server_module = sys.modules['test_server']
-        db = test_server_module.db
-        MeituAPIPreset = test_server_module.MeituAPIPreset
+        db = models['db']
+        MeituAPIPreset = models['MeituAPIPreset']
         
         preset = MeituAPIPreset.query.get(preset_id)
         if not preset:

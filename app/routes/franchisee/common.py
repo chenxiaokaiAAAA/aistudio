@@ -27,6 +27,9 @@ def get_models():
         'ProductCustomField': test_server_module.ProductCustomField,
         'SelfieMachine': test_server_module.SelfieMachine,
         'StaffUser': test_server_module.StaffUser if hasattr(test_server_module, 'StaffUser') else None,
+        'Coupon': test_server_module.Coupon if hasattr(test_server_module, 'Coupon') else None,
+        'UserCoupon': test_server_module.UserCoupon if hasattr(test_server_module, 'UserCoupon') else None,
+        'GrouponPackage': test_server_module.GrouponPackage if hasattr(test_server_module, 'GrouponPackage') else None,
         'app': test_server_module.app if hasattr(test_server_module, 'app') else None,
         'allowed_file': test_server_module.allowed_file if hasattr(test_server_module, 'allowed_file') else None
     }

@@ -292,20 +292,36 @@ def poll_processing_tasks():
         
         with test_server_module.app.app_context():
             # 查找所有处理中的任务
-            # 对于测试任务（source_type='admin_test'），减少等待时间到5秒，提高响应速度
-            # 对于正常订单，等待30秒后再轮询，避免频繁查询刚创建的任务
             # 关键修复：排除同步API任务，同步API不应该轮询（应该一次性返回结果）
             Order = test_server_module.Order if hasattr(test_server_module, 'Order') else None
+            PollingConfig = test_server_module.PollingConfig if hasattr(test_server_module, 'PollingConfig') else None
+            
+            # 从数据库读取轮询配置（工作流任务）
+            wait_before_polling = 30  # 默认值：正常订单等待30秒
+            wait_before_polling_test = 0  # 默认值：测试任务立即轮询
+            polling_interval_with_tasks = 5  # 默认值：有活跃任务时每5秒轮询一次
+            
+            if PollingConfig:
+                try:
+                    workflow_config = PollingConfig.query.filter_by(task_type='workflow_task', is_active=True).first()
+                    if workflow_config:
+                        wait_before_polling = workflow_config.wait_before_polling or 30
+                        wait_before_polling_test = workflow_config.wait_before_polling_test or 0
+                        polling_interval_with_tasks = workflow_config.polling_interval_with_tasks or 5
+                        print(f"📋 [轮询] 使用轮询配置: 正常任务等待={wait_before_polling}秒, 测试任务等待={wait_before_polling_test}秒, 轮询间隔={polling_interval_with_tasks}秒")
+                    else:
+                        print(f"⚠️ [轮询] 未找到启用的工作流任务轮询配置，使用默认值")
+                except Exception as e:
+                    print(f"⚠️ [轮询] 读取轮询配置失败: {str(e)}，使用默认值")
             
             # 先查询所有处理中的任务
             all_processing_tasks = AITask.query.filter(
                 AITask.status.in_(['pending', 'processing'])
             ).all()
             
-            # 根据任务类型设置不同的等待时间
-            # 优化：对于测试任务，立即开始轮询（0秒），提高响应速度
-            cutoff_time_normal = datetime.now() - timedelta(seconds=30)  # 正常订单：30秒
-            cutoff_time_test = datetime.now() - timedelta(seconds=0)  # 测试任务：立即轮询（0秒）
+            # 根据任务类型和配置设置不同的等待时间
+            cutoff_time_normal = datetime.now() - timedelta(seconds=wait_before_polling)
+            cutoff_time_test = datetime.now() - timedelta(seconds=wait_before_polling_test)
             
             # 分离测试任务和正常任务
             test_tasks = []
@@ -316,17 +332,23 @@ def poll_processing_tasks():
                 if Order and task.order_id:
                     try:
                         order = Order.query.get(task.order_id)
-                        if order and getattr(order, 'source_type', None) == 'admin_test':
-                            is_test_task = True
+                        if order:
+                            source_type = getattr(order, 'source_type', None)
+                            # 判断是否为测试任务：admin_test 或 playground_test
+                            if source_type in ['admin_test', 'playground_test']:
+                                is_test_task = True
+                            # 或者通过订单号判断（PLAY_开头的是Playground测试任务）
+                            elif task.order_number and task.order_number.startswith('PLAY_'):
+                                is_test_task = True
                     except:
                         pass
                 
                 if is_test_task:
-                    # 测试任务：5秒后开始轮询
+                    # 测试任务：立即开始轮询（wait_before_polling_test秒后）
                     if task.created_at and task.created_at <= cutoff_time_test:
                         test_tasks.append(task)
                 else:
-                    # 正常任务：30秒后开始轮询
+                    # 正常任务：wait_before_polling秒后开始轮询
                     if task.created_at and task.created_at <= cutoff_time_normal:
                         normal_tasks.append(task)
             
@@ -1572,58 +1594,130 @@ def start_ai_task_polling_service():
             try:
                 loop_count += 1
                 
-                # 轮询AI任务（云端API服务商）
-                updated_count = poll_processing_tasks()
-                
-                # 轮询美图API任务
-                meitu_updated_count = poll_meitu_api_tasks()
-                
-                # 检查是否有待处理的任务
-                has_pending_tasks = (updated_count > 0 or meitu_updated_count > 0)
-                
-                # 检查是否有处理中的任务（用于判断是否需要继续轮询）
+                # 先检查是否有处理中的任务（用于判断是否需要轮询）
+                processing_ai_tasks = 0
+                processing_meitu_tasks = 0
                 try:
                     import sys
                     if 'test_server' in sys.modules:
                         test_server_module = sys.modules['test_server']
+                        app = test_server_module.app
                         db = test_server_module.db
                         AITask = test_server_module.AITask
                         MeituAPICallLog = test_server_module.MeituAPICallLog
                         
-                        # 检查是否有处理中的AI任务
-                        processing_ai_tasks = AITask.query.filter(
-                            AITask.status.in_(['pending', 'processing'])
-                        ).count()
+                        # 必须在应用上下文中执行数据库查询
+                        with app.app_context():
+                            # 检查是否有处理中的AI任务
+                            processing_ai_tasks = AITask.query.filter(
+                                AITask.status.in_(['pending', 'processing'])
+                            ).count()
+                            
+                            # 检查是否有处理中的美图API任务
+                            processing_meitu_tasks = MeituAPICallLog.query.filter(
+                                MeituAPICallLog.status == 'pending'
+                            ).count()
+                            
+                            has_active_tasks = (processing_ai_tasks > 0 or processing_meitu_tasks > 0)
+                            
+                            # 调试日志：每5次循环输出一次任务检测结果（更频繁，便于调试）
+                            if loop_count % 5 == 0:
+                                print(f"🔍 [轮询检测] 检测到 {processing_ai_tasks} 个AI任务, {processing_meitu_tasks} 个美图任务, 是否有活跃任务: {has_active_tasks}")
+                                if processing_ai_tasks > 0:
+                                    # 显示前3个任务的详情
+                                    try:
+                                        from datetime import datetime
+                                        recent_tasks = AITask.query.filter(
+                                            AITask.status.in_(['pending', 'processing'])
+                                        ).order_by(AITask.created_at.desc()).limit(3).all()
+                                        for t in recent_tasks:
+                                            age_seconds = (datetime.now() - t.created_at).total_seconds() if t.created_at else 0
+                                            print(f"   - 任务 {t.id}: 订单号={t.order_number}, 状态={t.status}, 创建于{age_seconds:.1f}秒前")
+                                    except Exception as debug_e:
+                                        print(f"   ⚠️ 获取任务详情失败: {debug_e}")
                         
-                        # 检查是否有处理中的美图API任务
-                        processing_meitu_tasks = MeituAPICallLog.query.filter(
-                            MeituAPICallLog.status == 'pending'
-                        ).count()
+                        # 调试日志：每5次循环输出一次任务检测结果（更频繁，便于调试）
+                        if loop_count % 5 == 0:
+                            print(f"🔍 [轮询检测] 检测到 {processing_ai_tasks} 个AI任务, {processing_meitu_tasks} 个美图任务, 是否有活跃任务: {has_active_tasks}")
+                            if processing_ai_tasks > 0:
+                                # 显示前3个任务的详情
+                                try:
+                                    from datetime import datetime
+                                    recent_tasks = AITask.query.filter(
+                                        AITask.status.in_(['pending', 'processing'])
+                                    ).order_by(AITask.created_at.desc()).limit(3).all()
+                                    for t in recent_tasks:
+                                        age_seconds = (datetime.now() - t.created_at).total_seconds() if t.created_at else 0
+                                        print(f"   - 任务 {t.id}: 订单号={t.order_number}, 状态={t.status}, 创建于{age_seconds:.1f}秒前")
+                                except Exception as debug_e:
+                                    print(f"   ⚠️ 获取任务详情失败: {debug_e}")
+                except Exception as e:
+                    has_active_tasks = False
+                    # 输出错误信息以便调试
+                    if loop_count % 5 == 0:
+                        print(f"⚠️ [轮询检测] 检测任务时出错: {e}")
+                        import traceback
+                        traceback.print_exc()
+                
+                # 只有在有活跃任务时才执行轮询
+                if has_active_tasks:
+                    # 输出轮询开始信息（每次轮询都输出，便于调试）
+                    print(f"🔄 [轮询服务] 开始轮询... (检测到 {processing_ai_tasks} 个AI任务, {processing_meitu_tasks} 个美图任务)")
+                    
+                    # 轮询AI任务（云端API服务商）
+                    updated_count = poll_processing_tasks()
+                    
+                    # 轮询美图API任务
+                    meitu_updated_count = poll_meitu_api_tasks()
+                    
+                    # 检查是否有待处理的任务
+                    has_pending_tasks = (updated_count > 0 or meitu_updated_count > 0)
+                    
+                    # 输出轮询结果
+                    if updated_count > 0:
+                        print(f"✅ [AI轮询] AI任务状态轮询完成，更新了 {updated_count} 个任务")
+                    else:
+                        print(f"ℹ️ [AI轮询] 轮询完成，本次未更新任务（任务可能还在处理中或等待轮询条件）")
+                    
+                    if meitu_updated_count > 0:
+                        print(f"✅ [美图轮询] 美图API任务状态轮询完成，更新了 {meitu_updated_count} 个任务")
+                    
+                    # 如果有活跃任务，每6次循环（约30秒）输出一次状态
+                    if loop_count % 6 == 0:
+                        print(f"💓 [轮询服务] 检测到活跃任务，轮询服务运行中... (已运行约 {loop_count * polling_interval_with_tasks} 秒)")
+                        print(f"   - 当前有 {processing_ai_tasks} 个AI任务处理中, {processing_meitu_tasks} 个美图任务处理中")
+                else:
+                    # 没有活跃任务，不执行轮询，静默等待
+                    updated_count = 0
+                    meitu_updated_count = 0
+                    has_pending_tasks = False
+                    # 每30次循环（约5分钟）输出一次无任务状态
+                    if loop_count % 30 == 0:
+                        print(f"💤 [轮询服务] 当前无活跃任务，轮询服务等待中... (已等待约 {loop_count * polling_interval} 秒)")
+                
+                # 从数据库读取轮询配置（工作流任务）
+                polling_interval = 10  # 默认值：无活跃任务时每10秒轮询一次
+                polling_interval_with_tasks = 5  # 默认值：有活跃任务时每5秒轮询一次
+                
+                try:
+                    import sys
+                    if 'test_server' in sys.modules:
+                        test_server_module = sys.modules['test_server']
+                        PollingConfig = test_server_module.PollingConfig if hasattr(test_server_module, 'PollingConfig') else None
                         
-                        has_active_tasks = (processing_ai_tasks > 0 or processing_meitu_tasks > 0)
+                        if PollingConfig:
+                            workflow_config = PollingConfig.query.filter_by(task_type='workflow_task', is_active=True).first()
+                            if workflow_config:
+                                polling_interval = workflow_config.polling_interval or 10
+                                polling_interval_with_tasks = workflow_config.polling_interval_with_tasks or 5
                 except:
                     pass
                 
-                # 只在有任务更新或检测到活跃任务时才输出日志
-                if updated_count > 0:
-                    print(f"✅ [AI轮询] AI任务状态轮询完成，更新了 {updated_count} 个任务")
-                
-                if meitu_updated_count > 0:
-                    print(f"✅ [美图轮询] 美图API任务状态轮询完成，更新了 {meitu_updated_count} 个任务")
-                
-                # 如果没有活跃任务，静默运行（不输出日志）
-                # 如果有活跃任务，每60秒输出一次状态（避免日志过多）
-                if has_active_tasks and loop_count % 6 == 0:
-                    print(f"💓 [轮询服务] 检测到活跃任务，轮询服务运行中... (已运行 {loop_count * 10} 秒)")
-                    print(f"   - 当前有 {processing_ai_tasks} 个AI任务处理中, {processing_meitu_tasks} 个美图任务处理中")
-                
-                # 根据是否有活跃任务调整轮询间隔
-                # 有活跃任务时：5秒轮询一次（提高响应速度）
-                # 无活跃任务时：10秒轮询一次（节省资源）
+                # 根据是否有活跃任务调整轮询间隔（使用配置的值）
                 if has_active_tasks:
-                    time.sleep(5)  # 有任务时5秒轮询一次
+                    time.sleep(polling_interval_with_tasks)  # 有任务时使用配置的轮询间隔
                 else:
-                    time.sleep(10)  # 无任务时10秒轮询一次
+                    time.sleep(polling_interval)  # 无任务时使用配置的轮询间隔
             except Exception as e:
                 print(f"❌ AI任务状态轮询服务异常: {e}")
                 import traceback
@@ -1633,9 +1727,10 @@ def start_ai_task_polling_service():
     # 在后台线程中运行
     polling_thread = threading.Thread(target=polling_loop, daemon=True)
     polling_thread.start()
-    print("🚀 AI任务状态自动轮询服务已启动（每10秒轮询一次，任务创建30秒后开始轮询）")
-    print("   - 轮询条件：任务状态为pending或processing，创建时间超过30秒")
-    print("   - 轮询频率：每10秒一次")
+    print("🚀 AI任务状态自动轮询服务已启动")
+    print("   - 轮询条件：任务状态为pending或processing")
+    print("   - 轮询配置：从数据库PollingConfig读取（工作流任务）")
+    print("   - 提示：可在轮询配置页面修改轮询间隔和等待时间")
 
 
 def init_ai_task_polling_service():

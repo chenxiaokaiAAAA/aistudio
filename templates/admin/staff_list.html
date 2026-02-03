@@ -86,22 +86,13 @@
                                             {% else %}
                                                 {% set perms = {} %}
                                             {% endif %}
-                                            {% if perms.get('view_today_orders') %}
-                                                <span class="badge bg-info">今日订单</span>
-                                            {% endif %}
-                                            {% if perms.get('view_store_images') %}
-                                                <span class="badge bg-success">门店图片</span>
-                                            {% endif %}
-                                            {% if perms.get('view_all_orders') %}
-                                                <span class="badge bg-primary">全部订单</span>
-                                            {% endif %}
-                                            {% if perms.get('view_statistics') %}
-                                                <span class="badge bg-warning">统计数据</span>
-                                            {% endif %}
                                             {% if perms.get('groupon_verify') %}
                                                 <span class="badge bg-danger">团购核销</span>
                                             {% endif %}
-                                            {% if not perms or (not perms.get('view_today_orders') and not perms.get('view_store_images') and not perms.get('view_all_orders') and not perms.get('view_statistics') and not perms.get('groupon_verify')) %}
+                                            {% if perms.get('refund_request') %}
+                                                <span class="badge bg-warning">退款申请</span>
+                                            {% endif %}
+                                            {% if not perms or (not perms.get('groupon_verify') and not perms.get('refund_request')) %}
                                                 <span class="text-muted">无权限</span>
                                             {% endif %}
                                         </td>

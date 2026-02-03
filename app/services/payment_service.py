@@ -33,15 +33,70 @@ def get_db():
     return None
 
 def get_wechat_pay_config():
-    """获取微信支付配置"""
+    """获取微信支付配置（优先从数据库读取，如果数据库没有则使用test_server.py中的默认配置）"""
     try:
         import sys
+        # 优先从数据库读取配置
         if 'test_server' in sys.modules:
             test_server_module = sys.modules['test_server']
+            
+            # 尝试从数据库读取配置
+            try:
+                if hasattr(test_server_module, 'AIConfig') and hasattr(test_server_module, 'db'):
+                    AIConfig = test_server_module.AIConfig
+                    db = test_server_module.db
+                    
+                    # 从数据库读取小程序和支付配置
+                    configs = {}
+                    ai_configs = AIConfig.query.filter(
+                        AIConfig.config_key.in_([
+                            'miniprogram_appid',
+                            'miniprogram_app_secret',
+                            'wechat_pay_appid',
+                            'wechat_pay_mch_id',
+                            'wechat_pay_api_key',
+                            'wechat_pay_notify_url'
+                        ])
+                    ).all()
+                    
+                    for config in ai_configs:
+                        if config.config_key == 'miniprogram_appid':
+                            configs['appid'] = config.config_value
+                        elif config.config_key == 'miniprogram_app_secret':
+                            configs['app_secret'] = config.config_value
+                        elif config.config_key == 'wechat_pay_appid':
+                            configs['pay_appid'] = config.config_value
+                        elif config.config_key == 'wechat_pay_mch_id':
+                            configs['mch_id'] = config.config_value
+                        elif config.config_key == 'wechat_pay_api_key':
+                            configs['api_key'] = config.config_value
+                        elif config.config_key == 'wechat_pay_notify_url':
+                            configs['notify_url'] = config.config_value
+                    
+                    # 如果数据库中有配置，优先使用数据库配置
+                    # 支付配置：优先使用pay_appid，如果没有则使用appid
+                    if configs.get('pay_appid') or configs.get('appid'):
+                        result = {
+                            'appid': configs.get('pay_appid') or configs.get('appid', ''),
+                            'mch_id': configs.get('mch_id', ''),
+                            'api_key': configs.get('api_key', ''),
+                            'notify_url': configs.get('notify_url', ''),
+                            'app_secret': configs.get('app_secret', '')
+                        }
+                        
+                        # 如果关键配置都存在，返回数据库配置
+                        if result['appid'] and result['mch_id'] and result['api_key']:
+                            print(f"✅ 使用数据库中的微信支付配置: appid={result['appid']}")
+                            return result
+            except Exception as e:
+                print(f"⚠️ 从数据库读取微信支付配置失败: {str(e)}")
+            
+            # 如果数据库没有配置或读取失败，使用test_server.py中的默认配置
             if hasattr(test_server_module, 'WECHAT_PAY_CONFIG'):
+                print("ℹ️ 使用test_server.py中的默认微信支付配置")
                 return test_server_module.WECHAT_PAY_CONFIG
-    except (ImportError, AttributeError):
-        pass
+    except (ImportError, AttributeError) as e:
+        print(f"⚠️ 获取微信支付配置失败: {str(e)}")
     return None
 
 def create_payment_order(order_id, total_price, openid, coupon_code=None, user_id=None, discount_amount=0, skip_payment=False, remote_addr='127.0.0.1'):

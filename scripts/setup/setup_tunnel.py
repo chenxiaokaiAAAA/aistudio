@@ -101,7 +101,7 @@ def update_miniprogram_config(public_url):
         
         # 替换serverUrl
         new_content = content.replace(
-            "serverUrl: 'http://moeart.cc'",
+            "serverUrl: 'http://photogooo'",
             f"serverUrl: '{public_url}'"
         )
         

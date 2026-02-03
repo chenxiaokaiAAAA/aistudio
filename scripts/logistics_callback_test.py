@@ -17,7 +17,7 @@ def test_logistics_callback():
     print("=" * 50)
     
     # 接口配置
-    api_url = "https://moeart.cc/api/logistics/callback"
+    api_url = "https://photogooo/api/logistics/callback"
     order_number = "PET17582664981342618"
     
     # 测试数据
@@ -147,7 +147,7 @@ def test_single_callback():
     print("=" * 50)
     
     # 接口配置
-    api_url = "https://moeart.cc/api/logistics/callback"
+    api_url = "https://photogooo/api/logistics/callback"
     order_number = "PET17582664981342618"
     
     # 测试数据

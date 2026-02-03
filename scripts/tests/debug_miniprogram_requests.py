@@ -12,7 +12,7 @@ import time
 
 def test_miniprogram_api():
     """测试小程序API接口"""
-    base_url = "http://moeart.cc"
+    base_url = "http://photogooo"
     
     print("🔍 测试小程序API接口...")
     
@@ -111,7 +111,7 @@ def test_miniprogram_api():
 
 def test_image_formats():
     """测试不同图片格式的访问"""
-    base_url = "http://moeart.cc"
+    base_url = "http://photogooo"
     
     print("\n🖼️ 测试不同图片格式:")
     

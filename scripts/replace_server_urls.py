@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-批量替换 test_server.py 中的 moeart.cc 地址为配置地址
+批量替换 test_server.py 中的 photogooo 地址为配置地址
 """
 import re
 
@@ -11,12 +11,12 @@ with open('test_server.py', 'r', encoding='utf-8') as f:
 
 # 替换模式
 replacements = [
-    # http://moeart.cc 替换为 get_base_url()
+    # http://photogooo 替换为 get_base_url()
     (r'f"http://moeart\.cc([^"]*)"', r'f"{get_base_url()}\1"'),
     (r'"http://moeart\.cc([^"]*)"', r'f"{get_base_url()}\1"'),
     (r"'http://moeart\.cc([^']*)'", r'f"{get_base_url()}\1"'),
     
-    # https://moeart.cc 替换为 get_base_url()（会自动处理https）
+    # https://photogooo 替换为 get_base_url()（会自动处理https）
     (r'f"https://moeart\.cc([^"]*)"', r'f"{get_base_url()}\1"'),
     (r'"https://moeart\.cc([^"]*)"', r'f"{get_base_url()}\1"'),
     (r"'https://moeart\.cc([^']*)'", r'f"{get_base_url()}\1"'),

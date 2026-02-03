@@ -93,6 +93,6 @@ if __name__ == "__main__":
     
     if init_photo_signup_table():
         print("🎉 初始化完成！现在可以访问管理后台了。")
-        print("📱 访问地址: https://moeart.cc/admin/photo-signups")
+        print("📱 访问地址: https://photogooo/admin/photo-signups")
     else:
         print("💥 初始化失败，请检查数据库连接。")

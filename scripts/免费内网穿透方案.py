@@ -221,7 +221,7 @@ def update_printer_config(tunnel_url):
         content = f.read()
     
     # 更新file_access_base_url
-    old_url = "http://moeart.cc"
+    old_url = "http://photogooo"
     new_content = content.replace(old_url, tunnel_url)
     
     # 写回配置文件

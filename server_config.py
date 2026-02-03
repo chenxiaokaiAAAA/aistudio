@@ -13,18 +13,21 @@ ENV = os.environ.get('SERVER_ENV', 'local')  # 修改这里的 'local' 为 'prod
 # 服务器地址配置
 SERVER_CONFIG = {
     'local': {
-        'base_url': 'http://192.168.2.54:8000',
-        'api_base_url': 'http://192.168.2.54:8000/api',
-        'static_url': 'http://192.168.2.54:8000/static',
-        'media_url': 'http://192.168.2.54:8000/media',
-        'notify_url': 'http://192.168.2.54:8000/api/payment/notify'
+        # 注意：如果小程序使用 127.0.0.1，这里也应该改为 127.0.0.1
+        # 如果小程序使用 192.168.2.54，这里保持 192.168.2.54
+        # 建议：小程序开发者工具使用 127.0.0.1，真机调试使用 192.168.2.54
+        'base_url': 'http://127.0.0.1:8000',  # 可以改为 'http://192.168.2.54:8000'
+        'api_base_url': 'http://127.0.0.1:8000/api',  # 可以改为 'http://192.168.2.54:8000/api'
+        'static_url': 'http://127.0.0.1:8000/static',  # 可以改为 'http://192.168.2.54:8000/static'
+        'media_url': 'http://127.0.0.1:8000/media',  # 可以改为 'http://192.168.2.54:8000/media'
+        'notify_url': 'http://127.0.0.1:8000/api/payment/notify'  # 可以改为 'http://192.168.2.54:8000/api/payment/notify'
     },
     'production': {
-        'base_url': 'https://moeart.cc',
-        'api_base_url': 'https://moeart.cc/api',
-        'static_url': 'https://moeart.cc/static',
-        'media_url': 'https://moeart.cc/media',
-        'notify_url': 'https://moeart.cc/api/payment/notify'
+        'base_url': 'https://photogooo',
+        'api_base_url': 'https://photogooo/api',
+        'static_url': 'https://photogooo/static',
+        'media_url': 'https://photogooo/media',
+        'notify_url': 'https://photogooo/api/payment/notify'
     }
 }
 

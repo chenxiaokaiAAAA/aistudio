@@ -43,7 +43,7 @@ def merchant_dashboard():
     if current_user.role != 'merchant':
         # 如果是管理员，跳回管理员控制台
         if current_user.is_authenticated and current_user.role == 'admin':
-            return redirect(url_for('admin.admin_dashboard'))
+            return redirect(url_for('admin.admin_routes.admin_dashboard'))
         return redirect(url_for('auth.login'))
     
     models = get_models()

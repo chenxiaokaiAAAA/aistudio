@@ -21,6 +21,10 @@ def get_models():
         'db': test_server_module.db,
         'Order': test_server_module.Order,
         'PromotionUser': test_server_module.PromotionUser,
+        'PromotionTrack': test_server_module.PromotionTrack,
+        'Commission': test_server_module.Commission,
+        'Withdrawal': test_server_module.Withdrawal,
+        'UserVisit': test_server_module.UserVisit,
         'calculate_visit_frequency': getattr(test_server_module, 'calculate_visit_frequency', None),
     }
 
@@ -132,6 +136,96 @@ def get_all_users_access():
         return jsonify({
             'success': False,
             'message': f'获取所有用户访问统计失败: {str(e)}'
+        }), 500
+
+
+@admin_users_api_bp.route('/api/admin/users/miniprogram/clear', methods=['POST'])
+@login_required
+def clear_miniprogram_users():
+    """清空所有小程序用户数据（仅admin）"""
+    try:
+        if current_user.role != 'admin':
+            return jsonify({'success': False, 'message': '权限不足，仅管理员可执行此操作'}), 403
+        
+        models = get_models()
+        if not models:
+            return jsonify({'success': False, 'message': '系统未初始化'}), 500
+        
+        db = models['db']
+        PromotionUser = models['PromotionUser']
+        PromotionTrack = models['PromotionTrack']
+        Commission = models['Commission']
+        Withdrawal = models['Withdrawal']
+        UserVisit = models['UserVisit']
+        
+        # 获取确认参数
+        data = request.get_json() or {}
+        confirm = data.get('confirm', False)
+        
+        if not confirm:
+            return jsonify({
+                'success': False,
+                'message': '请确认要清空所有小程序用户数据',
+                'requiresConfirm': True
+            }), 400
+        
+        # 统计要删除的数据
+        user_count = PromotionUser.query.count()
+        track_count = PromotionTrack.query.count()
+        commission_count = Commission.query.count()
+        withdrawal_count = Withdrawal.query.count()
+        visit_count = UserVisit.query.count()
+        
+        print(f"准备清空小程序用户数据:")
+        print(f"  - 用户数: {user_count}")
+        print(f"  - 推广追踪记录: {track_count}")
+        print(f"  - 分佣记录: {commission_count}")
+        print(f"  - 提现记录: {withdrawal_count}")
+        print(f"  - 访问记录: {visit_count}")
+        
+        # 删除数据（按依赖关系顺序）
+        deleted_counts = {}
+        
+        # 1. 删除提现记录（依赖用户）
+        deleted_counts['withdrawals'] = Withdrawal.query.delete()
+        
+        # 2. 删除分佣记录（依赖用户）
+        deleted_counts['commissions'] = Commission.query.delete()
+        
+        # 3. 删除推广追踪记录（依赖用户）
+        deleted_counts['tracks'] = PromotionTrack.query.delete()
+        
+        # 4. 删除用户访问记录
+        deleted_counts['visits'] = UserVisit.query.delete()
+        
+        # 5. 删除用户（最后删除）
+        deleted_counts['users'] = PromotionUser.query.delete()
+        
+        db.session.commit()
+        
+        print(f"✅ 清空完成:")
+        print(f"  - 已删除用户: {deleted_counts['users']}")
+        print(f"  - 已删除推广追踪: {deleted_counts['tracks']}")
+        print(f"  - 已删除分佣记录: {deleted_counts['commissions']}")
+        print(f"  - 已删除提现记录: {deleted_counts['withdrawals']}")
+        print(f"  - 已删除访问记录: {deleted_counts['visits']}")
+        
+        return jsonify({
+            'success': True,
+            'message': '小程序用户数据已清空',
+            'deleted': deleted_counts
+        })
+        
+    except Exception as e:
+        print(f"清空小程序用户数据失败: {e}")
+        import traceback
+        traceback.print_exc()
+        models = get_models()
+        if models:
+            models['db'].session.rollback()
+        return jsonify({
+            'success': False,
+            'message': f'清空数据失败: {str(e)}'
         }), 500
 
 

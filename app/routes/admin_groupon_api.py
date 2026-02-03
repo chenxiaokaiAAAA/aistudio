@@ -20,14 +20,20 @@ def get_models():
     try:
         test_server = sys.modules.get('test_server')
         if test_server:
-            return {
+            models = {
                 'Coupon': test_server.Coupon,
                 'UserCoupon': test_server.UserCoupon,
                 'db': test_server.db
             }
+            # 添加GrouponPackage模型（如果存在）
+            if hasattr(test_server, 'GrouponPackage'):
+                models['GrouponPackage'] = test_server.GrouponPackage
+            return models
         return None
     except Exception as e:
         print(f"⚠️ 获取数据库模型失败: {e}")
+        import traceback
+        traceback.print_exc()
         return None
 
 def generate_random_code(length=8):
@@ -77,7 +83,7 @@ def verify_groupon_order():
         data = request.get_json()
         
         # 验证必填字段
-        required_fields = ['groupon_order_id', 'verify_amount', 'customer_phone']
+        required_fields = ['groupon_order_id', 'customer_phone']
         for field in required_fields:
             if field not in data or not data[field]:
                 return jsonify({
@@ -86,10 +92,77 @@ def verify_groupon_order():
                 }), 400
         
         groupon_order_id = data['groupon_order_id']
-        verify_amount = float(data['verify_amount'])
         customer_phone = data['customer_phone']
         customer_name = data.get('customer_name', '')
         expire_days = int(data.get('expire_days', 30))  # 默认30天有效期
+        
+        # 获取核销金额（优先使用套餐配置，否则使用手动输入的金额）
+        verify_amount = None
+        platform = data.get('platform', '')
+        package_id = data.get('package_id')
+        
+        if package_id:
+            # 从套餐配置获取金额
+            try:
+                GrouponPackage = models.get('GrouponPackage')
+                if GrouponPackage:
+                    # 确保package_id是整数
+                    package_id_int = int(package_id) if package_id else None
+                    if package_id_int:
+                        package = GrouponPackage.query.get(package_id_int)
+                        if package:
+                            verify_amount = float(package.package_amount)
+                            platform = package.platform
+                        else:
+                            return jsonify({
+                                'status': 'error',
+                                'message': '套餐不存在'
+                            }), 400
+                    else:
+                        return jsonify({
+                            'status': 'error',
+                            'message': '套餐ID无效'
+                        }), 400
+                else:
+                    # 如果GrouponPackage模型不存在，尝试使用手动输入的金额
+                    if 'verify_amount' in data:
+                        verify_amount = float(data['verify_amount'])
+                    else:
+                        return jsonify({
+                            'status': 'error',
+                            'message': '套餐配置功能未启用，请手动输入核销金额'
+                        }), 400
+            except (ValueError, TypeError) as e:
+                return jsonify({
+                    'status': 'error',
+                    'message': f'套餐ID格式错误: {str(e)}'
+                }), 400
+            except Exception as e:
+                print(f"获取套餐配置失败: {str(e)}")
+                import traceback
+                traceback.print_exc()
+                # 如果获取套餐失败，尝试使用手动输入的金额
+                if 'verify_amount' in data:
+                    verify_amount = float(data['verify_amount'])
+                else:
+                    return jsonify({
+                        'status': 'error',
+                        'message': f'获取套餐配置失败: {str(e)}'
+                    }), 500
+        elif 'verify_amount' in data:
+            # 兼容旧方式：手动输入金额
+            verify_amount = float(data['verify_amount'])
+        else:
+            return jsonify({
+                'status': 'error',
+                'message': '请选择套餐或输入核销金额'
+            }), 400
+        
+        if verify_amount <= 0:
+            return jsonify({
+                'status': 'error',
+                'message': '核销金额必须大于0'
+            }), 400
         
         # 检查是否已存在该团购订单的优惠券
         existing_coupon = Coupon.query.filter_by(
@@ -129,6 +202,21 @@ def verify_groupon_order():
             verify_amount=verify_amount,
             is_random_code=True
         )
+        
+        # 保存平台和套餐信息
+        if hasattr(coupon, 'groupon_platform'):
+            coupon.groupon_platform = platform
+        if hasattr(coupon, 'groupon_package_id') and package_id:
+            try:
+                coupon.groupon_package_id = int(package_id)
+            except:
+                pass
+        
+        # 保存创建人信息（管理员创建）
+        if hasattr(coupon, 'creator_type'):
+            coupon.creator_type = 'admin'
+        if hasattr(coupon, 'creator_name'):
+            coupon.creator_name = current_user.username if current_user else '管理员'
         
         db.session.add(coupon)
         db.session.flush()

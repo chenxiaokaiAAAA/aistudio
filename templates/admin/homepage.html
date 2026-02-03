@@ -72,6 +72,55 @@
             color: rgba(255,255,255,0.6);
         }
         
+        /* 下拉框样式 */
+        select.form-control {
+            background: rgba(30, 30, 50, 0.95) !important;
+            color: white !important;
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23ffffff' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e") !important;
+            background-repeat: no-repeat !important;
+            background-position: right 0.75rem center !important;
+            background-size: 16px 12px !important;
+            padding-right: 2.5rem !important;
+            appearance: none !important;
+            -webkit-appearance: none !important;
+            -moz-appearance: none !important;
+        }
+        
+        select.form-control option {
+            background: #1a1a2e !important;
+            color: white !important;
+            padding: 10px !important;
+        }
+        
+        select.form-control option:hover {
+            background: #4ecdc4 !important;
+            color: #1a1a2e !important;
+        }
+        
+        select.form-control option:checked,
+        select.form-control option:focus {
+            background: #4ecdc4 !important;
+            color: #1a1a2e !important;
+        }
+        
+        /* 下拉框打开时的样式 */
+        select.form-control:focus {
+            background-color: rgba(30, 30, 50, 0.95) !important;
+            color: white !important;
+        }
+        
+        /* 确保下拉列表背景可见 */
+        select.form-control::-ms-expand {
+            display: none;
+        }
+        
+        /* 针对不同浏览器的下拉选项样式 */
+        @supports (-webkit-appearance: none) {
+            select.form-control {
+                background-color: rgba(30, 30, 50, 0.95) !important;
+            }
+        }
+        
         .modal-content {
             background: linear-gradient(135deg, #1a1a2e, #16213e);
             color: white;
@@ -145,6 +194,95 @@
         .sortable-handle:hover {
             color: #ff6b6b;
         }
+        
+        /* 产品选择器样式 */
+        .product-selector-list {
+            max-height: 500px;
+            overflow-y: auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 15px;
+            padding: 15px;
+        }
+        
+        .product-selector-item {
+            position: relative;
+        }
+        
+        .product-selector-card {
+            background: rgba(255,255,255,0.05);
+            border: 2px solid rgba(255,255,255,0.1);
+            border-radius: 10px;
+            padding: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+        }
+        
+        .product-selector-card:hover {
+            border-color: #4ecdc4;
+            background: rgba(78, 205, 196, 0.1);
+            transform: translateY(-2px);
+        }
+        
+        .product-selector-item.selected .product-selector-card {
+            border-color: #4ecdc4;
+            background: rgba(78, 205, 196, 0.2);
+        }
+        
+        .product-selector-checkbox {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            z-index: 10;
+        }
+        
+        .product-selector-checkbox input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+        
+        .product-selector-image {
+            width: 100%;
+            height: 120px;
+            overflow: hidden;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            background: rgba(255,255,255,0.05);
+        }
+        
+        .product-selector-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .product-selector-info {
+            text-align: center;
+        }
+        
+        .product-selector-name {
+            font-size: 14px;
+            color: white;
+            font-weight: 500;
+            margin-bottom: 4px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        .product-selector-category {
+            font-size: 12px;
+            color: rgba(255,255,255,0.6);
+        }
+        
+        #selectedProductsPreview {
+            padding: 8px;
+            background: rgba(78, 205, 196, 0.1);
+            border-radius: 5px;
+            border: 1px solid rgba(78, 205, 196, 0.3);
+        }
     </style>
 </head>
 <body>
@@ -170,6 +308,117 @@
                                     </button>
                                     <div id="bannerList">
                                         <!-- 轮播图列表将通过JavaScript动态加载 -->
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- 分类导航管理 -->
+                            <div class="row mb-4">
+                                <div class="col-12">
+                                    <h5>分类导航管理</h5>
+                                    <p class="text-muted">配置首页显示的分类导航图标</p>
+                                    <button class="btn btn-primary mb-3" onclick="addCategoryNav()">
+                                        + 添加分类导航
+                                    </button>
+                                    <div id="categoryNavList">
+                                        <!-- 分类导航列表将通过JavaScript动态加载 -->
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- 小程序首页模块配置 -->
+                            <div class="row mb-4">
+                                <div class="col-12">
+                                    <h5>小程序首页模块配置</h5>
+                                    <p class="text-muted">配置小程序首页的固定模块内容（图片和跳转链接），模块标题和布局由前端固定</p>
+                                    
+                                    <!-- 固定模块配置卡片 -->
+                                    <div class="row">
+                                        <!-- 当季主推模块 -->
+                                        <div class="col-md-6 mb-3">
+                                            <div class="card">
+                                                <div class="card-header">
+                                                    <h6 class="mb-0">
+                                                        <i class="fas fa-star"></i> 当季主推
+                                                        <span class="badge bg-success ms-2" id="featuredSectionStatus">已配置</span>
+                                                    </h6>
+                                                </div>
+                                                <div class="card-body">
+                                                    <p class="text-muted small">配置当季主推模块的产品卡片</p>
+                                                    <button class="btn btn-sm btn-primary" onclick="editFixedModule('featured_section')">
+                                                        <i class="fas fa-edit"></i> 配置内容
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- 时光旅程模块 -->
+                                        <div class="col-md-6 mb-3">
+                                            <div class="card">
+                                                <div class="card-header">
+                                                    <h6 class="mb-0">
+                                                        <i class="fas fa-clock"></i> 时光旅程
+                                                        <span class="badge bg-success ms-2" id="timeJourneySectionStatus">已配置</span>
+                                                    </h6>
+                                                </div>
+                                                <div class="card-body">
+                                                    <p class="text-muted small">配置时光旅程模块的分类图片</p>
+                                                    <button class="btn btn-sm btn-primary" onclick="editFixedModule('time_journey')">
+                                                        <i class="fas fa-edit"></i> 配置内容
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- IP联名模块 -->
+                                        <div class="col-md-6 mb-3">
+                                            <div class="card">
+                                                <div class="card-header">
+                                                    <h6 class="mb-0">
+                                                        <i class="fas fa-handshake"></i> IP联名
+                                                        <span class="badge bg-success ms-2" id="ipCollabSectionStatus">已配置</span>
+                                                    </h6>
+                                                </div>
+                                                <div class="card-body">
+                                                    <p class="text-muted small">配置IP联名模块的标签和图片</p>
+                                                    <button class="btn btn-sm btn-primary" onclick="editFixedModule('ip_collab')">
+                                                        <i class="fas fa-edit"></i> 配置内容
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- 作品展示模块 -->
+                                        <div class="col-md-6 mb-3">
+                                            <div class="card">
+                                                <div class="card-header">
+                                                    <h6 class="mb-0">
+                                                        <i class="fas fa-images"></i> 作品展示
+                                                        <span class="badge bg-success ms-2" id="worksSectionStatus">已配置</span>
+                                                    </h6>
+                                                </div>
+                                                <div class="card-body">
+                                                    <p class="text-muted small">配置作品展示模块的标签和图片</p>
+                                                    <button class="btn btn-sm btn-primary" onclick="editFixedModule('works')">
+                                                        <i class="fas fa-edit"></i> 配置内容
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- 旧的产品推荐模块管理（保留用于其他类型） -->
+                            <div class="row mb-4" style="display: none;">
+                                <div class="col-12">
+                                    <h5>产品推荐模块管理</h5>
+                                    <p class="text-muted">配置首页显示的产品推荐模块（如：当季主推、热门产品等）</p>
+                                    <button class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#productSectionModal">
+                                        + 添加产品推荐模块
+                                    </button>
+                                    <div id="productSectionList">
+                                        <!-- 产品推荐模块列表将通过JavaScript动态加载 -->
                                     </div>
                                 </div>
                             </div>
@@ -316,11 +565,7 @@
         let banners = [];
         let homepageConfig = {};
 
-        // 页面加载时初始化
-        document.addEventListener('DOMContentLoaded', function() {
-            loadBanners();
-            loadHomepageConfig();
-        });
+        // 页面加载时初始化（已在底部统一处理）
 
         // 加载轮播图数据
         async function loadBanners() {
@@ -588,7 +833,1654 @@
             document.getElementById('bannerPreview').style.display = 'none';
             document.getElementById('bannerUploadArea').style.display = 'block';
         });
+        // ========== 分类导航管理 ==========
+        let categoryNavs = [];
+        let products = [];
+        let categories = [];
+
+        // 加载分类导航
+        async function loadCategoryNavs() {
+            try {
+                const response = await fetch('/api/admin/homepage/category-navs');
+                const data = await response.json();
+                if (data.status === 'success') {
+                    categoryNavs = data.data;
+                    renderCategoryNavs();
+                }
+            } catch (error) {
+                console.error('加载分类导航失败:', error);
+            }
+        }
+
+        // 渲染分类导航列表
+        function renderCategoryNavs() {
+            const container = document.getElementById('categoryNavList');
+            container.innerHTML = '';
+            
+            if (categoryNavs.length === 0) {
+                container.innerHTML = '<p class="text-muted">暂无分类导航，请添加</p>';
+                return;
+            }
+            
+            categoryNavs.forEach(nav => {
+                const div = document.createElement('div');
+                div.className = 'banner-item mb-2';
+                div.innerHTML = `
+                    <div class="row align-items-center">
+                        <div class="col-md-1">
+                            <span class="badge bg-secondary">${nav.sort_order}</span>
+                        </div>
+                        <div class="col-md-2">
+                            ${nav.image_url ? `<img src="${nav.image_url}" class="banner-preview" style="width: 60px; height: 60px; object-fit: cover; border-radius: 50%;">` : `<span style="font-size: 40px;">${nav.icon || '📦'}</span>`}
+                        </div>
+                        <div class="col-md-4">
+                            <h6 class="mb-1">${nav.name}</h6>
+                            <small class="text-muted">${nav.link_type === 'category' ? '分类' : nav.link_type === 'page' ? '页面' : '链接'}</small>
+                        </div>
+                        <div class="col-md-3">
+                            <span class="badge ${nav.is_active ? 'bg-success' : 'bg-secondary'}">${nav.is_active ? '启用' : '禁用'}</span>
+                        </div>
+                        <div class="col-md-2 text-end">
+                            <button class="btn btn-sm btn-outline-primary me-2" onclick="editCategoryNav(${nav.id})">编辑</button>
+                            <button class="btn btn-sm btn-outline-danger" onclick="deleteCategoryNav(${nav.id})">删除</button>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        // 添加分类导航
+        function addCategoryNav() {
+            // 重置表单
+            document.getElementById('categoryNavId').value = '';
+            document.getElementById('categoryNavName').value = '';
+            document.getElementById('categoryNavIcon').value = '';
+            document.getElementById('categoryNavImageUrl').value = '';
+            document.getElementById('categoryNavLinkType').value = 'category';
+            document.getElementById('categoryNavLinkValue').value = '';
+            document.getElementById('categoryNavCategoryId').value = '';
+            document.getElementById('categoryNavSortOrder').value = 0;
+            document.getElementById('categoryNavIsActive').checked = true;
+            
+            // 重置图片预览
+            document.getElementById('categoryNavPreview').style.display = 'none';
+            document.getElementById('categoryNavUploadArea').style.display = 'block';
+            
+            // 更新链接值输入方式
+            updateLinkValueInput();
+            
+            document.getElementById('categoryNavModalTitle').textContent = '添加分类导航';
+            new bootstrap.Modal(document.getElementById('categoryNavModal')).show();
+        }
+        
+        // 编辑分类导航
+        function editCategoryNav(id) {
+            const nav = categoryNavs.find(n => n.id === id);
+            if (!nav) return;
+            
+            document.getElementById('categoryNavId').value = nav.id;
+            document.getElementById('categoryNavName').value = nav.name || '';
+            document.getElementById('categoryNavIcon').value = nav.icon || '';
+            // 使用原始路径，而不是完整URL
+            const imageUrl = nav.image_url || '';
+            document.getElementById('categoryNavImageUrl').value = imageUrl;
+            document.getElementById('categoryNavLinkType').value = nav.link_type || 'category';
+            document.getElementById('categoryNavLinkValue').value = nav.link_value || '';
+            document.getElementById('categoryNavCategoryId').value = nav.category_id || '';
+            document.getElementById('categoryNavSortOrder').value = nav.sort_order || 0;
+            document.getElementById('categoryNavIsActive').checked = nav.is_active;
+            
+            // 显示预览（使用完整URL）
+            if (nav.image_url_preview || nav.image_url) {
+                const previewUrl = nav.image_url_preview || (imageUrl.startsWith('http') ? imageUrl : '');
+                if (previewUrl) {
+                    document.getElementById('categoryNavPreview').src = previewUrl;
+                    document.getElementById('categoryNavPreview').style.display = 'block';
+                    document.getElementById('categoryNavUploadArea').style.display = 'none';
+                } else {
+                    document.getElementById('categoryNavPreview').style.display = 'none';
+                    document.getElementById('categoryNavUploadArea').style.display = 'block';
+                }
+            } else {
+                document.getElementById('categoryNavPreview').style.display = 'none';
+                document.getElementById('categoryNavUploadArea').style.display = 'block';
+            }
+            
+            // 更新链接值输入方式
+            updateLinkValueInput();
+            
+            document.getElementById('categoryNavModalTitle').textContent = '编辑分类导航';
+            new bootstrap.Modal(document.getElementById('categoryNavModal')).show();
+        }
+        
+        // 产品分类列表
+        let productCategories = [];
+        
+        // 加载产品分类列表
+        async function loadProductCategories() {
+            try {
+                const response = await fetch('/api/admin/product-categories');
+                const data = await response.json();
+                if (data.status === 'success') {
+                    productCategories = data.data || [];
+                    updateCategorySelect();
+                }
+            } catch (error) {
+                console.error('加载产品分类失败:', error);
+            }
+        }
+        
+        // 更新分类下拉选择
+        function updateCategorySelect() {
+            const select = document.getElementById('categoryNavCategorySelect');
+            if (!select) return;
+            
+            select.innerHTML = '<option value="">请选择分类</option>';
+            productCategories.forEach(cat => {
+                const option = document.createElement('option');
+                option.value = cat.id;
+                option.textContent = cat.name;
+                select.appendChild(option);
+            });
+        }
+        
+        // 处理分类选择变化
+        function handleCategorySelectChange(categoryId) {
+            document.getElementById('categoryNavCategoryId').value = categoryId;
+            document.getElementById('categoryNavLinkValue').value = categoryId;
+        }
+        
+        // 根据链接类型更新输入方式
+        function updateLinkValueInput() {
+            const linkType = document.getElementById('categoryNavLinkType').value;
+            const linkValueInput = document.getElementById('categoryNavLinkValue');
+            const categorySelect = document.getElementById('categoryNavCategorySelect');
+            const pageSelect = document.getElementById('categoryNavPageSelect');
+            const hintText = document.getElementById('categoryNavLinkHintText');
+            
+            // 隐藏所有选项
+            if (categorySelect) categorySelect.style.display = 'none';
+            if (pageSelect) pageSelect.style.display = 'none';
+            linkValueInput.style.display = 'none';
+            
+            if (linkType === 'category') {
+                // 显示分类下拉选择
+                if (categorySelect) {
+                    categorySelect.style.display = 'block';
+                    // 设置当前值
+                    const currentCategoryId = document.getElementById('categoryNavCategoryId').value;
+                    if (currentCategoryId) {
+                        categorySelect.value = currentCategoryId;
+                    }
+                }
+                if (hintText) {
+                    hintText.textContent = '选择产品分类后，点击导航将跳转到该分类的产品列表';
+                }
+            } else if (linkType === 'page') {
+                // 显示页面路径下拉选择
+                if (pageSelect) {
+                    pageSelect.style.display = 'block';
+                    // 设置当前值
+                    if (linkValueInput.value) {
+                        pageSelect.value = linkValueInput.value;
+                    }
+                }
+                if (hintText) {
+                    hintText.textContent = '选择小程序页面路径，点击导航将跳转到该页面';
+                }
+            } else {
+                // 显示文本输入
+                linkValueInput.style.display = 'block';
+                if (hintText) {
+                    hintText.textContent = '输入完整的外部链接URL（如：https://example.com）';
+                }
+            }
+        }
+
+        // 删除分类导航
+        async function deleteCategoryNav(id) {
+            if (!confirm('确定要删除这个分类导航吗？')) return;
+            
+            try {
+                const response = await fetch(`/api/admin/homepage/category-navs/${id}`, {
+                    method: 'DELETE'
+                });
+                const data = await response.json();
+                if (data.status === 'success') {
+                    loadCategoryNavs();
+                    alert('删除成功');
+                } else {
+                    alert('删除失败: ' + data.message);
+                }
+            } catch (error) {
+                console.error('删除失败:', error);
+                alert('删除失败');
+            }
+        }
+
+        // 保存分类导航
+        async function saveCategoryNav() {
+            const id = document.getElementById('categoryNavId').value;
+            const linkType = document.getElementById('categoryNavLinkType').value;
+            let linkValue = '';
+            let categoryId = null;
+            
+            // 根据链接类型获取链接值
+            if (linkType === 'category') {
+                const categorySelect = document.getElementById('categoryNavCategorySelect');
+                categoryId = categorySelect ? parseInt(categorySelect.value) : null;
+                linkValue = categoryId ? categoryId.toString() : '';
+                if (!categoryId) {
+                    alert('请选择产品分类');
+                    return;
+                }
+            } else if (linkType === 'page') {
+                const pageSelect = document.getElementById('categoryNavPageSelect');
+                linkValue = pageSelect ? pageSelect.value : document.getElementById('categoryNavLinkValue').value;
+                if (!linkValue) {
+                    alert('请选择或输入页面路径');
+                    return;
+                }
+            } else {
+                linkValue = document.getElementById('categoryNavLinkValue').value;
+                if (!linkValue) {
+                    alert('请输入外部链接URL');
+                    return;
+                }
+            }
+            
+            // 处理图片URL：如果是完整URL，提取相对路径
+            let imageUrl = document.getElementById('categoryNavImageUrl').value;
+            if (imageUrl) {
+                // 如果是完整URL，尝试提取相对路径
+                if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+                    // 尝试提取 /media/ 或 /static/ 之后的部分
+                    const mediaMatch = imageUrl.match(/\/(media|static)\/(.+)$/);
+                    if (mediaMatch) {
+                        imageUrl = `/${mediaMatch[1]}/${mediaMatch[2]}`;
+                    }
+                }
+            }
+            
+            const data = {
+                name: document.getElementById('categoryNavName').value,
+                icon: document.getElementById('categoryNavIcon').value,
+                image_url: imageUrl,
+                link_type: linkType,
+                link_value: linkValue,
+                category_id: categoryId,
+                sort_order: parseInt(document.getElementById('categoryNavSortOrder').value) || 0,
+                is_active: document.getElementById('categoryNavIsActive').checked
+            };
+            
+            if (!data.name) {
+                alert('请填写名称');
+                return;
+            }
+            
+            try {
+                const url = id ? `/api/admin/homepage/category-navs/${id}` : '/api/admin/homepage/category-navs';
+                const method = id ? 'PUT' : 'POST';
+                
+                const response = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                if (result.status === 'success') {
+                    bootstrap.Modal.getInstance(document.getElementById('categoryNavModal')).hide();
+                    loadCategoryNavs();
+                    alert('保存成功');
+                } else {
+                    alert('保存失败: ' + result.message);
+                }
+            } catch (error) {
+                console.error('保存失败:', error);
+                alert('保存失败');
+            }
+        }
+
+        // 上传分类导航图标
+        async function uploadCategoryNavImage(input) {
+            const file = input.files[0];
+            if (!file) return;
+            
+            const formData = new FormData();
+            formData.append('image', file);
+            
+            try {
+                const response = await fetch('/api/admin/upload-image', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                let imageUrl = result.image_url || result.url;
+                
+                if ((result.status === 'success' || result.success === true) && imageUrl) {
+                    // 如果是完整URL，提取相对路径
+                    if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+                        const mediaMatch = imageUrl.match(/\/(media|static)\/(.+)$/);
+                        if (mediaMatch) {
+                            imageUrl = `/${mediaMatch[1]}/${mediaMatch[2]}`;
+                        }
+                    }
+                    
+                    // 保存相对路径
+                    document.getElementById('categoryNavImageUrl').value = imageUrl;
+                    
+                    // 显示预览（使用完整URL）
+                    const previewUrl = result.image_url || result.url;
+                    document.getElementById('categoryNavPreview').src = previewUrl;
+                    document.getElementById('categoryNavPreview').style.display = 'block';
+                    document.getElementById('categoryNavUploadArea').style.display = 'none';
+                } else {
+                    alert('上传失败: ' + (result.message || '未知错误'));
+                }
+            } catch (error) {
+                console.error('上传失败:', error);
+                alert('上传失败');
+            }
+        }
+
+        // ========== 产品推荐模块管理 ==========
+        let productSections = [];
+
+        // 加载产品推荐模块
+        async function loadProductSections() {
+            try {
+                const response = await fetch('/api/admin/homepage/product-sections');
+                const data = await response.json();
+                if (data.status === 'success') {
+                    productSections = data.data;
+                    renderProductSections();
+                    updateFixedModuleStatus(); // 更新固定模块状态
+                }
+            } catch (error) {
+                console.error('加载产品推荐模块失败:', error);
+            }
+        }
+        
+        // 更新固定模块状态
+        function updateFixedModuleStatus() {
+            const fixedModules = ['featured_section', 'time_journey', 'ip_collab', 'works'];
+            fixedModules.forEach(moduleType => {
+                const section = productSections.find(s => s.section_type === moduleType);
+                const statusEl = document.getElementById(`${moduleType}SectionStatus`);
+                if (statusEl) {
+                    if (section && section.is_active) {
+                        statusEl.textContent = '已配置';
+                        statusEl.className = 'badge bg-success ms-2';
+                    } else {
+                        statusEl.textContent = '未配置';
+                        statusEl.className = 'badge bg-secondary ms-2';
+                    }
+                }
+            });
+        }
+        
+        // 编辑固定模块
+        function editFixedModule(moduleType) {
+            // 查找或创建对应的模块配置
+            let section = productSections.find(s => s.section_type === moduleType);
+            
+            if (section) {
+                // 编辑现有模块
+                editProductSection(section.id);
+            } else {
+                // 创建新模块
+                document.getElementById('productSectionId').value = '';
+                document.getElementById('productSectionType').value = moduleType;
+                document.getElementById('productSectionTitle').value = getModuleTitle(moduleType);
+                document.getElementById('productSectionSubtitle').value = '';
+                document.getElementById('productSectionSortOrder').value = getModuleSortOrder(moduleType);
+                document.getElementById('productSectionIsActive').checked = true;
+                
+                // 重置模块项
+                moduleItems = [];
+                renderModuleItems();
+                
+                // 处理模块类型切换
+                handleSectionTypeChange();
+                
+                document.getElementById('productSectionModalTitle').textContent = `配置${getModuleTitle(moduleType)}`;
+                new bootstrap.Modal(document.getElementById('productSectionModal')).show();
+            }
+        }
+        
+        // 获取模块标题
+        function getModuleTitle(moduleType) {
+            const titles = {
+                'featured_section': '当季主推',
+                'time_journey': '时光旅程',
+                'ip_collab': 'IP联名',
+                'works': '作品展示'
+            };
+            return titles[moduleType] || '';
+        }
+        
+        // 获取模块排序
+        function getModuleSortOrder(moduleType) {
+            const orders = {
+                'featured_section': 1,
+                'time_journey': 2,
+                'ip_collab': 3,
+                'works': 4
+            };
+            return orders[moduleType] || 0;
+        }
+
+        // 渲染产品推荐模块列表
+        function renderProductSections() {
+            const container = document.getElementById('productSectionList');
+            container.innerHTML = '';
+            
+            if (productSections.length === 0) {
+                container.innerHTML = '<p class="text-muted">暂无产品推荐模块，请添加</p>';
+                return;
+            }
+            
+            productSections.forEach(section => {
+                const div = document.createElement('div');
+                div.className = 'banner-item mb-2';
+                div.innerHTML = `
+                    <div class="row align-items-center">
+                        <div class="col-md-1">
+                            <span class="badge bg-secondary">${section.sort_order}</span>
+                        </div>
+                        <div class="col-md-5">
+                            <h6 class="mb-1">${section.title}</h6>
+                            <small class="text-muted">${section.subtitle || ''}</small>
+                            <br>
+                            <small class="text-info">类型: ${section.section_type} | 布局: ${section.layout_type} | 产品数: ${section.product_ids ? section.product_ids.length : 0}</small>
+                        </div>
+                        <div class="col-md-2">
+                            <span class="badge ${section.is_active ? 'bg-success' : 'bg-secondary'}">${section.is_active ? '启用' : '禁用'}</span>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <button class="btn btn-sm btn-outline-primary me-2" onclick="editProductSection(${section.id})">编辑</button>
+                            <button class="btn btn-sm btn-outline-danger" onclick="deleteProductSection(${section.id})">删除</button>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        // 编辑产品推荐模块
+        function editProductSection(id) {
+            const section = productSections.find(s => s.id === id);
+            if (!section) return;
+            
+            document.getElementById('productSectionId').value = section.id;
+            document.getElementById('productSectionType').value = section.section_type;
+            // 固定模块的标题由前端决定，显示固定标题
+            document.getElementById('productSectionTitle').value = getModuleTitle(section.section_type) || section.title || '';
+            document.getElementById('productSectionSubtitle').value = section.subtitle || '';
+            document.getElementById('productSectionSortOrder').value = section.sort_order || getModuleSortOrder(section.section_type);
+            document.getElementById('productSectionIsActive').checked = section.is_active;
+            
+            // 处理模块类型切换
+            handleSectionTypeChange();
+            
+            const itemBasedTypes = ['featured_section', 'time_journey', 'ip_collab', 'works'];
+            if (itemBasedTypes.includes(section.section_type)) {
+                // 基于项的模块，加载配置
+                if (section.config) {
+                    try {
+                        const config = typeof section.config === 'string' ? JSON.parse(section.config) : section.config;
+                        const sectionType = section.section_type;
+                        
+                        if (sectionType === 'featured_section') {
+                            moduleItems = config.items || [];
+                        } else if (sectionType === 'time_journey') {
+                            moduleItems = config.categories || [];
+                        } else if (sectionType === 'ip_collab') {
+                            moduleItems = config.tabs || [];
+                        } else if (sectionType === 'works') {
+                            moduleItems = config.tabs || [];
+                        } else {
+                            moduleItems = [];
+                        }
+                    } catch (e) {
+                        console.error('解析配置失败:', e);
+                        moduleItems = [];
+                    }
+                } else {
+                    moduleItems = [];
+                }
+                renderModuleItems();
+            } else {
+                // 传统产品推荐模块
+                document.getElementById('productSectionShowMore').checked = section.show_more_button;
+                document.getElementById('productSectionMoreLink').value = section.more_link || '';
+                document.getElementById('productSectionLayout').value = section.layout_type;
+                document.getElementById('productSectionCategoryId').value = section.category_id || '';
+                document.getElementById('productSectionLimit').value = section.limit || 6;
+                
+                // 设置产品ID列表
+                if (section.product_ids && section.product_ids.length > 0) {
+                    document.getElementById('productSectionProductIds').value = section.product_ids.join(',');
+                } else {
+                    document.getElementById('productSectionProductIds').value = '';
+                }
+            }
+            
+            const moduleTitle = getModuleTitle(section.section_type) || section.title || '产品推荐模块';
+            document.getElementById('productSectionModalTitle').textContent = `配置${moduleTitle}`;
+            new bootstrap.Modal(document.getElementById('productSectionModal')).show();
+        }
+
+        // 删除产品推荐模块
+        async function deleteProductSection(id) {
+            if (!confirm('确定要删除这个产品推荐模块吗？')) return;
+            
+            try {
+                const response = await fetch(`/api/admin/homepage/product-sections/${id}`, {
+                    method: 'DELETE'
+                });
+                const data = await response.json();
+                if (data.status === 'success') {
+                    loadProductSections();
+                    alert('删除成功');
+                } else {
+                    alert('删除失败: ' + data.message);
+                }
+            } catch (error) {
+                console.error('删除失败:', error);
+                alert('删除失败');
+            }
+        }
+
+        // 保存产品推荐模块
+        async function saveProductSection() {
+            const id = document.getElementById('productSectionId').value;
+            const sectionType = document.getElementById('productSectionType').value;
+            const itemBasedTypes = ['featured_section', 'time_journey', 'ip_collab', 'works'];
+            
+            // 固定模块的标题由前端决定，使用固定标题
+            const fixedTitle = getModuleTitle(sectionType);
+            const title = fixedTitle || document.getElementById('productSectionTitle').value;
+            
+            let data = {
+                section_type: sectionType,
+                title: title, // 使用固定标题
+                subtitle: document.getElementById('productSectionSubtitle').value,
+                sort_order: parseInt(document.getElementById('productSectionSortOrder').value) || getModuleSortOrder(sectionType),
+                is_active: document.getElementById('productSectionIsActive').checked
+            };
+            
+            if (itemBasedTypes.includes(sectionType)) {
+                // 基于项的模块（当季主推、时光旅程、IP联名、作品展示）
+                // 处理模块项，从产品/分类获取图片
+                const processedItems = await processModuleItems(moduleItems, sectionType);
+                
+                let config = {};
+                if (sectionType === 'featured_section') {
+                    config = {
+                        items: processedItems,
+                        show_subscribe: true
+                    };
+                } else if (sectionType === 'time_journey') {
+                    config = {
+                        categories: processedItems
+                    };
+                } else if (sectionType === 'ip_collab') {
+                    config = {
+                        tabs: processedItems,
+                        active_tab: processedItems.length > 0 ? processedItems[0].id : null
+                    };
+                } else if (sectionType === 'works') {
+                    config = {
+                        tabs: processedItems,
+                        active_tab: processedItems.length > 0 ? processedItems[0].id : null
+                    };
+                }
+                
+                data.config = config;
+            } else {
+                // 传统产品推荐模块
+                const productIdsStr = document.getElementById('productSectionProductIds').value;
+                const productIds = productIdsStr ? productIdsStr.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id)) : [];
+                
+                data.show_more_button = document.getElementById('productSectionShowMore').checked;
+                data.more_link = document.getElementById('productSectionMoreLink').value;
+                data.layout_type = document.getElementById('productSectionLayout').value;
+                data.product_ids = productIds;
+                data.category_id = document.getElementById('productSectionCategoryId').value || null;
+                data.limit = parseInt(document.getElementById('productSectionLimit').value) || 6;
+            }
+            
+            if (!data.title || !data.section_type) {
+                alert('请填写标题和模块类型');
+                return;
+            }
+            
+            try {
+                const url = id ? `/api/admin/homepage/product-sections/${id}` : '/api/admin/homepage/product-sections';
+                const method = id ? 'PUT' : 'POST';
+                
+                const response = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                if (result.status === 'success') {
+                    bootstrap.Modal.getInstance(document.getElementById('productSectionModal')).hide();
+                    loadProductSections();
+                    alert('保存成功');
+                    // 更新固定模块状态
+                    setTimeout(() => updateFixedModuleStatus(), 500);
+                } else {
+                    alert('保存失败: ' + result.message);
+                }
+            } catch (error) {
+                console.error('保存失败:', error);
+                alert('保存失败: ' + error.message);
+            }
+        }
+
+        // 处理模块项，从产品/分类获取图片URL
+        async function processModuleItems(items, sectionType) {
+            const processedItems = [];
+            
+            for (let item of items) {
+                let processedItem = {
+                    id: item.id || Date.now() + Math.random(),
+                    title: item.title,
+                    desc: item.desc,
+                    tag: item.tag,
+                    link_type: item.link_type,
+                    link_value: item.link_value
+                };
+                
+                // 从产品获取图片
+                if (item.product_id) {
+                    // 确保 allProducts 已加载
+                    if (allProducts.length === 0) {
+                        await loadProductsForSelector();
+                    }
+                    const product = allProducts.find(p => p.id === item.product_id);
+                    if (product) {
+                        processedItem.product_id = product.id;
+                        processedItem.product_name = product.name;
+                        // 确保图片URL是相对路径
+                        let imageUrl = product.image_url || '';
+                        if (imageUrl && imageUrl.startsWith('http')) {
+                            // 提取相对路径
+                            const mediaMatch = imageUrl.match(/\/(media|static)\/(.+)$/);
+                            if (mediaMatch) {
+                                imageUrl = `/${mediaMatch[1]}/${mediaMatch[2]}`;
+                            }
+                        }
+                        processedItem.image_url = imageUrl;
+                        
+                        // 如果配置了跳转到产品，自动设置
+                        if (!processedItem.link_type || processedItem.link_type === 'none') {
+                            processedItem.link_type = 'product';
+                            processedItem.link_value = product.id.toString();
+                        }
+                    } else {
+                        console.warn(`产品ID ${item.product_id} 未找到`);
+                    }
+                }
+                
+                // 从分类获取图片
+                if (item.category_id) {
+                    // 确保 productCategories 已加载
+                    if (productCategories.length === 0) {
+                        await loadCategoriesForItem();
+                    }
+                    const category = productCategories.find(c => c.id === item.category_id);
+                    if (category) {
+                        processedItem.category_id = category.id;
+                        processedItem.category_name = category.name;
+                        // 确保图片URL是相对路径
+                        let imageUrl = category.image_url || '';
+                        if (imageUrl && imageUrl.startsWith('http')) {
+                            // 提取相对路径
+                            const mediaMatch = imageUrl.match(/\/(media|static)\/(.+)$/);
+                            if (mediaMatch) {
+                                imageUrl = `/${mediaMatch[1]}/${mediaMatch[2]}`;
+                            }
+                        }
+                        processedItem.image_url = imageUrl;
+                        
+                        // 时光旅程模块使用 main_image 字段
+                        if (sectionType === 'time_journey') {
+                            processedItem.main_image = imageUrl;
+                            processedItem.category_name = category.name;
+                        }
+                        
+                        // 如果配置了跳转到分类，自动设置
+                        if (!processedItem.link_type || processedItem.link_type === 'none') {
+                            processedItem.link_type = 'category';
+                            processedItem.link_value = category.id.toString();
+                        }
+                    } else {
+                        console.warn(`分类ID ${item.category_id} 未找到`);
+                    }
+                }
+                
+                // 根据模块类型设置特定字段
+                if (sectionType === 'time_journey') {
+                    processedItem.category_name = processedItem.category_name || processedItem.title;
+                    processedItem.overlay_text = processedItem.desc;
+                } else if (sectionType === 'ip_collab') {
+                    processedItem.name = processedItem.title;
+                    processedItem.images = processedItem.image_url ? [processedItem.image_url] : [];
+                } else if (sectionType === 'works') {
+                    processedItem.name = processedItem.title;
+                    processedItem.main_image = processedItem.image_url;
+                    processedItem.images = processedItem.image_url ? [{ url: processedItem.image_url }] : [];
+                }
+                
+                processedItems.push(processedItem);
+            }
+            
+            return processedItems;
+        }
+
+        // ========== 产品选择器 ==========
+        let allProducts = [];
+        let selectedProductIds = new Set();
+
+        // 加载产品列表
+        async function loadProductsForSelector() {
+            try {
+                const response = await fetch('/api/admin/homepage/products');
+                const data = await response.json();
+                if (data.status === 'success') {
+                    allProducts = data.data || [];
+                    renderProductSelector();
+                }
+            } catch (error) {
+                console.error('加载产品列表失败:', error);
+            }
+        }
+
+        // 打开产品选择器
+        function openProductSelector() {
+            // 从输入框读取已选择的产品ID
+            const productIdsStr = document.getElementById('productSectionProductIds').value;
+            if (productIdsStr) {
+                selectedProductIds = new Set(
+                    productIdsStr.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id))
+                );
+            } else {
+                selectedProductIds = new Set();
+            }
+            
+            // 加载产品列表
+            if (allProducts.length === 0) {
+                loadProductsForSelector().then(() => {
+                    renderProductSelector();
+                    new bootstrap.Modal(document.getElementById('productSelectorModal')).show();
+                });
+            } else {
+                renderProductSelector();
+                new bootstrap.Modal(document.getElementById('productSelectorModal')).show();
+            }
+        }
+
+        // 渲染产品选择器
+        function renderProductSelector() {
+            const container = document.getElementById('productSelectorList');
+            if (!container) return;
+            
+            container.innerHTML = '';
+            
+            if (allProducts.length === 0) {
+                container.innerHTML = '<p class="text-muted text-center">暂无产品</p>';
+                return;
+            }
+            
+            allProducts.forEach(product => {
+                const isSelected = selectedProductIds.has(product.id);
+                const div = document.createElement('div');
+                div.className = `product-selector-item ${isSelected ? 'selected' : ''}`;
+                div.innerHTML = `
+                    <div class="product-selector-card" onclick="toggleProductSelection(${product.id})">
+                        <div class="product-selector-checkbox">
+                            <input type="checkbox" ${isSelected ? 'checked' : ''} onchange="toggleProductSelection(${product.id})">
+                        </div>
+                        <div class="product-selector-image">
+                            <img src="${product.image_url || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iIzMzMzMzMyIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTQiIGZpbGw9IiM2NjYiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj7lm77liqE8L3RleHQ+PC9zdmc+'}" 
+                                 alt="${product.name}" 
+                                 onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iIzMzMzMzMyIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTQiIGZpbGw9IiM2NjYiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj7lm77liqE8L3RleHQ+PC9zdmc+'; this.onerror=null;">
+                        </div>
+                        <div class="product-selector-info">
+                            <div class="product-selector-name">${product.name}</div>
+                            <div class="product-selector-category">${product.category_name || '未分类'}</div>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+            
+            updateSelectedProductsCount();
+        }
+
+        // 切换产品选择
+        function toggleProductSelection(productId) {
+            if (selectedProductIds.has(productId)) {
+                selectedProductIds.delete(productId);
+            } else {
+                selectedProductIds.add(productId);
+            }
+            renderProductSelector();
+        }
+
+        // 确认选择产品
+        function confirmProductSelection() {
+            const productIdsArray = Array.from(selectedProductIds).sort((a, b) => a - b);
+            document.getElementById('productSectionProductIds').value = productIdsArray.join(',');
+            updateSelectedProductsCount();
+            bootstrap.Modal.getInstance(document.getElementById('productSelectorModal')).hide();
+        }
+
+        // 更新已选择产品数量显示
+        function updateSelectedProductsCount() {
+            const count = selectedProductIds.size;
+            const preview = document.getElementById('selectedProductsPreview');
+            const countSpan = document.getElementById('selectedProductsCount');
+            const selectorCount = document.getElementById('productSelectorCount');
+            
+            if (count > 0 && preview && countSpan) {
+                preview.style.display = 'block';
+                countSpan.textContent = count;
+            } else if (preview) {
+                preview.style.display = 'none';
+            }
+            
+            if (selectorCount) {
+                selectorCount.textContent = count;
+            }
+        }
+
+        // ============================================================================
+        // 模块项管理（当季主推、时光旅程、IP联名、作品展示等）
+        // ============================================================================
+        
+        let moduleItems = []; // 当前模块项列表
+        let currentEditingItemIndex = -1; // 当前编辑的项索引
+        let selectedItemProduct = null; // 为模块项选择的产品
+        // productCategories 已在上面声明，不再重复声明
+
+        // 处理模块类型切换
+        function handleSectionTypeChange() {
+            const sectionType = document.getElementById('productSectionType').value;
+            const itemBasedTypes = ['featured_section', 'time_journey', 'ip_collab', 'works'];
+            const itemBasedConfig = document.getElementById('itemBasedConfig');
+            const productBasedConfig = document.getElementById('productBasedConfig');
+            const productBasedConfigRight = document.getElementById('productBasedConfigRight');
+            
+            if (itemBasedTypes.includes(sectionType)) {
+                // 显示基于项的配置
+                if (itemBasedConfig) itemBasedConfig.style.display = 'block';
+                if (productBasedConfig) productBasedConfig.style.display = 'none';
+                if (productBasedConfigRight) productBasedConfigRight.style.display = 'none';
+                // 加载模块项
+                loadModuleItems();
+            } else {
+                // 显示基于产品的配置
+                if (itemBasedConfig) itemBasedConfig.style.display = 'none';
+                if (productBasedConfig) productBasedConfig.style.display = 'block';
+                if (productBasedConfigRight) productBasedConfigRight.style.display = 'block';
+            }
+        }
+
+        // 加载模块项列表
+        function loadModuleItems() {
+            const sectionId = document.getElementById('productSectionId').value;
+            if (!sectionId) {
+                moduleItems = [];
+                renderModuleItems();
+                return;
+            }
+            
+            // 从已加载的productSections中获取配置
+            const section = productSections.find(s => s.id == sectionId);
+            if (section && section.config) {
+                try {
+                    const config = typeof section.config === 'string' ? JSON.parse(section.config) : section.config;
+                    const sectionType = document.getElementById('productSectionType').value;
+                    
+                    if (sectionType === 'featured_section') {
+                        moduleItems = config.items || [];
+                    } else if (sectionType === 'time_journey') {
+                        moduleItems = config.categories || [];
+                    } else if (sectionType === 'ip_collab') {
+                        moduleItems = config.tabs || [];
+                    } else if (sectionType === 'works') {
+                        moduleItems = config.tabs || [];
+                    } else {
+                        moduleItems = [];
+                    }
+                } catch (e) {
+                    console.error('解析配置失败:', e);
+                    moduleItems = [];
+                }
+            } else {
+                moduleItems = [];
+            }
+            
+            renderModuleItems();
+        }
+
+        // 渲染模块项列表
+        function renderModuleItems() {
+            const container = document.getElementById('moduleItemsList');
+            if (!container) return;
+            
+            container.innerHTML = '';
+            
+            if (moduleItems.length === 0) {
+                container.innerHTML = '<p class="text-muted">暂无模块项，请添加</p>';
+                return;
+            }
+            
+            moduleItems.forEach((item, index) => {
+                const div = document.createElement('div');
+                div.className = 'banner-item mb-2';
+                const imageUrl = item.image_url || item.main_image || '';
+                const title = item.title || item.category_name || item.name || '未命名';
+                
+                div.innerHTML = `
+                    <div class="row align-items-center">
+                        <div class="col-md-2">
+                            ${imageUrl ? `<img src="${imageUrl}" class="banner-preview" alt="${title}" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjEyMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMzAwIiBoZWlnaHQ9IjEyMCIgZmlsbD0iI2NjYyIvPjx0ZXh0IHg9IjE1MCIgeT0iNjAiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzY2NiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPuWbvuWJjzwvdGV4dD48L3N2Zz4='">` : '<div class="banner-preview bg-secondary d-flex align-items-center justify-content-center"><small>无图片</small></div>'}
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="mb-1">${title}</h6>
+                            <small class="text-muted">${item.desc || item.overlay_text || ''}</small>
+                            ${item.tag ? `<br><span class="badge bg-danger">${item.tag}</span>` : ''}
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <button class="btn btn-sm btn-outline-primary me-2" onclick="editModuleItem(${index})">编辑</button>
+                            <button class="btn btn-sm btn-outline-danger" onclick="deleteModuleItem(${index})">删除</button>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        // 添加模块项
+        function addModuleItem() {
+            currentEditingItemIndex = -1;
+            resetModuleItemForm();
+            document.getElementById('moduleItemModalTitle').textContent = '添加模块项';
+            new bootstrap.Modal(document.getElementById('moduleItemModal')).show();
+        }
+
+        // 编辑模块项
+        function editModuleItem(index) {
+            currentEditingItemIndex = index;
+            const item = moduleItems[index];
+            if (!item) return;
+            
+            // 填充表单
+            document.getElementById('moduleItemIndex').value = index;
+            document.getElementById('moduleItemTitle').value = item.title || item.category_name || item.name || '';
+            document.getElementById('moduleItemDesc').value = item.desc || item.overlay_text || '';
+            document.getElementById('moduleItemTag').value = item.tag || '';
+            document.getElementById('moduleItemLinkType').value = item.link_type || 'none';
+            document.getElementById('moduleItemLinkValue').value = item.link_value || '';
+            
+            // 判断图片来源类型
+            if (item.product_id) {
+                document.getElementById('moduleItemSourceType').value = 'product';
+                document.getElementById('moduleItemProductIdValue').value = item.product_id;
+                // 从产品列表获取产品名称
+                const product = allProducts.find(p => p.id === item.product_id);
+                document.getElementById('moduleItemProductId').value = product ? product.name : `产品ID: ${item.product_id}`;
+                handleItemSourceTypeChange();
+                
+                // 显示产品图片预览
+                const productImageUrl = product ? (product.image_url || '') : (item.image_url || '');
+                if (productImageUrl) {
+                    document.getElementById('moduleItemImagePreview').innerHTML = `<img src="${productImageUrl}" style="max-width: 100%; border-radius: 8px;" onerror="this.parentElement.innerHTML='<p class=\\'text-muted\\'>图片加载失败</p>'">`;
+                }
+            } else if (item.category_id) {
+                document.getElementById('moduleItemSourceType').value = 'category';
+                document.getElementById('moduleItemCategoryId').value = item.category_id;
+                handleItemSourceTypeChange();
+                
+                // 显示分类图片预览
+                const category = productCategories.find(c => c.id === item.category_id);
+                const categoryImageUrl = category ? (category.image_url || '') : (item.image_url || item.main_image || '');
+                if (categoryImageUrl) {
+                    document.getElementById('moduleItemImagePreview').innerHTML = `<img src="${categoryImageUrl}" style="max-width: 100%; border-radius: 8px;" onerror="this.parentElement.innerHTML='<p class=\\'text-muted\\'>图片加载失败</p>'">`;
+                }
+            } else {
+                // 如果没有产品ID和分类ID，显示已有图片
+                const imageUrl = item.image_url || item.main_image || '';
+                if (imageUrl) {
+                    document.getElementById('moduleItemImagePreview').innerHTML = `<img src="${imageUrl}" style="max-width: 100%; border-radius: 8px;" onerror="this.parentElement.innerHTML='<p class=\\'text-muted\\'>图片加载失败</p>'">`;
+                }
+            }
+            
+            handleItemLinkTypeChange();
+            document.getElementById('moduleItemModalTitle').textContent = '编辑模块项';
+            new bootstrap.Modal(document.getElementById('moduleItemModal')).show();
+        }
+
+        // 删除模块项
+        function deleteModuleItem(index) {
+            if (!confirm('确定要删除这个模块项吗？')) return;
+            moduleItems.splice(index, 1);
+            renderModuleItems();
+        }
+
+        // 保存模块项
+        async function saveModuleItem() {
+            const sourceType = document.getElementById('moduleItemSourceType').value;
+            const title = document.getElementById('moduleItemTitle').value;
+            const desc = document.getElementById('moduleItemDesc').value;
+            const tag = document.getElementById('moduleItemTag').value;
+            const linkType = document.getElementById('moduleItemLinkType').value;
+            const linkValue = document.getElementById('moduleItemLinkValue').value;
+            
+            let item = {
+                title: title,
+                desc: desc,
+                tag: tag,
+                link_type: linkType !== 'none' ? linkType : undefined,
+                link_value: linkType !== 'none' ? linkValue : undefined
+            };
+            
+            if (sourceType === 'product') {
+                const productId = document.getElementById('moduleItemProductIdValue').value;
+                if (!productId) {
+                    alert('请选择产品');
+                    return;
+                }
+                // 确保产品列表已加载
+                if (allProducts.length === 0) {
+                    await loadProductsForSelector();
+                }
+                const product = allProducts.find(p => p.id === parseInt(productId));
+                if (!product) {
+                    alert('产品不存在，请重新选择');
+                    return;
+                }
+                item.product_id = parseInt(productId);
+                item.product_name = product.name;
+                // 保存图片URL（相对路径）
+                let imageUrl = product.image_url || '';
+                if (imageUrl && imageUrl.startsWith('http')) {
+                    const mediaMatch = imageUrl.match(/\/(media|static)\/(.+)$/);
+                    if (mediaMatch) {
+                        imageUrl = `/${mediaMatch[1]}/${mediaMatch[2]}`;
+                    }
+                }
+                item.image_url = imageUrl;
+            } else if (sourceType === 'category') {
+                const categoryId = document.getElementById('moduleItemCategoryId').value;
+                if (!categoryId) {
+                    alert('请选择分类');
+                    return;
+                }
+                // 确保分类列表已加载
+                if (productCategories.length === 0) {
+                    await loadCategoriesForItem();
+                }
+                const category = productCategories.find(c => c.id === parseInt(categoryId));
+                if (!category) {
+                    alert('分类不存在，请重新选择');
+                    return;
+                }
+                item.category_id = parseInt(categoryId);
+                item.category_name = category.name;
+                // 保存图片URL（相对路径）
+                let imageUrl = category.image_url || '';
+                if (imageUrl && imageUrl.startsWith('http')) {
+                    const mediaMatch = imageUrl.match(/\/(media|static)\/(.+)$/);
+                    if (mediaMatch) {
+                        imageUrl = `/${mediaMatch[1]}/${mediaMatch[2]}`;
+                    }
+                }
+                item.image_url = imageUrl;
+            }
+            
+            if (currentEditingItemIndex >= 0) {
+                // 编辑模式
+                moduleItems[currentEditingItemIndex] = item;
+            } else {
+                // 添加模式
+                moduleItems.push(item);
+            }
+            
+            renderModuleItems();
+            bootstrap.Modal.getInstance(document.getElementById('moduleItemModal')).hide();
+        }
+
+        // 处理模块项图片来源类型切换
+        function handleItemSourceTypeChange() {
+            const sourceType = document.getElementById('moduleItemSourceType').value;
+            const productContainer = document.getElementById('moduleItemProductContainer');
+            const categoryContainer = document.getElementById('moduleItemCategoryContainer');
+            
+            if (sourceType === 'product') {
+                if (productContainer) productContainer.style.display = 'block';
+                if (categoryContainer) categoryContainer.style.display = 'none';
+            } else if (sourceType === 'category') {
+                if (productContainer) productContainer.style.display = 'none';
+                if (categoryContainer) categoryContainer.style.display = 'block';
+                loadCategoriesForItem();
+            }
+        }
+
+        // 处理模块项跳转类型切换
+        function handleItemLinkTypeChange() {
+            const linkType = document.getElementById('moduleItemLinkType').value;
+            const container = document.getElementById('moduleItemLinkValueContainer');
+            const hint = document.getElementById('moduleItemLinkHint');
+            
+            if (linkType === 'none') {
+                if (container) container.style.display = 'none';
+            } else {
+                if (container) container.style.display = 'block';
+                if (hint) {
+                    const hints = {
+                        'category': '填写分类ID（数字）',
+                        'product': '填写产品ID（数字）',
+                        'page': '填写页面路径，如：/pages/product/product',
+                        'url': '填写完整URL，如：https://example.com'
+                    };
+                    hint.textContent = hints[linkType] || '根据跳转类型填写';
+                }
+            }
+        }
+
+        // 为模块项打开产品选择器
+        function openProductSelectorForItem() {
+            selectedItemProduct = null;
+            renderItemProductSelector();
+            new bootstrap.Modal(document.getElementById('itemProductSelectorModal')).show();
+        }
+
+        // 渲染模块项产品选择器
+        function renderItemProductSelector() {
+            const container = document.getElementById('itemProductSelectorList');
+            if (!container) return;
+            
+            container.innerHTML = '';
+            
+            if (!allProducts || allProducts.length === 0) {
+                container.innerHTML = '<p class="text-muted">暂无产品，请先添加产品</p>';
+                return;
+            }
+            
+            allProducts.forEach(product => {
+                const div = document.createElement('div');
+                div.className = `product-selector-item ${selectedItemProduct && selectedItemProduct.id === product.id ? 'selected' : ''}`;
+                div.innerHTML = `
+                    <div class="product-selector-card" onclick="selectItemProduct(${product.id})">
+                        <div class="product-selector-checkbox">
+                            <input type="radio" name="itemProduct" ${selectedItemProduct && selectedItemProduct.id === product.id ? 'checked' : ''} onchange="selectItemProduct(${product.id})">
+                        </div>
+                        <div class="product-selector-image">
+                            <img src="${product.image_url || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjQwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMzAwIiBoZWlnaHQ9IjQwMCIgZmlsbD0iI2NjYyIvPjx0ZXh0IHg9IjE1MCIgeT0iMjAwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTQiIGZpbGw9IiM2NjYiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj7lm77liY88L3RleHQ+PC9zdmc+'}" alt="${product.name}" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjQwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMzAwIiBoZWlnaHQ9IjQwMCIgZmlsbD0iI2NjYyIvPjx0ZXh0IHg9IjE1MCIgeT0iMjAwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTQiIGZpbGw9IiM2NjYiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj7lm77liY88L3RleHQ+PC9zdmc+'">
+                        </div>
+                        <div class="product-selector-info">
+                            <div class="product-selector-name">${product.name}</div>
+                            <div class="product-selector-category">${product.category_name || '未分类'}</div>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        // 选择模块项产品
+        function selectItemProduct(productId) {
+            const product = allProducts.find(p => p.id === productId);
+            if (product) {
+                selectedItemProduct = product;
+                renderItemProductSelector();
+            }
+        }
+
+        // 确认模块项产品选择
+        function confirmItemProductSelection() {
+            if (!selectedItemProduct) {
+                alert('请选择产品');
+                return;
+            }
+            
+            document.getElementById('moduleItemProductIdValue').value = selectedItemProduct.id;
+            document.getElementById('moduleItemProductId').value = selectedItemProduct.name;
+            
+            // 显示图片预览
+            const imageUrl = selectedItemProduct.image_url || '';
+            if (imageUrl) {
+                document.getElementById('moduleItemImagePreview').innerHTML = `<img src="${imageUrl}" style="max-width: 100%; border-radius: 8px;" onerror="this.parentElement.innerHTML='<p class=\\'text-muted\\'>图片加载失败</p>'">`;
+            }
+            
+            bootstrap.Modal.getInstance(document.getElementById('itemProductSelectorModal')).hide();
+        }
+
+        // 加载分类列表（用于模块项）
+        async function loadCategoriesForItem() {
+            if (productCategories.length > 0) {
+                renderCategoriesForItem();
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/miniprogram/product-categories');
+                const data = await response.json();
+                if (data.status === 'success') {
+                    productCategories = data.data;
+                    renderCategoriesForItem();
+                }
+            } catch (error) {
+                console.error('加载分类失败:', error);
+            }
+        }
+
+        // 渲染分类下拉列表（用于模块项）
+        function renderCategoriesForItem() {
+            const select = document.getElementById('moduleItemCategoryId');
+            if (!select) return;
+            
+            select.innerHTML = '<option value="">请选择分类</option>';
+            
+            productCategories.forEach(category => {
+                const option = document.createElement('option');
+                option.value = category.id;
+                option.textContent = category.name;
+                select.appendChild(option);
+            });
+            
+            // 监听分类选择变化，更新图片预览
+            select.onchange = function() {
+                const categoryId = this.value;
+                if (!categoryId) {
+                    document.getElementById('moduleItemImagePreview').innerHTML = '<p class="text-muted">选择分类后显示图片</p>';
+                    return;
+                }
+                
+                const category = productCategories.find(c => c.id == categoryId);
+                if (category && category.image_url) {
+                    document.getElementById('moduleItemImagePreview').innerHTML = `<img src="${category.image_url}" style="max-width: 100%; border-radius: 8px;" onerror="this.parentElement.innerHTML='<p class=\\'text-muted\\'>图片加载失败</p>'">`;
+                } else {
+                    document.getElementById('moduleItemImagePreview').innerHTML = '<p class="text-muted">该分类暂无图片</p>';
+                }
+            };
+        }
+
+        // 重置模块项表单
+        function resetModuleItemForm() {
+            document.getElementById('moduleItemIndex').value = '';
+            document.getElementById('moduleItemSourceType').value = 'product';
+            document.getElementById('moduleItemProductId').value = '';
+            document.getElementById('moduleItemProductIdValue').value = '';
+            document.getElementById('moduleItemCategoryId').value = '';
+            document.getElementById('moduleItemTitle').value = '';
+            document.getElementById('moduleItemDesc').value = '';
+            document.getElementById('moduleItemTag').value = '';
+            document.getElementById('moduleItemLinkType').value = 'none';
+            document.getElementById('moduleItemLinkValue').value = '';
+            document.getElementById('moduleItemImagePreview').innerHTML = '<p class="text-muted">选择产品或分类后显示图片</p>';
+            handleItemSourceTypeChange();
+            handleItemLinkTypeChange();
+        }
+
+        // 初始化时加载数据
+        document.addEventListener('DOMContentLoaded', function() {
+            loadBanners();
+            loadHomepageConfig();
+            loadCategoryNavs();
+            loadProductSections();
+            loadProductCategories();  // 加载产品分类列表
+            loadProductsForSelector();  // 预加载产品列表
+        });
+        
     </script>
+
+    <!-- 分类导航编辑模态框 -->
+    <div class="modal fade" id="categoryNavModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="categoryNavModalTitle">添加分类导航</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="categoryNavForm">
+                        <input type="hidden" id="categoryNavId">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">名称 *</label>
+                                    <input type="text" class="form-control" id="categoryNavName" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">图标（Emoji）</label>
+                                    <input type="text" class="form-control" id="categoryNavIcon" placeholder="如：📦">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">图标图片路径</label>
+                                    <input type="text" class="form-control" id="categoryNavImageUrl" placeholder="相对路径，如：/media/original/xxx.jpg" readonly>
+                                    <small class="text-muted">图片路径将在上传后自动填充，无需手动输入</small>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">链接类型</label>
+                                    <select class="form-control" id="categoryNavLinkType" onchange="updateLinkValueInput()">
+                                        <option value="category">产品分类</option>
+                                        <option value="page">小程序页面</option>
+                                        <option value="url">外部链接</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3" id="categoryNavLinkValueContainer">
+                                    <label class="form-label">链接值</label>
+                                    <!-- 分类选择下拉 -->
+                                    <select class="form-control" id="categoryNavCategorySelect" style="display: none;" onchange="handleCategorySelectChange(this.value)">
+                                        <option value="">请选择分类</option>
+                                    </select>
+                                    <!-- 页面路径选择下拉 -->
+                                    <select class="form-control" id="categoryNavPageSelect" style="display: none;" onchange="document.getElementById('categoryNavLinkValue').value = this.value;">
+                                        <option value="">请选择页面</option>
+                                        <option value="/pages/product/product">产品馆</option>
+                                        <option value="/pages/style/style">风格库</option>
+                                        <option value="/pages/orders/orders">订单列表</option>
+                                        <option value="/pages/mine/mine">我的</option>
+                                    </select>
+                                    <!-- 文本输入（用于外部链接） -->
+                                    <input type="text" class="form-control" id="categoryNavLinkValue" placeholder="分类ID、页面路径或URL" style="display: none;">
+                                    <small class="text-muted" id="categoryNavLinkHint">
+                                        <span id="categoryNavLinkHintText">选择链接类型后显示对应输入方式</span>
+                                    </small>
+                                </div>
+                                <input type="hidden" id="categoryNavCategoryId">
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">图标图片</label>
+                                    <div class="upload-area" onclick="document.getElementById('categoryNavFile').click()">
+                                        <div id="categoryNavUploadArea">
+                                            <i class="fas fa-cloud-upload-alt fa-2x mb-2"></i>
+                                            <p>点击上传图标</p>
+                                            <small class="text-muted">建议尺寸：80x80px</small>
+                                        </div>
+                                        <img id="categoryNavPreview" class="preview-image" style="display: none;">
+                                    </div>
+                                    <input type="file" id="categoryNavFile" accept="image/*" style="display: none;" onchange="uploadCategoryNavImage(this)">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">排序</label>
+                                    <input type="number" class="form-control" id="categoryNavSortOrder" value="0">
+                                </div>
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="categoryNavIsActive" checked>
+                                        <label class="form-check-label" for="categoryNavIsActive">启用</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" onclick="saveCategoryNav()">保存</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 产品推荐模块编辑模态框 -->
+    <div class="modal fade" id="productSectionModal" tabindex="-1" data-bs-backdrop="static">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="productSectionModalTitle">添加产品推荐模块</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="productSectionForm">
+                        <input type="hidden" id="productSectionId">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">模块类型 *</label>
+                                    <input type="text" class="form-control" id="productSectionType" readonly>
+                                    <small class="text-muted">模块类型由前端固定，不可修改</small>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">模块标题</label>
+                                    <input type="text" class="form-control" id="productSectionTitle" readonly>
+                                    <small class="text-muted">模块标题由前端固定，不可修改</small>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">副标题</label>
+                                    <input type="text" class="form-control" id="productSectionSubtitle">
+                                </div>
+                                <!-- 模块配置区域（根据模块类型动态显示） -->
+                                <div id="moduleConfigArea">
+                                    <!-- 当季主推、时光旅程、IP联名、作品展示等模块的配置 -->
+                                    <div id="itemBasedConfig" style="display: none;">
+                                        <div class="mb-3">
+                                            <label class="form-label">模块项配置</label>
+                                            <div id="moduleItemsList" class="mb-3" style="max-height: 300px; overflow-y: auto;">
+                                                <!-- 模块项列表 -->
+                                            </div>
+                                            <button type="button" class="btn btn-outline-primary btn-sm" onclick="addModuleItem()">
+                                                <i class="fas fa-plus"></i> 添加项
+                                            </button>
+                                            <small class="text-muted d-block mt-2">点击"添加项"按钮，从产品库或分类库选择图片</small>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- 传统产品推荐模块的配置 -->
+                                    <div id="productBasedConfig">
+                                        <div class="mb-3">
+                                            <label class="form-label">布局类型</label>
+                                            <select class="form-control" id="productSectionLayout">
+                                                <option value="grid">网格</option>
+                                                <option value="list">列表</option>
+                                            </select>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">产品列表</label>
+                                            <div class="input-group">
+                                                <input type="text" class="form-control" id="productSectionProductIds" placeholder="如：1,2,3" readonly>
+                                                <button type="button" class="btn btn-outline-primary" onclick="openProductSelector()">
+                                                    <i class="fas fa-th"></i> 选择产品
+                                                </button>
+                                            </div>
+                                            <small class="text-muted">点击"选择产品"按钮可视化选择，或留空则按分类筛选</small>
+                                            <div id="selectedProductsPreview" class="mt-2" style="display: none;">
+                                                <small class="text-muted">已选择 <span id="selectedProductsCount">0</span> 个产品</small>
+                                            </div>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">分类ID（可选）</label>
+                                            <input type="number" class="form-control" id="productSectionCategoryId">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <!-- 传统产品推荐模块的配置（仅当模块类型不是基于项的类型时显示） -->
+                                <div id="productBasedConfigRight" style="display: none;">
+                                    <div class="mb-3">
+                                        <label class="form-label">显示数量限制</label>
+                                        <input type="number" class="form-control" id="productSectionLimit" value="6">
+                                    </div>
+                                    <div class="mb-3">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="productSectionShowMore" checked>
+                                            <label class="form-check-label" for="productSectionShowMore">显示"更多"按钮</label>
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">"更多"按钮链接</label>
+                                        <input type="text" class="form-control" id="productSectionMoreLink" placeholder="如：/pages/product/product">
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">排序</label>
+                                    <input type="number" class="form-control" id="productSectionSortOrder" value="0">
+                                </div>
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="productSectionIsActive" checked>
+                                        <label class="form-check-label" for="productSectionIsActive">启用</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" onclick="saveProductSection()">保存</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 产品选择器模态框 -->
+    <div class="modal fade" id="productSelectorModal" tabindex="-1">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">选择产品</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <small class="text-muted">已选择 <span id="productSelectorCount">0</span> 个产品</small>
+                    </div>
+                    <div id="productSelectorList" class="product-selector-list">
+                        <!-- 产品列表将通过JavaScript动态加载 -->
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" onclick="confirmProductSelection()">确认选择</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 模块项配置模态框（用于当季主推、时光旅程、IP联名、作品展示等） -->
+    <div class="modal fade" id="moduleItemModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="moduleItemModalTitle">添加模块项</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="moduleItemForm">
+                        <input type="hidden" id="moduleItemIndex">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">图片来源 *</label>
+                                    <select class="form-control" id="moduleItemSourceType" required onchange="handleItemSourceTypeChange()">
+                                        <option value="product">产品图片</option>
+                                        <option value="category">分类图片</option>
+                                    </select>
+                                    <small class="text-muted">选择使用产品图片还是分类图片</small>
+                                </div>
+                                <div class="mb-3" id="moduleItemProductContainer" style="display: none;">
+                                    <label class="form-label">选择产品 *</label>
+                                    <div class="input-group">
+                                        <input type="text" class="form-control" id="moduleItemProductId" placeholder="请选择产品" readonly>
+                                        <button type="button" class="btn btn-outline-primary" onclick="openProductSelectorForItem()">
+                                            <i class="fas fa-th"></i> 选择产品
+                                        </button>
+                                    </div>
+                                    <input type="hidden" id="moduleItemProductIdValue">
+                                </div>
+                                <div class="mb-3" id="moduleItemCategoryContainer" style="display: none;">
+                                    <label class="form-label">选择分类 *</label>
+                                    <select class="form-control" id="moduleItemCategoryId" required>
+                                        <option value="">请选择分类</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">标题</label>
+                                    <input type="text" class="form-control" id="moduleItemTitle" placeholder="如：产品标题">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">描述</label>
+                                    <input type="text" class="form-control" id="moduleItemDesc" placeholder="如：产品描述">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">标签</label>
+                                    <input type="text" class="form-control" id="moduleItemTag" placeholder="如：新年限定">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">图片预览</label>
+                                    <div id="moduleItemImagePreview" style="min-height: 200px; border: 2px dashed rgba(255,255,255,0.3); border-radius: 8px; padding: 20px; text-align: center;">
+                                        <p class="text-muted">选择产品或分类后显示图片</p>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">跳转类型</label>
+                                    <select class="form-control" id="moduleItemLinkType" onchange="handleItemLinkTypeChange()">
+                                        <option value="none">无跳转</option>
+                                        <option value="category">跳转到分类</option>
+                                        <option value="product">跳转到产品</option>
+                                        <option value="page">跳转到页面</option>
+                                        <option value="url">外部链接</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3" id="moduleItemLinkValueContainer" style="display: none;">
+                                    <label class="form-label">跳转值</label>
+                                    <input type="text" class="form-control" id="moduleItemLinkValue" placeholder="根据跳转类型填写">
+                                    <small class="text-muted" id="moduleItemLinkHint">选择跳转类型后显示提示</small>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" onclick="saveModuleItem()">保存</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 产品/分类选择器模态框（用于模块项） -->
+    <div class="modal fade" id="itemProductSelectorModal" tabindex="-1">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">选择产品</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="itemProductSelectorList" class="product-selector-list">
+                        <!-- 产品列表将通过JavaScript动态加载 -->
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" onclick="confirmItemProductSelection()">确认选择</button>
+                </div>
+            </div>
+        </div>
+    </div>
 </body>
 </html>
 

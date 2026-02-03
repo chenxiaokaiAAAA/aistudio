@@ -1226,8 +1226,8 @@ def miniprogram_get_orders():
                 }.get(order.status, '未知'),
                 'createTime': order.created_at.strftime('%Y-%m-%d %H:%M:%S'),
                 'completeTime': order.completed_at.strftime('%Y-%m-%d %H:%M:%S') if order.completed_at else None,
-                'images': [{'url': f'https://moeart.cc/media/original/{img.path}'} for img in images],
-                'finalImage': f'https://moeart.cc/media/final/{order.final_image}' if order.final_image else None
+                'images': [{'url': f'https://photogooo/media/original/{img.path}'} for img in images],
+                'finalImage': f'https://photogooo/media/final/{order.final_image}' if order.final_image else None
             })
         
         return jsonify({

@@ -30,8 +30,11 @@ def login():
         if user and check_password_hash(user.password, password):
             # 记住登录，维持会话
             login_user(user, remember=True)
-            if user.role in ['admin', 'operator']:
-                return redirect(url_for('admin.admin_dashboard'))
+            if user.role == 'admin':
+                return redirect(url_for('admin.admin_routes.admin_dashboard'))
+            elif user.role == 'operator':
+                # 操作员默认跳转到 playground
+                return redirect(url_for('base.playground'))
             else:
                 return redirect(url_for('merchant.merchant_dashboard'))
         # 兼容旧数据：若存的是明文密码，首次登录时自动迁移为哈希
@@ -39,8 +42,11 @@ def login():
             user.password = generate_password_hash(password)
             db.session.commit()
             login_user(user, remember=True)
-            if user.role in ['admin', 'operator']:
-                return redirect(url_for('admin.admin_dashboard'))
+            if user.role == 'admin':
+                return redirect(url_for('admin.admin_routes.admin_dashboard'))
+            elif user.role == 'operator':
+                # 操作员默认跳转到 playground
+                return redirect(url_for('base.playground'))
             else:
                 return redirect(url_for('merchant.merchant_dashboard'))
         flash('用户名或密码错误', 'error')

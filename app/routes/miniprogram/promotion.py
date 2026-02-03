@@ -76,7 +76,7 @@ def miniprogram_get_promotion_code():
                 'data': {
                     'promotionCode': promotion_code,
                     'qrCode': f"data:image/png;base64,{qr_base64}",
-                    'qrUrl': f"https://servicewechat.com/wx8e9715aac932a79b/0/page-frame.html?promotion={promotion_code}",
+                    'qrUrl': f"https://servicewechat.com/wx01e841dfc50052a9/0/page-frame.html?promotion={promotion_code}",
                     'promotionInstructions': [
                         "分享您的作品给朋友",
                         "朋友通过您的推广码进入小程序",

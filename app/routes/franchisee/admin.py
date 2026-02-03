@@ -380,6 +380,23 @@ def admin_franchisee_detail(account_id):
         staff_users = StaffUser.query.filter_by(franchisee_id=account_id)\
             .order_by(desc(StaffUser.created_at)).all()
     
+    # 获取退款申请列表 - 检查字段是否存在
+    try:
+        inspector = db.inspect(db.engine)
+        columns = [col['name'] for col in inspector.get_columns('orders')]
+        
+        if 'refund_request_status' in columns:
+            refund_requests = Order.query.filter_by(
+                franchisee_id=account_id
+            ).filter(
+                Order.refund_request_status.isnot(None)
+            ).order_by(desc(Order.refund_request_time)).all()
+        else:
+            refund_requests = []
+    except Exception as e:
+        print(f"获取退款申请列表失败: {e}")
+        refund_requests = []
+    
     # 统计数据
     total_orders = len(orders)
     total_order_amount = sum(order.price for order in orders if order.price)
@@ -391,6 +408,7 @@ def admin_franchisee_detail(account_id):
                          orders=orders,
                          machines=machines,
                          staff_users=staff_users,
+                         refund_requests=refund_requests,
                          total_orders=total_orders,
                          total_order_amount=total_order_amount,
                          total_deduction=total_deduction)
@@ -413,7 +431,7 @@ def admin_qrcode_preview(account_id):
         account = FranchiseeAccount.query.get_or_404(account_id)
         
         # 生成二维码内容
-        qr_content = f"https://moeart.cc/franchisee/scan/{account.qr_code}"
+        qr_content = f"https://photogooo/franchisee/scan/{account.qr_code}"
         
         # 创建二维码
         import qrcode

@@ -117,11 +117,11 @@ from app.services.payment_service import (
 
 # 微信支付配置
 WECHAT_PAY_CONFIG = {
-    'appid': 'wx8e9715aac932a79b',  # 你的小程序AppID
+    'appid': 'wx01e841dfc50052a9',  # 你的小程序AppID（与前端project.config.json保持一致）
     'mch_id': '1728339549',       # 你的商户号
     'api_key': 'Rebf8QfhS383srRkbO5PQoHeUm7qUIGT',  # 32位API密钥
     'notify_url': get_notify_url(),
-    'app_secret': '3cdb890ade31e5673c88fbf1aa8a46df'     # 你的小程序AppSecret
+    'app_secret': '3cdb890ade31e5673c88fbf1aa8a46df'     # 你的小程序AppSecret（需要与AppID匹配）
 }
 
 # ⭐ 微信支付辅助函数已迁移到 app.utils.helpers
@@ -171,6 +171,38 @@ os.makedirs(app.config['WATERMARK_FOLDER'], exist_ok=True)
 @app.context_processor
 def inject_server_config():
     """注入服务器配置和品牌名称到所有模板"""
+    import json
+    from flask_login import current_user
+    
+    def get_user_page_permissions(user):
+        """获取用户的页面权限列表"""
+        if not user:
+            return []
+        if user.role == 'admin':
+            return None  # None表示拥有所有权限
+        if user.role == 'operator':
+            page_permissions = getattr(user, 'page_permissions', None)
+            if page_permissions:
+                try:
+                    return json.loads(page_permissions)
+                except:
+                    return []
+            return []
+        return []
+    
+    def has_page_permission(permission_id):
+        """检查当前用户是否有指定权限"""
+        if not current_user or not current_user.is_authenticated:
+            return False
+        if current_user.role == 'admin':
+            return True
+        if current_user.role == 'operator':
+            permissions = get_user_page_permissions(current_user)
+            if permissions is None:  # admin
+                return True
+            return permission_id in permissions
+        return False
+    
     try:
         from server_config import get_base_url, get_media_url, get_static_url, get_api_base_url
         from app.utils.config_loader import get_brand_name
@@ -179,7 +211,9 @@ def inject_server_config():
             'server_media_url': get_media_url(),
             'server_static_url': get_static_url(),
             'server_api_url': get_api_base_url(),
-            'brand_name': get_brand_name()
+            'brand_name': get_brand_name(),
+            'get_user_page_permissions': get_user_page_permissions,
+            'has_page_permission': has_page_permission
         }
     except ImportError:
         # 如果配置不可用，使用默认值
@@ -189,7 +223,9 @@ def inject_server_config():
             'server_media_url': 'http://192.168.2.54:8000/media',
             'server_static_url': 'http://192.168.2.54:8000/static',
             'server_api_url': 'http://192.168.2.54:8000/api',
-            'brand_name': get_brand_name()
+            'brand_name': get_brand_name(),
+            'get_user_page_permissions': get_user_page_permissions,
+            'has_page_permission': has_page_permission
         }
 
 # ⭐ 图片处理函数已迁移到 app.utils.image_utils
@@ -206,23 +242,31 @@ try:
     # 注意：导入models模块时会立即执行类定义，此时db.Model会被访问
     # 所以我们需要在导入前设置db，但导入时就会执行类定义
     # 解决方案：使用延迟绑定的DBProxy，在访问时动态获取db
-    # 先导入models模块（会执行类定义，但DBProxy会在访问时获取db）
+    # 关键：确保test_server模块已经在sys.modules中，这样_get_db()就能找到db
+    import sys
+    # 如果当前模块是__main__，也注册为test_server，这样_get_db()能找到db
+    if __name__ == '__main__':
+        sys.modules['test_server'] = sys.modules[__name__]
+    
+    # 先导入models模块（会执行类定义，但DBProxy会在访问时通过_get_db()获取db）
     import app.models as models_module
-    # 使用set_db函数设置db实例（替换DBProxy为实际的db）
+    # 立即设置db实例（替换DBProxy为实际的db，这样后续访问就直接使用db）
     models_module.set_db(db)
     # 现在导入所有模型类（此时db已经可用）
     from app.models import (
+        ProductCategory, ProductSubcategory,  # 产品分类模型
         Product, ProductSize, ProductSizePetOption, ProductImage, ProductStyleCategory, ProductCustomField, ProductBonusWorkflow,
-        StyleCategory, StyleImage,
-        HomepageBanner, WorksGallery, HomepageConfig,
+        StyleCategory, StyleSubcategory, StyleImage,
+        HomepageBanner, WorksGallery, HomepageConfig, HomepageCategoryNav, HomepageProductSection, HomepageActivityBanner,
         User, UserVisit,
         Order, OrderImage,
         PromotionUser, Commission, Withdrawal, PromotionTrack,
-        Coupon, UserCoupon,
+        Coupon, UserCoupon, ShareRecord, GrouponPackage,
         FranchiseeAccount, FranchiseeRecharge, SelfieMachine, StaffUser,
         AITask, AIConfig,  # 新增AI相关模型
         MeituAPIConfig, MeituAPIPreset, MeituAPICallLog,  # 美图API相关模型
         APIProviderConfig, APITemplate,  # 新增云端API服务商相关模型
+        PollingConfig,  # 新增轮询配置模型
         ShopProduct, ShopProductImage, ShopProductSize, ShopOrder,  # 新增商城相关模型
         _sanitize_style_code, _build_style_code, _ensure_unique_style_code
     )
@@ -456,6 +500,7 @@ register_franchisee_blueprints()
 try:
     from app.routes.payment import payment_bp
     from app.routes.miniprogram import miniprogram_bp
+    from app.routes.miniprogram.refund import bp as miniprogram_refund_bp
     from app.routes.order import order_bp
     from app.routes.ai import ai_bp
     from app.routes.meitu import meitu_bp
@@ -516,8 +561,18 @@ try:
         from app.routes.user_api import user_api_bp
         app.register_blueprint(user_api_bp)
         print("✅ 用户API蓝图已注册")
+        # 验证路由是否注册成功
+        with app.app_context():
+            rules = [str(rule) for rule in app.url_map.iter_rules()]
+            visit_routes = [r for r in rules if '/api/user/visit' in r]
+            if visit_routes:
+                print(f"✅ 访问记录路由已注册: {visit_routes}")
+            else:
+                print("⚠️  警告: /api/user/visit 路由未找到!")
     except Exception as e:
         print(f"⚠️  用户API蓝图注册失败: {e}")
+        import traceback
+        traceback.print_exc()
         print("   提示: 如果缺少Crypto模块，请运行: pip install pycryptodome")
     
     # 注册推广API蓝图
@@ -548,9 +603,41 @@ try:
     try:
         from app.routes.admin_groupon_api import admin_groupon_api_bp
         app.register_blueprint(admin_groupon_api_bp)
+        
+        # 注册团购套餐配置API蓝图
+        try:
+            from app.routes.admin_groupon_package_api import admin_groupon_package_api_bp
+            app.register_blueprint(admin_groupon_package_api_bp)
+        except Exception as e:
+            print(f"⚠️ 注册团购套餐配置API蓝图失败: {e}")
+        
+        # 注册团购核销记录页面蓝图
+        try:
+            from app.routes.admin_groupon_verify import bp as admin_groupon_verify_bp
+            app.register_blueprint(admin_groupon_verify_bp)
+            print("✅ 团购核销记录页面蓝图已注册")
+        except Exception as e:
+            print(f"⚠️ 注册团购核销记录页面蓝图失败: {e}")
+        
         print("✅ 团购核销API蓝图已注册")
     except Exception as e:
         print(f"⚠️  团购核销API蓝图注册失败: {e}")
+    
+    # 注册支付管理蓝图
+    try:
+        from app.routes.admin_payment_management import bp as admin_payment_management_bp
+        app.register_blueprint(admin_payment_management_bp)
+        print("✅ 支付管理蓝图已注册")
+    except Exception as e:
+        print(f"⚠️  支付管理蓝图注册失败: {e}")
+    
+    # 注册退款审核API蓝图
+    try:
+        from app.routes.admin_refund_api import bp as admin_refund_api_bp
+        app.register_blueprint(admin_refund_api_bp)
+        print("✅ 退款审核API蓝图已注册")
+    except Exception as e:
+        print(f"⚠️  退款审核API蓝图注册失败: {e}")
     
     # 注册第三方团购核销API蓝图
     try:
@@ -568,6 +655,30 @@ try:
     except Exception as e:
         print(f"⚠️  管理后台风格管理API蓝图注册失败: {e}")
     
+    # 注册产品分类管理API蓝图
+    try:
+        from app.routes.admin_product_categories_api import admin_product_categories_api_bp
+        app.register_blueprint(admin_product_categories_api_bp)
+        print("✅ 产品分类管理API蓝图已注册")
+    except Exception as e:
+        print(f"⚠️  产品分类管理API蓝图注册失败: {e}")
+    
+    # 注册轮询配置API蓝图
+    try:
+        from app.routes.admin_polling_config_api import admin_polling_config_api_bp
+        app.register_blueprint(admin_polling_config_api_bp)
+        print("✅ 轮询配置API蓝图已注册")
+    except Exception as e:
+        print(f"⚠️  轮询配置API蓝图注册失败: {e}")
+    
+    # 注册Playground API蓝图
+    try:
+        from app.routes.playground_api import playground_api_bp
+        app.register_blueprint(playground_api_bp)
+        print("✅ Playground API蓝图已注册")
+    except Exception as e:
+        print(f"⚠️  Playground API蓝图注册失败: {e}")
+    
     # 注册管理后台首页配置API蓝图
     try:
         from app.routes.admin_homepage_api import admin_homepage_api_bp
@@ -576,11 +687,27 @@ try:
     except Exception as e:
         print(f"⚠️  管理后台首页配置API蓝图注册失败: {e}")
     
+    # 注册管理后台小程序配置API蓝图
+    try:
+        from app.routes.admin_miniprogram_config_api import admin_miniprogram_config_api_bp
+        app.register_blueprint(admin_miniprogram_config_api_bp)
+        print("✅ 管理后台小程序配置API蓝图已注册")
+    except Exception as e:
+        print(f"⚠️  管理后台小程序配置API蓝图注册失败: {e}")
+    
     # 注册管理后台推广管理API蓝图
     try:
         from app.routes.admin_promotion_api import admin_promotion_api_bp
         app.register_blueprint(admin_promotion_api_bp)
         print("✅ 管理后台推广管理API蓝图已注册")
+    except Exception as e:
+        print(f"⚠️  管理后台推广管理API蓝图注册失败: {e}")
+    
+    # 注册调试API蓝图（开发环境使用）
+    try:
+        from app.routes.debug_api import debug_api_bp
+        app.register_blueprint(debug_api_bp)
+        print("✅ 调试API蓝图已注册")
     except Exception as e:
         print(f"⚠️  管理后台推广管理API蓝图注册失败: {e}")
     
@@ -649,6 +776,13 @@ try:
         print(f"⚠️  店员权限管理蓝图注册失败: {e}")
     
     app.register_blueprint(miniprogram_bp)
+    
+    # 注册小程序退款申请API蓝图
+    try:
+        app.register_blueprint(miniprogram_refund_bp)
+        print("✅ 小程序退款申请API蓝图已注册")
+    except Exception as e:
+        print(f"⚠️  小程序退款申请API蓝图注册失败: {e}")
     app.register_blueprint(order_bp)
     app.register_blueprint(ai_bp)
     app.register_blueprint(meitu_bp)
@@ -692,153 +826,23 @@ except ImportError as e:
 
 # 风格管理API和小程序API已迁移到对应的蓝图模块
 
-@app.route('/api/debug/payment', methods=['POST'])
-def debug_payment():
-    """调试支付接口 - 记录所有请求参数"""
-    try:
-        data = request.get_json()
-        print(f"🔍 收到支付请求:")
-        print(f"  原始数据: {data}")
-        print(f"  请求头: {dict(request.headers)}")
-        print(f"  请求方法: {request.method}")
-        print(f"  请求路径: {request.path}")
-        
-        return jsonify({
-            'success': True,
-            'message': '调试信息已记录',
-            'received_data': data
-        })
-    except Exception as e:
-        print(f"❌ 调试接口错误: {str(e)}")
-        return jsonify({
-            'success': False,
-            'message': f'调试接口错误: {str(e)}'
-        }), 500
-
-@app.route('/api/coupons/test', methods=['GET'])
-def test_coupons():
-    """测试优惠券接口 - 返回固定数据"""
-    try:
-        print("🔍 收到优惠券测试请求")
-        
-        # 返回测试数据
-        test_coupons = [
-            {
-                "id": 1,
-                "name": "新用户专享券",
-                "code": "NEWUSER001",
-                "type": "cash",
-                "value": 49.0,
-                "min_amount": 0.0,
-                "description": "新用户专享，无门槛使用",
-                "end_time": "2025-12-31T23:59:59",
-                "can_claim": True,
-                "remaining_count": 100,
-                "per_user_limit": 1,
-                "user_claimed_count": 0
-            },
-            {
-                "id": 2,
-                "name": "限时优惠券",
-                "code": "LIMITED001",
-                "type": "cash",
-                "value": 29.0,
-                "min_amount": 100.0,
-                "description": "满100元可用",
-                "end_time": "2025-11-30T23:59:59",
-                "can_claim": True,
-                "remaining_count": 50,
-                "per_user_limit": 2,
-                "user_claimed_count": 0
-            }
-        ]
-        
-        return jsonify({
-            'success': True,
-            'data': test_coupons,
-            'total': len(test_coupons),
-            'message': '测试数据'
-        })
-        
-    except Exception as e:
-        print(f"❌ 测试接口错误: {str(e)}")
-        return jsonify({
-            'success': False,
-            'message': f'测试接口错误: {str(e)}'
-        }), 500
-
-@app.route('/api/coupons/debug', methods=['GET'])
-def debug_coupons():
-    """调试优惠券接口 - 记录所有请求信息"""
-    try:
-        user_id = request.args.get('userId')
-        print(f"🔍 收到优惠券调试请求:")
-        print(f"  用户ID: {user_id}")
-        print(f"  请求头: {dict(request.headers)}")
-        print(f"  请求参数: {request.args}")
-        print(f"  请求方法: {request.method}")
-        print(f"  请求路径: {request.path}")
-        
-        # 返回调试信息
-        return jsonify({
-            'success': True,
-            'message': '调试信息已记录',
-            'debug_info': {
-                'user_id': user_id,
-                'request_args': dict(request.args),
-                'request_headers': dict(request.headers),
-                'request_method': request.method,
-                'request_path': request.path,
-                'timestamp': datetime.now().isoformat()
-            }
-        })
-        
-    except Exception as e:
-        print(f"❌ 调试接口错误: {str(e)}")
-        return jsonify({
-            'success': False,
-            'message': f'调试接口错误: {str(e)}'
-        }), 500
+# ⭐ 以下调试路由已迁移到 app.routes.debug_api，已删除：
+# - debug_payment() → /api/debug/payment
+# - test_coupons() → /api/coupons/test
+# - debug_coupons() → /api/coupons/debug
 
 def get_order_images(order_id):
     """获取订单图片列表"""
     order_images = OrderImage.query.filter_by(order_id=order_id).all()
     return [img.path for img in order_images]
 
-# ==================== 首页配置API接口 ====================
+# ==================== 已迁移模块说明 ====================
+# - 首页管理API → app.routes.admin_homepage_api
+# - 调试API → app.routes.debug_api
+# =====================================================
 
-# ⚠️ 以下首页管理API已迁移到 app.routes.admin_homepage_api，已注释
-# 获取轮播图
-@app.route('/api/example-images', methods=['GET'])
-def get_example_images():
-    """获取示例图片"""
-    try:
-        # 从 static/images/works 目录获取示例图片
-        example_images = [
-            {
-                'url': f'{get_static_url()}/images/works/example1.jpg',
-                'label': '全身正面示例'
-            },
-            {
-                'url': f'{get_static_url()}/images/works/example2.jpg', 
-                'label': '全身正面示例'
-            },
-            {
-                'url': f'{get_static_url()}/images/works/example3.jpg',
-                'label': '全身正面示例'
-            }
-        ]
-        
-        return jsonify({
-            'success': True,
-            'images': example_images
-        })
-        
-    except Exception as e:
-        return jsonify({
-            'success': False,
-            'message': f'获取示例图片失败: {str(e)}'
-        })
+# ⭐ 以下路由已迁移到 app.routes.debug_api，已删除：
+# - get_example_images() → /api/example-images
 
 # 清空测试数据路由（仅用于开发）
 # 管理后台工具API已迁移到 app.routes.admin_tools_api
@@ -870,10 +874,13 @@ def after_request(response):
     # 记录响应
     logger.info(f"📤 响应: {response.status_code} {request.method} {request.url}")
     
-    # 跨域支持
-    response.headers.add('Access-Control-Allow-Origin', '*')
-    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
-    response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
+    # 跨域支持（使用set而不是add，避免重复）
+    if 'Access-Control-Allow-Origin' not in response.headers:
+        response.headers['Access-Control-Allow-Origin'] = '*'
+    if 'Access-Control-Allow-Headers' not in response.headers:
+        response.headers['Access-Control-Allow-Headers'] = 'Content-Type,Authorization'
+    if 'Access-Control-Allow-Methods' not in response.headers:
+        response.headers['Access-Control-Allow-Methods'] = 'GET,PUT,POST,DELETE,OPTIONS'
     return response
 
 def migrate_database():
@@ -991,19 +998,29 @@ def migrate_database():
         print("source_type 更新完成")
         
         # 为现有记录设置默认封面图（仅在封面图为空时设置）
-        categories = StyleCategory.query.all()
-        for category in categories:
-            if not category.cover_image:
-                if category.code == 'anthropomorphic':
-                    category.cover_image = '/static/images/8-威廉国王.jpg'
-                elif category.code == 'oil_painting':
-                    category.cover_image = '/static/images/油画风格-梵高.jpg'
-                elif category.code == 'transfer':
-                    category.cover_image = '/static/images/转绘风格-卡通.png'
-                else:
-                    category.cover_image = '/static/images/8-威廉国王.jpg'  # 默认图片
-        
-        db.session.commit()
+        if MODELS_AVAILABLE:
+            try:
+                categories = StyleCategory.query.all()
+                for category in categories:
+                    if not category.cover_image:
+                        if category.code == 'anthropomorphic':
+                            category.cover_image = '/static/images/8-威廉国王.jpg'
+                        elif category.code == 'oil_painting':
+                            category.cover_image = '/static/images/油画风格-梵高.jpg'
+                        elif category.code == 'transfer':
+                            category.cover_image = '/static/images/转绘风格-卡通.png'
+                        else:
+                            category.cover_image = '/static/images/8-威廉国王.jpg'  # 默认图片
+                
+                db.session.commit()
+            except NameError:
+                print("⚠️ StyleCategory 未定义，跳过封面图设置")
+            except Exception as e:
+                print(f"⚠️ 设置封面图失败: {e}")
+                try:
+                    db.session.rollback()
+                except:
+                    pass
         
         # 检查并添加 meitu_api_config 表的字段
         tables = [t[0] for t in db.session.execute(text("SELECT name FROM sqlite_master WHERE type='table'")).fetchall()]
@@ -1162,10 +1179,22 @@ def init_concurrency_configs():
 
 def init_default_data():
     """初始化默认数据 - 只在数据库为空时创建"""
-    # 检查是否已有数据，如果有则不创建
-    existing_categories = StyleCategory.query.count()
-    if existing_categories > 0:
-        print(f"数据库中已有 {existing_categories} 个风格分类，跳过默认数据创建")
+    # 检查模型是否可用
+    if not MODELS_AVAILABLE:
+        print("⚠️ 数据库模型未加载，跳过默认数据创建")
+        return
+    
+    try:
+        # 检查是否已有数据，如果有则不创建
+        existing_categories = StyleCategory.query.count()
+        if existing_categories > 0:
+            print(f"数据库中已有 {existing_categories} 个风格分类，跳过默认数据创建")
+            return
+    except NameError as e:
+        print(f"⚠️ StyleCategory 未定义，跳过默认数据创建: {e}")
+        return
+    except Exception as e:
+        print(f"⚠️ 检查数据库时出错，跳过默认数据创建: {e}")
         return
     
     print("数据库为空，开始创建默认数据...")
@@ -1198,10 +1227,18 @@ def init_default_data():
         }
     ]
     
-    for cat_data in categories:
-        category = StyleCategory(**cat_data)
-        db.session.add(category)
-        print(f"创建风格分类: {cat_data['name']}")
+    try:
+        for cat_data in categories:
+            category = StyleCategory(**cat_data)
+            db.session.add(category)
+            print(f"创建风格分类: {cat_data['name']}")
+        
+        db.session.commit()
+        print("✅ 默认风格分类创建完成")
+    except Exception as e:
+        print(f"⚠️ 创建风格分类失败: {e}")
+        db.session.rollback()
+        return
     
     # 创建默认风格图片
     images = [
@@ -1255,83 +1292,100 @@ def init_default_data():
         }
     ]
     
-    for img_data in images:
-        # 查找对应的分类
-        category = StyleCategory.query.filter_by(code=img_data['category_code']).first()
-        if category:
-            existing = StyleImage.query.filter_by(code=img_data['code']).first()
-            if not existing:
-                image = StyleImage(
-                    category_id=category.id,
-                    name=img_data['name'],
-                    code=img_data['code'],
-                    description=img_data['description'],
-                    image_url=img_data['image_url'],
-                    sort_order=img_data['sort_order']
-                )
-                db.session.add(image)
-                print(f"创建风格图片: {img_data['name']} (分类: {category.name})")
+    try:
+        for img_data in images:
+            # 查找对应的分类
+            category = StyleCategory.query.filter_by(code=img_data['category_code']).first()
+            if category:
+                existing = StyleImage.query.filter_by(code=img_data['code']).first()
+                if not existing:
+                    image = StyleImage(
+                        category_id=category.id,
+                        name=img_data['name'],
+                        code=img_data['code'],
+                        description=img_data['description'],
+                        image_url=img_data['image_url'],
+                        sort_order=img_data['sort_order']
+                    )
+                    db.session.add(image)
+                    print(f"创建风格图片: {img_data['name']} (分类: {category.name})")
+        
+        db.session.commit()
+        print("✅ 默认风格图片创建完成")
+    except Exception as e:
+        print(f"⚠️ 创建风格图片失败: {e}")
+        db.session.rollback()
+        return
     
     # 创建默认首页配置
-    config = HomepageConfig.query.first()
-    if not config:
-        config = HomepageConfig(
-            title='AI拍照机',
-            subtitle='专属定制',
-            description='为您打造专属艺术品',
-            enable_custom_order=True,
-            enable_style_library=True,
-            enable_product_gallery=True,
-            enable_works_gallery=True
-        )
-        db.session.add(config)
-        print("创建默认首页配置")
+    try:
+        config = HomepageConfig.query.first()
+        if not config:
+            config = HomepageConfig(
+                title='AI拍照机',
+                subtitle='专属定制',
+                description='为您打造专属艺术品',
+                enable_custom_order=True,
+                enable_style_library=True,
+                enable_product_gallery=True,
+                enable_works_gallery=True
+            )
+            db.session.add(config)
+            print("创建默认首页配置")
+        
+        # 创建默认轮播图 (竖版长比例)
+        banners = [
+            {
+                'title': '拟人风格',
+                'subtitle': '皇家宠物',
+                'image_url': '/static/images/8-威廉国王.jpg',
+                'link': '/pages/style/style',
+                'sort_order': 1,
+                'is_active': True
+            },
+            {
+                'title': '油画风格',
+                'subtitle': '艺术大师',
+                'image_url': '/static/images/油画风格-梵高.jpg',
+                'link': '/pages/style/style',
+                'sort_order': 2,
+                'is_active': True
+            },
+            {
+                'title': '转绘风格',
+                'subtitle': '可爱萌趣',
+                'image_url': '/static/images/转绘风格-卡通.png',
+                'link': '/pages/style/style',
+                'sort_order': 3,
+                'is_active': True
+            },
+            {
+                'title': '样片展示',
+                'subtitle': '精美作品',
+                'image_url': '/static/images/样片展示.jpg',
+                'link': '/works-gallery',
+                'sort_order': 4,
+                'is_active': True
+            }
+        ]
+        
+        for banner_data in banners:
+            existing = HomepageBanner.query.filter_by(title=banner_data['title']).first()
+            if not existing:
+                banner = HomepageBanner(**banner_data)
+                db.session.add(banner)
+                print(f"创建轮播图: {banner_data['title']}")
+        
+        db.session.commit()
+        print("✅ 默认首页配置和轮播图创建完成")
+    except Exception as e:
+        print(f"⚠️ 创建首页配置或轮播图失败: {e}")
+        try:
+            db.session.rollback()
+        except:
+            pass
     
-    # 创建默认轮播图 (竖版长比例)
-    banners = [
-        {
-            'title': '拟人风格',
-            'subtitle': '皇家宠物',
-            'image_url': '/static/images/8-威廉国王.jpg',
-            'link': '/pages/style/style',
-            'sort_order': 1,
-            'is_active': True
-        },
-        {
-            'title': '油画风格',
-            'subtitle': '艺术大师',
-            'image_url': '/static/images/油画风格-梵高.jpg',
-            'link': '/pages/style/style',
-            'sort_order': 2,
-            'is_active': True
-        },
-        {
-            'title': '转绘风格',
-            'subtitle': '可爱萌趣',
-            'image_url': '/static/images/转绘风格-卡通.png',
-            'link': '/pages/style/style',
-            'sort_order': 3,
-            'is_active': True
-        },
-        {
-            'title': '样片展示',
-            'subtitle': '精美作品',
-            'image_url': '/static/images/样片展示.jpg',
-            'link': '/works-gallery',
-            'sort_order': 4,
-            'is_active': True
-        }
-    ]
-    
-    for banner_data in banners:
-        existing = HomepageBanner.query.filter_by(title=banner_data['title']).first()
-        if not existing:
-            banner = HomepageBanner(**banner_data)
-            db.session.add(banner)
-            print(f"创建轮播图: {banner_data['title']}")
-    
-    db.session.commit()
-    print("默认数据初始化完成")
+    print("✅ 默认数据初始化完成")
 
 if __name__ == '__main__':
     with app.app_context():
@@ -1344,16 +1398,26 @@ if __name__ == '__main__':
         init_default_data()
         
         # 创建默认管理员账号
-        admin = User.query.filter_by(username='admin').first()
-        if not admin:
-            admin = User(
-                username='admin',
-                password=generate_password_hash('admin123'),
-                role='admin'
-            )
-            db.session.add(admin)
-            db.session.commit()
-            print("创建默认管理员账号: admin/admin123")
+        if MODELS_AVAILABLE:
+            try:
+                admin = User.query.filter_by(username='admin').first()
+                if not admin:
+                    admin = User(
+                        username='admin',
+                        password=generate_password_hash('admin123'),
+                        role='admin'
+                    )
+                    db.session.add(admin)
+                    db.session.commit()
+                    print("创建默认管理员账号: admin/admin123")
+                else:
+                    print("✅ 管理员账号已存在")
+            except NameError as e:
+                print(f"⚠️ User 模型未定义，跳过创建管理员账号: {e}")
+            except Exception as e:
+                print(f"⚠️ 创建管理员账号失败: {e}")
+        else:
+            print("⚠️ 数据库模型未加载，跳过创建管理员账号")
         
         # 初始化并发和队列配置（如果不存在，使用默认值）
         try:
@@ -1586,149 +1650,8 @@ def send_commission_notification_auto(commission):
 # 推广相关路由已迁移到 app.routes.promotion_api
 
 # ⚠️ 以下优惠券路由已迁移到 app.routes.coupon_api 和 app.routes.admin_coupon_api，已注释
-# ==================== 管理员优惠券API接口 ====================
-# ⚠️ 以下管理员优惠券API已迁移到 app.routes.admin_coupon_api，已注释
-
-@login_required
-def create_coupon_admin():
-    """管理员创建优惠券"""
-    try:
-        data = request.get_json()
-        
-        required_fields = ['name', 'type', 'value', 'total_count']
-        for field in required_fields:
-            if field not in data:
-                return jsonify({
-                    'success': False,
-                    'message': f'缺少必要字段: {field}'
-                }), 400
-        
-        # 解析时间
-        start_time = None
-        end_time = None
-        if data.get('start_time'):
-            start_time = datetime.fromisoformat(data['start_time'].replace('Z', '+00:00'))
-        if data.get('end_time'):
-            end_time = datetime.fromisoformat(data['end_time'].replace('Z', '+00:00'))
-        
-        coupon = create_coupon(
-            name=data['name'],
-            coupon_type=data['type'],
-            value=float(data['value']),
-            min_amount=float(data.get('min_amount', 0)),
-            max_discount=float(data.get('max_discount')) if data.get('max_discount') else None,
-            total_count=int(data['total_count']),
-            per_user_limit=int(data.get('per_user_limit', 1)),
-            start_time=start_time,
-            end_time=end_time,
-            description=data.get('description')
-        )
-        
-        return jsonify({
-            'success': True,
-            'message': '优惠券创建成功',
-            'data': {
-                'id': coupon.id,
-                'name': coupon.name,
-                'code': coupon.code,
-                'type': coupon.type,
-                'value': coupon.value
-            }
-        })
-        
-    except Exception as e:
-        return jsonify({
-            'success': False,
-            'message': f'创建优惠券失败: {str(e)}'
-        }), 500
-
-@login_required
-def update_coupon_admin(coupon_id):
-    """管理员更新优惠券"""
-    try:
-        coupon = Coupon.query.get(coupon_id)
-        if not coupon:
-            return jsonify({
-                'success': False,
-                'message': '优惠券不存在'
-            }), 404
-        
-        data = request.get_json()
-        
-        # 更新字段
-        if 'name' in data:
-            coupon.name = data['name']
-        if 'type' in data:
-            coupon.type = data['type']
-        if 'value' in data:
-            coupon.value = float(data['value'])
-        if 'min_amount' in data:
-            coupon.min_amount = float(data['min_amount'])
-        if 'max_discount' in data:
-            coupon.max_discount = float(data['max_discount']) if data['max_discount'] else None
-        if 'total_count' in data:
-            coupon.total_count = int(data['total_count'])
-        if 'per_user_limit' in data:
-            coupon.per_user_limit = int(data['per_user_limit'])
-        if 'start_time' in data:
-            coupon.start_time = datetime.fromisoformat(data['start_time'].replace('Z', '+00:00'))
-        if 'end_time' in data:
-            coupon.end_time = datetime.fromisoformat(data['end_time'].replace('Z', '+00:00'))
-        if 'status' in data:
-            coupon.status = data['status']
-        if 'description' in data:
-            coupon.description = data['description']
-        
-        coupon.update_time = datetime.now()
-        db.session.commit()
-        
-        return jsonify({
-            'success': True,
-            'message': '优惠券更新成功'
-        })
-        
-    except Exception as e:
-        return jsonify({
-            'success': False,
-            'message': f'更新优惠券失败: {str(e)}'
-        }), 500
-
-@login_required
-def delete_coupon_admin(coupon_id):
-    """管理员删除优惠券"""
-    try:
-        coupon = Coupon.query.get(coupon_id)
-        if not coupon:
-            return jsonify({
-                'success': False,
-                'message': '优惠券不存在'
-            }), 404
-        
-        # 检查是否有用户已领取
-        user_coupon_count = UserCoupon.query.filter_by(coupon_id=coupon_id).count()
-        if user_coupon_count > 0:
-            return jsonify({
-                'success': False,
-                'message': '该优惠券已有用户领取，无法删除'
-            }), 400
-        
-        db.session.delete(coupon)
-        db.session.commit()
-        
-        return jsonify({
-            'success': True,
-            'message': '优惠券删除成功'
-        })
-        
-    except Exception as e:
-        return jsonify({
-            'success': False,
-            'message': f'删除优惠券失败: {str(e)}'
-        }), 500
-
-# ==================== 小程序码生成接口 ====================
-
-# ==================== 已迁移模块说明（续）====================
+# ==================== 已迁移模块说明 ====================
+# - 管理员优惠券API → app.routes.admin_coupon_api
 # - 二维码生成API → app.routes.qrcode_api
 # - 推广管理页面和API → app.routes.admin_promotion_api
 # - 用户管理路由 → app.routes.admin_users_api
@@ -1736,153 +1659,15 @@ def delete_coupon_admin(coupon_id):
 # - 用户消息相关路由 → app.routes.user_api
 # =====================================================
 
-# ⚠️ 以下优惠券管理页面已迁移到 app.routes.admin_coupon_api，已注释
-@login_required
-def admin_coupons_management():
-    """后台优惠券管理页面"""
-    return render_template('admin/coupons.html')
+# ⭐ 以下函数已迁移到 app.routes.admin_coupon_api，已删除：
+# - create_coupon_admin()
+# - update_coupon_admin()
+# - delete_coupon_admin()
+# - admin_coupons_management()
 
         # ⭐ 提现功能已删除，不再删除提现记录
 
-# 抖音同步功能（可选功能，如果模块不存在则跳过）
-try:
-    import sys
-    import os
-    # 添加 scripts 目录到 Python 路径
-    scripts_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'scripts')
-    if scripts_dir not in sys.path:
-        sys.path.insert(0, scripts_dir)
-    
-    from douyin_open_api import DouyinOpenAPI
-    from douyin_webhook_handler import create_douyin_webhook_routes
-    from douyin_file_sync import create_douyin_file_sync_routes
-    from douyin_manual_entry import create_douyin_manual_entry_routes, create_douyin_manual_template
-    
-    # 注册抖音同步路由
-    create_douyin_webhook_routes(app)
-    create_douyin_file_sync_routes(app)
-    create_douyin_manual_entry_routes(app)
-    
-    # 创建手动录入页面模板
-    create_douyin_manual_template()
-    
-    # 抖音同步管理页面
-    @app.route('/admin/douyin')
-    @login_required
-    def admin_douyin_sync():
-        """抖音订单同步管理页面"""
-        return render_template('admin/douyin_sync.html')
-    
-    # 测试页面（无需登录）
-    @app.route('/test/douyin')
-    def test_douyin_page():
-        """测试抖音页面"""
-        return '''
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <title>抖音同步测试页面</title>
-            <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
-        </head>
-        <body>
-            <div class="container mt-5">
-                <h2>抖音订单同步测试页面</h2>
-                <div class="alert alert-info">
-                    <h4>功能说明</h4>
-                    <ul>
-                        <li>✅ 页面加载成功</li>
-                        <li>✅ 路由注册正常</li>
-                        <li>⏳ 等待抖音开放平台配置</li>
-                    </ul>
-                </div>
-                <div class="card">
-                    <div class="card-header">
-                        <h5>下一步操作</h5>
-                    </div>
-                    <div class="card-body">
-                        <ol>
-                            <li>注册抖音开放平台账号</li>
-                            <li>获取App ID和App Secret</li>
-                            <li>配置douyin_config.py文件</li>
-                            <li>测试API连接</li>
-                        </ol>
-                    </div>
-                </div>
-                <div class="mt-3">
-                    <a href="/admin/douyin" class="btn btn-primary">访问完整管理页面</a>
-                </div>
-            </div>
-        </body>
-        </html>
-        '''
-    
-    # 抖音同步API接口
-    @app.route('/api/douyin/sync/recent', methods=['POST'])
-    @login_required
-    def sync_douyin_recent():
-        """同步最近订单"""
-        try:
-            # 暂时返回模拟数据，等配置完成后实现真实同步
-            return jsonify({
-                'success': True,
-                'message': '同步完成（模拟）',
-                'synced_count': 0
-            })
-        except Exception as e:
-            return jsonify({
-                'success': False,
-                'message': f'同步失败: {str(e)}'
-            }), 500
-    
-    @app.route('/api/douyin/sync/all', methods=['POST'])
-    @login_required
-    def sync_douyin_all():
-        """同步所有订单"""
-        try:
-            # 暂时返回模拟数据，等配置完成后实现真实同步
-            return jsonify({
-                'success': True,
-                'message': '同步完成（模拟）',
-                'synced_count': 0
-            })
-        except Exception as e:
-            return jsonify({
-                'success': False,
-                'message': f'同步失败: {str(e)}'
-            }), 500
-    
-    @app.route('/api/douyin/webhook/status', methods=['GET'])
-    @login_required
-    def douyin_webhook_status():
-        """获取抖音同步状态"""
-        try:
-            # 统计抖音订单数量
-            douyin_orders = Order.query.filter_by(source_type='douyin').count()
-            
-            # 统计最近同步的订单
-            recent_orders = Order.query.filter(
-                Order.source_type == 'douyin',
-                Order.created_at >= datetime.now() - timedelta(hours=24)
-            ).count()
-            
-            return jsonify({
-                'success': True,
-                'data': {
-                    'total_douyin_orders': douyin_orders,
-                    'recent_synced_orders': recent_orders,
-                    'last_sync_time': None,
-                    'api_status': 'disconnected'  # 等配置完成后改为connected
-                }
-            })
-        except Exception as e:
-            return jsonify({
-                'success': False,
-                'message': f'获取状态失败: {str(e)}'
-            }), 500
-    
-    print("✅ 抖音开放平台同步功能已加载")
-except ImportError as e:
-    print(f"⚠️ 抖音同步功能加载失败: {e}")
+# ⭐ 抖音同步功能已删除
 
 # 导入订单状态自动更新服务（可选功能）
 try:
@@ -1912,16 +1697,26 @@ if __name__ == '__main__':
         init_default_data()
         
         # 创建默认管理员账号
-        admin = User.query.filter_by(username='admin').first()
-        if not admin:
-            admin = User(
-                username='admin',
-                password=generate_password_hash('admin123'),
-                role='admin'
-            )
-            db.session.add(admin)
-            db.session.commit()
-            print("创建默认管理员账号: admin/admin123")
+        if MODELS_AVAILABLE:
+            try:
+                admin = User.query.filter_by(username='admin').first()
+                if not admin:
+                    admin = User(
+                        username='admin',
+                        password=generate_password_hash('admin123'),
+                        role='admin'
+                    )
+                    db.session.add(admin)
+                    db.session.commit()
+                    print("创建默认管理员账号: admin/admin123")
+                else:
+                    print("✅ 管理员账号已存在")
+            except NameError as e:
+                print(f"⚠️ User 模型未定义，跳过创建管理员账号: {e}")
+            except Exception as e:
+                print(f"⚠️ 创建管理员账号失败: {e}")
+        else:
+            print("⚠️ 数据库模型未加载，跳过创建管理员账号")
     
     # 注册加盟商蓝图（已在上面调用过）
     # register_franchisee_blueprints()

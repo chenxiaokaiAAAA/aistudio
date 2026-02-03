@@ -6,7 +6,7 @@ Write-Host "🚚 物流回调测试脚本 - PowerShell版本" -ForegroundColor G
 Write-Host "==================================================" -ForegroundColor Green
 
 # 接口配置
-$API_URL = "https://moeart.cc/api/logistics/callback"
+$API_URL = "https://photogooo/api/logistics/callback"
 $ORDER_NUMBER = "PET17582664981342618"
 
 Write-Host "📦 目标订单: $ORDER_NUMBER" -ForegroundColor Yellow

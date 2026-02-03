@@ -9,7 +9,7 @@ import requests
 import json
 
 # 配置信息
-API_URL = "https://moeart.cc/api/logistics/callback"
+API_URL = "https://photogooo/api/logistics/callback"
 ORDER_NUMBER = "PET17582664981342618"  # 替换为实际订单号
 
 def test_callback():

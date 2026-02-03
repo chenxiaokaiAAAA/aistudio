@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>轮询配置管理 - {{ brand_name }}管理系统</title>
+    <link href="/static/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body {
+            background: #000000;
+            color: #e0e0e0;
+            min-height: 100vh;
+            padding-top: 80px;
+        }
+        
+        .navbar-custom {
+            background: #0a0a0a !important;
+            border-bottom: 1px solid #1a1a1a;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        }
+        
+        .navbar-brand, .nav-link {
+            color: #e0e0e0 !important;
+        }
+        
+        .nav-link:hover {
+            color: #ffffff !important;
+        }
+        
+        .nav-link.active {
+            color: #ffffff !important;
+            font-weight: 600;
+        }
+        
+        .config-card {
+            background: #0a0a0a;
+            border: 1px solid #1a1a1a;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+        }
+        
+        .config-card h5 {
+            color: #e0e0e0;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #4ecdc4;
+            padding-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .config-card h5 i {
+            margin-right: 10px;
+        }
+        
+        .form-label {
+            font-weight: 600;
+            color: #e0e0e0;
+            margin-bottom: 8px;
+        }
+        
+        .form-control, .form-select {
+            background: #1a1a1a;
+            border: 1px solid #2a2a2a;
+            color: #e0e0e0;
+        }
+        
+        .form-control:focus, .form-select:focus {
+            background: #2a2a2a;
+            border-color: #4ecdc4;
+            color: #ffffff;
+            box-shadow: 0 0 0 0.2rem rgba(78, 205, 196, 0.25);
+        }
+        
+        .help-text {
+            font-size: 0.875rem;
+            color: #888888;
+            margin-top: 5px;
+        }
+        
+        .btn-primary {
+            background: #1a1a1a;
+            border: 1px solid #2a2a2a;
+            color: #ffffff;
+        }
+        
+        .btn-primary:hover {
+            background: #2a2a2a;
+            border-color: #4ecdc4;
+        }
+        
+        .btn-success {
+            background: #1a1a1a;
+            border: 1px solid #2a2a2a;
+            color: #ffffff;
+        }
+        
+        .btn-success:hover {
+            background: #2a2a2a;
+            border-color: #4ecdc4;
+        }
+        
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+        
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #2a2a2a;
+            transition: .4s;
+            border-radius: 24px;
+        }
+        
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        
+        input:checked + .slider {
+            background-color: #4ecdc4;
+        }
+        
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+        
+        .status-badge.active {
+            background: rgba(78, 205, 196, 0.2);
+            color: #4ecdc4;
+            border: 1px solid #4ecdc4;
+        }
+        
+        .status-badge.inactive {
+            background: rgba(255, 255, 255, 0.1);
+            color: #888888;
+            border: 1px solid #2a2a2a;
+        }
+        
+        .alert-info {
+            background: #050505;
+            border-color: #1a1a1a;
+            color: #b0b0b0;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #666666;
+        }
+        
+        .empty-state i {
+            font-size: 4rem;
+            margin-bottom: 20px;
+            opacity: 0.3;
+        }
+    </style>
+</head>
+<body>
+    <!-- 导航栏 -->
+    {% include 'admin/_navbar.html' %}
+
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-md-12">
+                <h2 class="mb-4">
+                    <i class="fas fa-sync-alt"></i> 轮询配置管理
+                </h2>
+                <p class="text-muted mb-4">配置不同任务类型的轮询规则，包括轮询间隔、等待时间、超时时间等</p>
+                
+                <!-- 配置列表 -->
+                <div id="configList">
+                    <div class="empty-state">
+                        <i class="fas fa-spinner fa-spin"></i>
+                        <p>加载配置中...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // 任务类型配置
+        const taskTypes = {
+            'api_task': {
+                name: 'API任务',
+                icon: 'fas fa-code',
+                description: '配置API任务的轮询规则'
+            },
+            'workflow_task': {
+                name: '工作流任务',
+                icon: 'fas fa-project-diagram',
+                description: '配置AI工作流任务的轮询规则'
+            },
+            'comfyui_task': {
+                name: 'API-ComfyUI工作流任务',
+                icon: 'fas fa-cogs',
+                description: '配置API-ComfyUI工作流任务的轮询规则'
+            }
+        };
+
+        // 加载配置列表
+        async function loadConfigs() {
+            try {
+                const response = await fetch('/api/admin/polling-config/list');
+                const result = await response.json();
+                
+                if (result.status === 'success') {
+                    const configs = result.data;
+                    renderConfigs(configs);
+                } else {
+                    showError('加载配置失败: ' + result.message);
+                }
+            } catch (error) {
+                console.error('加载配置失败:', error);
+                showError('加载配置失败，请刷新页面重试');
+            }
+        }
+
+        // 渲染配置列表
+        function renderConfigs(configs) {
+            const container = document.getElementById('configList');
+            
+            if (configs.length === 0) {
+                // 如果没有配置，显示默认配置
+                const defaultConfigs = [
+                    {
+                        id: null,
+                        task_type: 'api_task',
+                        task_type_name: 'API任务',
+                        polling_interval: 10,
+                        polling_interval_with_tasks: 5,
+                        wait_before_polling: 30,
+                        wait_before_polling_test: 0,
+                        timeout_seconds: 3600,
+                        is_active: true
+                    },
+                    {
+                        id: null,
+                        task_type: 'workflow_task',
+                        task_type_name: '工作流任务',
+                        polling_interval: 10,
+                        polling_interval_with_tasks: 5,
+                        wait_before_polling: 30,
+                        wait_before_polling_test: 0,
+                        timeout_seconds: 3600,
+                        is_active: true
+                    },
+                    {
+                        id: null,
+                        task_type: 'comfyui_task',
+                        task_type_name: 'API-ComfyUI工作流任务',
+                        polling_interval: 10,
+                        polling_interval_with_tasks: 5,
+                        wait_before_polling: 30,
+                        wait_before_polling_test: 0,
+                        timeout_seconds: 3600,
+                        is_active: true
+                    }
+                ];
+                renderConfigs(defaultConfigs);
+                return;
+            }
+            
+            container.innerHTML = configs.map(config => {
+                const taskType = taskTypes[config.task_type] || {
+                    name: config.task_type_name || config.task_type,
+                    icon: 'fas fa-cog',
+                    description: ''
+                };
+                
+                return `
+                    <div class="config-card" data-config-id="${config.id || ''}" data-task-type="${config.task_type}">
+                        <h5>
+                            <span>
+                                <i class="${taskType.icon}"></i>
+                                ${taskType.name}
+                            </span>
+                            <span class="status-badge ${config.is_active ? 'active' : 'inactive'}">
+                                ${config.is_active ? '已启用' : '已禁用'}
+                            </span>
+                        </h5>
+                        <form class="config-form" onsubmit="saveConfig(event, '${config.task_type}')">
+                            <input type="hidden" name="id" value="${config.id || ''}">
+                            <input type="hidden" name="task_type" value="${config.task_type}">
+                            <input type="hidden" name="task_type_name" value="${taskType.name}">
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">轮询间隔（秒）</label>
+                                        <input type="number" class="form-control" name="polling_interval" 
+                                               value="${config.polling_interval || 10}" min="1" max="300" required>
+                                        <div class="help-text">无活跃任务时的轮询间隔，建议10秒</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">有活跃任务时的轮询间隔（秒）</label>
+                                        <input type="number" class="form-control" name="polling_interval_with_tasks" 
+                                               value="${config.polling_interval_with_tasks || 5}" min="1" max="300" required>
+                                        <div class="help-text">有活跃任务时的轮询间隔，建议5秒（提高响应速度）</div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">任务创建后等待时间（秒）</label>
+                                        <input type="number" class="form-control" name="wait_before_polling" 
+                                               value="${config.wait_before_polling || 30}" min="0" max="600" required>
+                                        <div class="help-text">正常订单创建后等待时间，建议30秒（避免频繁查询刚创建的任务）</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">测试任务创建后等待时间（秒）</label>
+                                        <input type="number" class="form-control" name="wait_before_polling_test" 
+                                               value="${config.wait_before_polling_test || 0}" min="0" max="600" required>
+                                        <div class="help-text">测试任务创建后等待时间，建议0秒（立即开始轮询，提高响应速度）</div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">任务超时时间（秒）</label>
+                                        <input type="number" class="form-control" name="timeout_seconds" 
+                                               value="${config.timeout_seconds || 3600}" min="60" max="86400" required>
+                                        <div class="help-text">任务超时时间，超过此时间标记为失败，建议3600秒（1小时）</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">启用状态</label>
+                                        <div class="mt-2">
+                                            <label class="switch">
+                                                <input type="checkbox" name="is_active" ${config.is_active ? 'checked' : ''} 
+                                                       onchange="toggleActive(this, '${config.task_type}')">
+                                                <span class="slider"></span>
+                                            </label>
+                                            <span class="ms-2">${config.is_active ? '已启用' : '已禁用'}</span>
+                                        </div>
+                                        <div class="help-text">控制此任务类型的轮询是否启用</div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="alert alert-info mt-3">
+                                <i class="fas fa-info-circle"></i> 
+                                <strong>说明：</strong>${taskType.description || '配置此任务类型的轮询规则'}
+                            </div>
+                            
+                            <div class="mt-3">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save"></i> 保存配置
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // 保存配置
+        async function saveConfig(event, taskType) {
+            event.preventDefault();
+            
+            const form = event.target;
+            const formData = new FormData(form);
+            const data = {};
+            
+            for (let [key, value] of formData.entries()) {
+                if (key === 'is_active') {
+                    data[key] = true;
+                } else if (key === 'polling_interval' || key === 'polling_interval_with_tasks' || 
+                          key === 'wait_before_polling' || key === 'wait_before_polling_test' || 
+                          key === 'timeout_seconds') {
+                    data[key] = parseInt(value);
+                } else {
+                    data[key] = value;
+                }
+            }
+            
+            // 处理is_active
+            const isActiveCheckbox = form.querySelector('input[name="is_active"]');
+            data.is_active = isActiveCheckbox ? isActiveCheckbox.checked : true;
+            
+            try {
+                const response = await fetch('/api/admin/polling-config/save', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                
+                if (result.status === 'success') {
+                    alert('配置保存成功！');
+                    loadConfigs(); // 重新加载配置
+                } else {
+                    alert('保存失败: ' + result.message);
+                }
+            } catch (error) {
+                console.error('保存配置失败:', error);
+                alert('保存失败: ' + error.message);
+            }
+        }
+
+        // 切换启用状态
+        async function toggleActive(checkbox, taskType) {
+            const form = checkbox.closest('form');
+            const formData = new FormData(form);
+            const data = {};
+            
+            for (let [key, value] of formData.entries()) {
+                if (key === 'polling_interval' || key === 'polling_interval_with_tasks' || 
+                    key === 'wait_before_polling' || key === 'wait_before_polling_test' || 
+                    key === 'timeout_seconds') {
+                    data[key] = parseInt(value);
+                } else if (key !== 'is_active') {
+                    data[key] = value;
+                }
+            }
+            
+            data.is_active = checkbox.checked;
+            
+            try {
+                const response = await fetch('/api/admin/polling-config/save', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                
+                if (result.status === 'success') {
+                    // 更新状态显示
+                    const configCard = checkbox.closest('.config-card');
+                    const statusBadge = configCard.querySelector('.status-badge');
+                    const statusText = checkbox.closest('.mt-2').querySelector('span.ms-2');
+                    
+                    if (checkbox.checked) {
+                        if (statusBadge) {
+                            statusBadge.className = 'status-badge active';
+                            statusBadge.textContent = '已启用';
+                        }
+                        if (statusText) {
+                            statusText.textContent = '已启用';
+                        }
+                    } else {
+                        if (statusBadge) {
+                            statusBadge.className = 'status-badge inactive';
+                            statusBadge.textContent = '已禁用';
+                        }
+                        if (statusText) {
+                            statusText.textContent = '已禁用';
+                        }
+                    }
+                } else {
+                    checkbox.checked = !checkbox.checked; // 恢复原状态
+                    alert('保存失败: ' + result.message);
+                }
+            } catch (error) {
+                console.error('保存配置失败:', error);
+                checkbox.checked = !checkbox.checked; // 恢复原状态
+                alert('保存失败: ' + error.message);
+            }
+        }
+
+        // 显示错误
+        function showError(message) {
+            const container = document.getElementById('configList');
+            container.innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle"></i> ${message}
+                </div>
+            `;
+        }
+
+        // 页面加载时初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            loadConfigs();
+        });
+    </script>
+</body>
+</html>

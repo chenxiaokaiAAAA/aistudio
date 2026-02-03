@@ -107,7 +107,12 @@
                     </div>
                     <div class="card-body">
                         <form method="GET" class="row g-3">
-                            <div class="col-md-4">
+                            <div class="col-md-3">
+                                <label for="search" class="form-label">订单搜索</label>
+                                <input type="text" class="form-control" id="search" name="search" 
+                                       placeholder="订单号/客户姓名/电话" value="{{ search or '' }}">
+                            </div>
+                            <div class="col-md-3">
                                 <label for="franchisee_id" class="form-label">订单来源（门店）</label>
                                 <select class="form-select" id="franchisee_id" name="franchisee_id">
                                     <option value="">全部门店</option>
@@ -116,7 +121,7 @@
                                     {% endfor %}
                                 </select>
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-md-2">
                                 <label for="status" class="form-label">订单状态</label>
                                 <select class="form-select" id="status" name="status">
                                     <option value="">全部状态（已支付）</option>
@@ -132,7 +137,15 @@
                                     <option value="unpaid" {% if status == 'unpaid' %}selected{% endif %}>未支付（查看全部）</option>
                                 </select>
                             </div>
-                            <div class="col-md-4 d-flex align-items-end">
+                            <div class="col-md-2">
+                                <label for="order_mode" class="form-label">订单类型</label>
+                                <select class="form-select" id="order_mode" name="order_mode">
+                                    <option value="">全部类型</option>
+                                    <option value="shooting" {% if order_mode == 'shooting' %}selected{% endif %}>立即拍摄</option>
+                                    <option value="making" {% if order_mode == 'making' %}selected{% endif %}>立即制作</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2 d-flex align-items-end">
                                 <button type="submit" class="btn btn-primary me-2">筛选</button>
                                 <a href="/admin/orders" class="btn btn-secondary">重置</a>
                             </div>
@@ -144,7 +157,7 @@
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <h5 class="mb-0">订单列表</h5>
                         <div class="d-flex align-items-center">
-                            <small class="text-muted me-3">共 {{ orders|length }} 条记录</small>
+                            <small class="text-muted me-3">共 {{ total_count }} 条记录，第 {{ current_page }}/{{ total_pages }} 页（每页10条）</small>
                             <!-- 批量更新订单状态按钮 -->
                             <button type="button" class="btn btn-warning btn-sm me-2" onclick="batchUpdateOrderStatus()" title="批量更新所有已完成AI任务的订单状态为'待选片'">
                                 <i class="fas fa-sync-alt"></i> 批量更新状态
@@ -176,6 +189,7 @@
                                         <th style="font-size: 0.9rem; padding: 0.6rem; white-space: nowrap;">产品名称</th>
                                         <th style="font-size: 0.9rem; padding: 0.6rem; white-space: nowrap;">来源（门店）</th>
                                         <th style="font-size: 0.9rem; padding: 0.6rem; white-space: nowrap;">状态</th>
+                                        <th style="font-size: 0.9rem; padding: 0.6rem; white-space: nowrap;">订单类型</th>
                                         <th style="font-size: 0.9rem; padding: 0.6rem; white-space: nowrap;">下单时间</th>
                                         <th style="font-size: 0.9rem; padding: 0.6rem; white-space: nowrap;">完成时间</th>
                                         <th style="font-size: 0.9rem; padding: 0.6rem; text-align: center; white-space: nowrap;">操作</th>
@@ -187,7 +201,7 @@
                                         <td style="font-size: 0.9rem; padding: 0.6rem; word-break: break-all;">{{ order.order_number }}</td>
                                         <td style="font-size: 0.9rem; padding: 0.6rem; word-wrap: break-word;" title="{{ order.customer_name }}">{{ order.customer_name or '-' }}</td>
                                         <td style="font-size: 0.9rem; padding: 0.6rem; word-break: break-all;">{{ order.customer_phone or '-' }}</td>
-                                        <td style="font-size: 0.9rem; padding: 0.6rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="{{ order.product_name or order.size|size_name }}">{{ order.product_name or order.size|size_name }}</td>
+                                        <td style="font-size: 0.9rem; padding: 0.6rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="{{ order.product_name or order.size or '-' }}">{{ order.product_name or order.size or '-' }}</td>
                                         <td style="font-size: 0.9rem; padding: 0.6rem; white-space: nowrap;">
                                             {% if order.franchisee_id and order.franchisee_account %}
                                             <span class="badge bg-warning" style="font-size: 0.8rem;" title="门店：{{ order.franchisee_account.company_name }}">{{ order.franchisee_account.company_name }}</span>
@@ -228,16 +242,17 @@
                                             <span class="badge bg-warning" style="font-size: 0.8rem;">高清放大</span>
                                             {% elif order.status == 'processing' %}
                                             <span class="badge bg-primary" style="font-size: 0.8rem;">处理中</span>
-                                            {% elif order.status == 'manufacturing' %}
-                                            <span class="badge bg-primary" style="font-size: 0.8rem;">制作中</span>
-                                            {% elif order.status == 'delivered' %}
-                                            <span class="badge bg-info" style="font-size: 0.8rem;">已送达</span>
-                                            {% elif order.status == 'cancelled' %}
-                                            <span class="badge bg-danger" style="font-size: 0.8rem;">已取消</span>
-                                            {% elif order.status == 'refunded' %}
-                                            <span class="badge bg-danger" style="font-size: 0.8rem;">已退款</span>
                                             {% else %}
                                             <span class="badge bg-secondary" style="font-size: 0.8rem;">{{ order.status or '未知' }}</span>
+                                            {% endif %}
+                                        </td>
+                                        <td style="font-size: 0.9rem; padding: 0.6rem; white-space: nowrap;">
+                                            {% if order.order_mode == 'shooting' %}
+                                            <span class="badge bg-primary" style="font-size: 0.8rem;" title="立即拍摄-自拍机拍摄">立即拍摄</span>
+                                            {% elif order.order_mode == 'making' %}
+                                            <span class="badge bg-warning" style="font-size: 0.8rem;" title="立即制作-人工线上订单">立即制作</span>
+                                            {% else %}
+                                            <span class="badge bg-secondary" style="font-size: 0.8rem;">-</span>
                                             {% endif %}
                                         </td>
                                         <td style="font-size: 0.9rem; padding: 0.6rem; white-space: normal; line-height: 1.6;">
@@ -262,6 +277,50 @@
                             </table>
                         </div>
                     </div>
+                    <!-- 分页 -->
+                    {% if total_pages > 1 %}
+                    <div class="card-footer">
+                        <nav aria-label="订单分页">
+                            <ul class="pagination justify-content-center mb-0">
+                                {% if current_page > 1 %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ current_page - 1 }}{% if search %}&search={{ search }}{% endif %}{% if franchisee_id %}&franchisee_id={{ franchisee_id }}{% endif %}{% if status %}&status={{ status }}{% endif %}{% if order_mode %}&order_mode={{ order_mode }}{% endif %}">上一页</a>
+                                </li>
+                                {% else %}
+                                <li class="page-item disabled">
+                                    <span class="page-link">上一页</span>
+                                </li>
+                                {% endif %}
+                                
+                                {% for page_num in range(1, total_pages + 1) %}
+                                    {% if page_num == current_page %}
+                                    <li class="page-item active">
+                                        <span class="page-link">{{ page_num }}</span>
+                                    </li>
+                                    {% elif page_num <= 3 or page_num > total_pages - 3 or (page_num >= current_page - 1 and page_num <= current_page + 1) %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_num }}{% if search %}&search={{ search }}{% endif %}{% if franchisee_id %}&franchisee_id={{ franchisee_id }}{% endif %}{% if status %}&status={{ status }}{% endif %}{% if order_mode %}&order_mode={{ order_mode }}{% endif %}">{{ page_num }}</a>
+                                    </li>
+                                    {% elif page_num == 4 or page_num == total_pages - 3 %}
+                                    <li class="page-item disabled">
+                                        <span class="page-link">...</span>
+                                    </li>
+                                    {% endif %}
+                                {% endfor %}
+                                
+                                {% if current_page < total_pages %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ current_page + 1 }}{% if search %}&search={{ search }}{% endif %}{% if franchisee_id %}&franchisee_id={{ franchisee_id }}{% endif %}{% if status %}&status={{ status }}{% endif %}{% if order_mode %}&order_mode={{ order_mode }}{% endif %}">下一页</a>
+                                </li>
+                                {% else %}
+                                <li class="page-item disabled">
+                                    <span class="page-link">下一页</span>
+                                </li>
+                                {% endif %}
+                            </ul>
+                        </nav>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
         </div>

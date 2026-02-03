@@ -17,7 +17,7 @@ def diagnose_callback_api():
     print("🔍 物流回调接口诊断")
     print("=" * 40)
     
-    api_url = "https://moeart.cc/api/logistics/callback"
+    api_url = "https://photogooo/api/logistics/callback"
     test_order = "PET17582664981342618"
     
     # 测试数据
@@ -35,7 +35,7 @@ def diagnose_callback_api():
     # 1. 检查网络连接
     print("1️⃣ 检查网络连接...")
     try:
-        response = requests.get("https://moeart.cc", timeout=5)
+        response = requests.get("https://photogooo", timeout=5)
         print(f"   ✅ 网站可访问 (状态码: {response.status_code})")
     except Exception as e:
         print(f"   ❌ 网站无法访问: {str(e)}")

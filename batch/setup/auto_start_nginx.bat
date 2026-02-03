@@ -30,7 +30,7 @@ timeout /t 3 /nobreak >nul
 netstat -ano | findstr ":80" | findstr "LISTENING" >nul
 if %errorlevel% equ 0 (
     echo ✅ HTTPS服务启动成功！
-    echo 可以通过 https://moeart.cc 访问您的网站
+    echo 可以通过 https://photogooo 访问您的网站
 ) else (
     echo ❌ HTTPS服务启动失败，请检查日志
 )

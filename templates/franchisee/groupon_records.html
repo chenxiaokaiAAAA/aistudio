@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>团购核销记录 - {{ account.company_name }}</title>
+    <link href="/static/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body {
+            background: #f5f5f5;
+            padding-top: 80px;
+        }
+        .navbar-custom {
+            background: #0a0a0a !important;
+            border-bottom: 1px solid #1a1a1a;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        }
+        .navbar-brand, .nav-link {
+            color: #e0e0e0 !important;
+        }
+        .nav-link:hover {
+            color: #ffffff !important;
+        }
+        .nav-link.active {
+            color: #ffffff !important;
+            font-weight: 600;
+        }
+        .main-content {
+            padding: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        .card {
+            background: #ffffff;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .card-header {
+            background: #f8f9fa;
+            border-bottom: 1px solid #dee2e6;
+            padding: 12px 20px;
+        }
+        .table {
+            width: 100%;
+            margin-bottom: 0;
+        }
+        .table th {
+            white-space: nowrap;
+            font-weight: 500;
+            background: #f8f9fa;
+            padding: 12px;
+            font-size: 0.9rem;
+        }
+        .table td {
+            padding: 12px;
+            font-size: 0.9rem;
+            vertical-align: middle;
+        }
+        .table-hover tbody tr:hover {
+            background-color: #f8f9fa;
+        }
+    </style>
+</head>
+<body>
+    <!-- 导航栏 -->
+    {% include 'franchisee/_navbar.html' %}
+
+    <div class="main-content">
+        <div class="row mb-4">
+            <div class="col-12">
+                <h2 class="mb-4"><i class="fas fa-list"></i> 团购核销记录</h2>
+                
+                <!-- 统计卡片 -->
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <div class="card bg-primary text-white">
+                            <div class="card-body">
+                                <h5 class="card-title">总核销记录</h5>
+                                <h3>{{ total_verifies }}</h3>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card bg-info text-white">
+                            <div class="card-body">
+                                <h5 class="card-title">今日核销</h5>
+                                <h3>{{ today_verifies }}</h3>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 筛选器 -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h6 class="mb-0">筛选条件</h6>
+                    </div>
+                    <div class="card-body">
+                        <form method="GET" class="row g-3">
+                            <div class="col-md-4">
+                                <label for="search" class="form-label">搜索</label>
+                                <input type="text" class="form-control" id="search" name="search" 
+                                       placeholder="订单号/优惠券代码" value="{{ search or '' }}">
+                            </div>
+                            <div class="col-md-4">
+                                <label for="platform" class="form-label">平台</label>
+                                <select class="form-select" id="platform" name="platform">
+                                    <option value="">全部平台</option>
+                                    {% for p in platforms %}
+                                    <option value="{{ p }}" {% if platform == p %}selected{% endif %}>{{ p }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-4 d-flex align-items-end">
+                                <button type="submit" class="btn btn-primary me-2">筛选</button>
+                                <a href="/franchisee/groupon/records" class="btn btn-secondary">重置</a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- 核销记录列表 -->
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">核销记录列表</h5>
+                        <small class="text-muted">共 {{ pagination.total }} 条记录，第 {{ pagination.page }}/{{ pagination.pages }} 页</small>
+                    </div>
+                    <div class="card-body p-0">
+                        <div style="overflow-x: auto;">
+                            <table class="table table-hover mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>团购订单号</th>
+                                        <th>平台</th>
+                                        <th>套餐</th>
+                                        <th>核销金额</th>
+                                        <th>优惠券代码</th>
+                                        <th>客户手机号</th>
+                                        <th>创建人</th>
+                                        <th>状态</th>
+                                        <th>创建时间</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for record in verify_records %}
+                                    {% set coupon = record.coupon %}
+                                    <tr>
+                                        <td><code>{{ coupon.groupon_order_id or '-' }}</code></td>
+                                        <td>
+                                            {% if record.platform %}
+                                                <span class="badge bg-info">{{ record.platform }}</span>
+                                            {% elif coupon.groupon_platform %}
+                                                <span class="badge bg-info">{{ coupon.groupon_platform }}</span>
+                                            {% else %}
+                                                <span class="text-muted">-</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ record.package_name or '-' }}</td>
+                                        <td>¥{{ '%.2f'|format(coupon.verify_amount or 0) }}</td>
+                                        <td><code>{{ coupon.code }}</code></td>
+                                        <td>
+                                            {% if coupon.customer_phone and coupon.customer_phone|length == 11 %}
+                                                {{ coupon.customer_phone[:3] }}****{{ coupon.customer_phone[7:] }}
+                                            {% else %}
+                                                {{ coupon.customer_phone or '-' }}
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ record.creator_info }}</td>
+                                        <td>
+                                            {% if coupon.status == 'active' %}
+                                                <span class="badge bg-success">有效</span>
+                                            {% elif coupon.status == 'expired' %}
+                                                <span class="badge bg-secondary">已过期</span>
+                                            {% else %}
+                                                <span class="badge bg-warning">已停用</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ coupon.create_time.strftime('%Y-%m-%d %H:%M') }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <!-- 分页 -->
+                    {% if pagination.pages > 1 %}
+                    <div class="card-footer">
+                        <nav aria-label="核销记录分页">
+                            <ul class="pagination justify-content-center mb-0">
+                                {% if pagination.has_prev %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ pagination.prev_num }}{% if search %}&search={{ search }}{% endif %}{% if platform %}&platform={{ platform }}{% endif %}">上一页</a>
+                                </li>
+                                {% else %}
+                                <li class="page-item disabled">
+                                    <span class="page-link">上一页</span>
+                                </li>
+                                {% endif %}
+                                
+                                {% for page_num in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+                                    {% if page_num %}
+                                        {% if page_num == pagination.page %}
+                                        <li class="page-item active">
+                                            <span class="page-link">{{ page_num }}</span>
+                                        </li>
+                                        {% else %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ page_num }}{% if search %}&search={{ search }}{% endif %}{% if platform %}&platform={{ platform }}{% endif %}">{{ page_num }}</a>
+                                        </li>
+                                        {% endif %}
+                                    {% else %}
+                                        <li class="page-item disabled">
+                                            <span class="page-link">...</span>
+                                        </li>
+                                    {% endif %}
+                                {% endfor %}
+                                
+                                {% if pagination.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ pagination.next_num }}{% if search %}&search={{ search }}{% endif %}{% if platform %}&platform={{ platform }}{% endif %}">下一页</a>
+                                </li>
+                                {% else %}
+                                <li class="page-item disabled">
+                                    <span class="page-link">下一页</span>
+                                </li>
+                                {% endif %}
+                            </ul>
+                        </nav>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

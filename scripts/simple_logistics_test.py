@@ -14,7 +14,7 @@ def main():
     print("=" * 40)
     
     # 接口配置
-    api_url = "https://moeart.cc/api/logistics/callback"
+    api_url = "https://photogooo/api/logistics/callback"
     order_number = "PET17582664981342618"
     
     # 测试数据

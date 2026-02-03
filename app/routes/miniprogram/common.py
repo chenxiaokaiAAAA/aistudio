@@ -16,7 +16,10 @@ def get_models():
         'Order': test_server_module.Order,
         'OrderImage': test_server_module.OrderImage,
         'StyleCategory': test_server_module.StyleCategory,
+        'StyleSubcategory': getattr(test_server_module, 'StyleSubcategory', None),
         'StyleImage': test_server_module.StyleImage,
+        'ProductCategory': getattr(test_server_module, 'ProductCategory', None),
+        'ProductSubcategory': getattr(test_server_module, 'ProductSubcategory', None),
         'Product': test_server_module.Product,
         'ProductSize': test_server_module.ProductSize,
         'ProductImage': test_server_module.ProductImage,
@@ -24,6 +27,9 @@ def get_models():
         'ProductCustomField': test_server_module.ProductCustomField,
         'ProductSizePetOption': test_server_module.ProductSizePetOption,
         'HomepageBanner': test_server_module.HomepageBanner,
+        'HomepageCategoryNav': getattr(test_server_module, 'HomepageCategoryNav', None),
+        'HomepageProductSection': getattr(test_server_module, 'HomepageProductSection', None),
+        'HomepageActivityBanner': getattr(test_server_module, 'HomepageActivityBanner', None),
         'PromotionUser': test_server_module.PromotionUser,
         'Commission': test_server_module.Commission,
         'app': test_server_module.app if hasattr(test_server_module, 'app') else None
@@ -54,6 +60,8 @@ def get_models():
             models['UserCoupon'] = test_server_module.UserCoupon
         if hasattr(test_server_module, 'StaffUser'):
             models['StaffUser'] = test_server_module.StaffUser
+        if hasattr(test_server_module, 'GrouponPackage'):
+            models['GrouponPackage'] = test_server_module.GrouponPackage
     except Exception as e:
         print(f"警告: 加载其他模型时出错: {e}")
     

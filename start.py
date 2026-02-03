@@ -162,7 +162,7 @@ def main():
         logger.info("Flask应用启动中...")
         app.run(
             host='0.0.0.0', 
-            port=8002, 
+            port=8000, 
             debug=True,  # 开发环境启用debug模式，自动重载模板
             threaded=True,  # 启用多线程支持
             use_reloader=True,  # 启用自动重载

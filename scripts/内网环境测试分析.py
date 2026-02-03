@@ -14,7 +14,7 @@ def analyze_network_issue():
     print("1. 您的服务器在内网 (192.168.1.66)")
     print("2. 厂家系统在外网，无法直接访问您的内网IP")
     print("3. 冲印系统需要下载您的高清图片文件")
-    print("4. 当前配置的文件URL: http://moeart.cc/media/hd/xxx.jpg")
+    print("4. 当前配置的文件URL: http://photogooo/media/hd/xxx.jpg")
     print("   ↑ 厂家无法访问这个地址")
     print()
     

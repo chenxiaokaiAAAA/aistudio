@@ -43,7 +43,7 @@
 如果自动启动失败，请：
 1. 检查 `logs\error.log` 文件
 2. 手动运行 `auto_start_nginx.bat` 查看错误信息
-3. 确认SSL证书文件存在：`C:\nginx\ssl\moeart.cc.pem` 和 `C:\nginx\ssl\moeart.cc.key`
+3. 确认SSL证书文件存在：`C:\nginx\ssl\photogooo.pem` 和 `C:\nginx\ssl\photogooo.key`
 
 ## 服务管理命令
 ```bash

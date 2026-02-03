@@ -157,9 +157,9 @@ def download_order_image():
     
     # 图片URL列表（按优先级排序）
     image_urls = [
-        "http://moeart.cc/public/hd/hd_8b6230e1-840a-4e9d-9df8-f85f7866d0cf_-2.jpg",
-        "http://moeart.cc/static/hd/hd_8b6230e1-840a-4e9d-9df8-f85f7866d0cf_-2.jpg",
-        "http://moeart.cc/hd_images/hd_8b6230e1-840a-4e9d-9df8-f85f7866d0cf_-2.jpg",
+        "http://photogooo/public/hd/hd_8b6230e1-840a-4e9d-9df8-f85f7866d0cf_-2.jpg",
+        "http://photogooo/static/hd/hd_8b6230e1-840a-4e9d-9df8-f85f7866d0cf_-2.jpg",
+        "http://photogooo/hd_images/hd_8b6230e1-840a-4e9d-9df8-f85f7866d0cf_-2.jpg",
     ]
     
     print(f"🔍 下载订单图片: {order_number}")

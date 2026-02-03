@@ -4,7 +4,7 @@
 
 本文档提供给厂家，详细说明小程序和Android App调用的所有API接口。
 
-**生产环境地址**：`https://moeart.cc`  
+**生产环境地址**：`https://photogooo`  
 **API基础路径**：`/api/miniprogram`  
 **请求格式**：JSON  
 **响应格式**：JSON
@@ -110,11 +110,11 @@
     {
       "code": "style1",
       "name": "经典风格",
-      "cover_image": "https://moeart.cc/static/images/style1.jpg",
+      "cover_image": "https://photogooo/static/images/style1.jpg",
       "images": [
         {
           "code": "img1",
-          "url": "https://moeart.cc/static/images/img1.jpg"
+          "url": "https://photogooo/static/images/img1.jpg"
         }
       ]
     }
@@ -231,7 +231,7 @@
       "statusText": "处理中",
       "createTime": "2026-01-14 12:34:56",
       "completeTime": null,
-      "hdImage": "https://moeart.cc/public/hd/PET20250114123456ABCD_effect_001.png"
+      "hdImage": "https://photogooo/public/hd/PET20250114123456ABCD_effect_001.png"
     }
   ]
 }
@@ -262,8 +262,8 @@
     "createTime": "2026-01-14 12:34:56",
     "shootingCompletedAt": "2026-01-14 13:00:00",
     "completedAt": "2026-01-14 14:00:00",
-    "hdImage": "https://moeart.cc/public/hd/PET20250114123456ABCD_effect_001.png",
-    "hdImageNoWatermark": "https://moeart.cc/public/hd/clean_PET20250114123456ABCD_effect_001.png"
+    "hdImage": "https://photogooo/public/hd/PET20250114123456ABCD_effect_001.png",
+    "hdImageNoWatermark": "https://photogooo/public/hd/clean_PET20250114123456ABCD_effect_001.png"
   }
 }
 ```
@@ -528,19 +528,19 @@ ApiService.getInstance().checkOrder(context, orderId, new ApiService.ApiCallback
 #### 1. 测试获取产品列表（curl）
 
 ```bash
-curl -X GET "https://moeart.cc/api/miniprogram/products"
+curl -X GET "https://photogooo/api/miniprogram/products"
 ```
 
 #### 2. 测试检查订单状态（curl）
 
 ```bash
-curl -X GET "https://moeart.cc/api/miniprogram/order/check?orderId=PET20250114123456ABCD&machineSerialNumber=XMSM_001"
+curl -X GET "https://photogooo/api/miniprogram/order/check?orderId=PET20250114123456ABCD&machineSerialNumber=XMSM_001"
 ```
 
 #### 3. 测试上传照片（curl）
 
 ```bash
-curl -X POST "https://moeart.cc/api/miniprogram/order/upload" \
+curl -X POST "https://photogooo/api/miniprogram/order/upload" \
   -F "orderId=PET20250114123456ABCD" \
   -F "machineSerialNumber=XMSM_001" \
   -F "photos=@/path/to/photo1.jpg" \
@@ -579,10 +579,10 @@ public class MachineConfig {
 ### 服务器地址配置
 
 **生产环境**：
-- 后端：`https://moeart.cc`
-- API：`https://moeart.cc/api/miniprogram`
-- 静态资源：`https://moeart.cc/static`
-- 媒体文件：`https://moeart.cc/media`
+- 后端：`https://photogooo`
+- API：`https://photogooo/api/miniprogram`
+- 静态资源：`https://photogooo/static`
+- 媒体文件：`https://photogooo/media`
 
 **开发环境**（仅用于测试）：
 - 后端：`http://192.168.2.54:8000`

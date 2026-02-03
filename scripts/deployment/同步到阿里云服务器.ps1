@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # 完整同步工具：代码 + 数据库 + 图片到阿里云服务器
 # 使用方法：.\scripts\deployment\同步到阿里云服务器.ps1
 
@@ -7,13 +6,13 @@ param(
     [string]$ServerUser = "root",
     [string]$KeyPath = "aliyun-key\your-key.pem",
     [string]$RemotePath = "/root/project_code",
-    [switch]$CodeOnly = $false,      # 只同步代码
-    [switch]$DatabaseOnly = $false,  # 只同步数据库
-    [switch]$ImagesOnly = $false,    # 只同步图片
-    [switch]$All = $true             # 同步所有（默认）
+    [switch]$CodeOnly = $false,
+    [switch]$DatabaseOnly = $false,
+    [switch]$ImagesOnly = $false,
+    [switch]$All = $true
 )
 
-$ErrorActionPreference = "Stop"
+$ErrorActionPreference = "Continue"
 
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host "    同步到阿里云服务器" -ForegroundColor Cyan
@@ -45,9 +44,9 @@ Write-Host "同步配置：" -ForegroundColor Green
 Write-Host "  服务器: $ServerUser@$ServerIP" -ForegroundColor White
 Write-Host "  远程路径: $RemotePath" -ForegroundColor White
 Write-Host "  同步内容:" -ForegroundColor White
-if ($syncCode) { Write-Host "    ✅ 代码文件（通过Git）" -ForegroundColor Green }
-if ($syncDatabase) { Write-Host "    ✅ 数据库文件" -ForegroundColor Green }
-if ($syncImages) { Write-Host "    ✅ 图片文件" -ForegroundColor Green }
+if ($syncCode) { Write-Host "    [OK] 代码文件（通过Git）" -ForegroundColor Green }
+if ($syncDatabase) { Write-Host "    [OK] 数据库文件" -ForegroundColor Green }
+if ($syncImages) { Write-Host "    [OK] 图片文件" -ForegroundColor Green }
 Write-Host ""
 
 $confirm = Read-Host "确认开始同步？(Y/N)"
@@ -63,14 +62,14 @@ if ($syncCode) {
     Write-Host "[1/3] 同步代码到GitHub..." -ForegroundColor Cyan
     
     # 检查Git状态
-    $gitStatus = git status --porcelain
-    if ($gitStatus) {
+    $gitStatus = git status --porcelain 2>&1
+    if ($gitStatus -and $gitStatus -notmatch "not a git") {
         Write-Host "  检测到未提交的更改，是否先提交到GitHub？" -ForegroundColor Yellow
         $commitConfirm = Read-Host "  提交并推送？(Y/N，直接回车跳过)"
         
         if ($commitConfirm -eq "Y" -or $commitConfirm -eq "y") {
             Write-Host "  添加文件..." -ForegroundColor White
-            git add .
+            git add . 2>&1 | Out-Null
             
             $commitMsg = Read-Host "  请输入提交信息（直接回车使用默认）"
             if ([string]::IsNullOrWhiteSpace($commitMsg)) {
@@ -78,34 +77,36 @@ if ($syncCode) {
             }
             
             Write-Host "  提交更改..." -ForegroundColor White
-            git commit -m $commitMsg
+            git commit -m $commitMsg 2>&1 | Out-Null
             
             Write-Host "  推送到GitHub..." -ForegroundColor White
-            git push origin master
+            $pushResult = git push origin master 2>&1
             if ($LASTEXITCODE -ne 0) {
-                git push origin main
+                $pushResult = git push origin main 2>&1
             }
-            Write-Host "  ✅ 代码已推送到GitHub" -ForegroundColor Green
+            Write-Host "  [OK] 代码已推送到GitHub" -ForegroundColor Green
         }
     } else {
-        Write-Host "  ℹ️  没有未提交的更改" -ForegroundColor Gray
+        Write-Host "  [信息] 没有未提交的更改" -ForegroundColor Gray
     }
     
     # 在服务器上拉取最新代码
     Write-Host ""
     Write-Host "  在服务器上拉取最新代码..." -ForegroundColor White
-    $sshCmd = "cd $RemotePath && git pull origin master || git pull origin main"
+    $sshCmd = "cd $RemotePath; git pull origin master 2>&1; if [ `$? -ne 0 ]; then git pull origin main 2>&1; fi"
     
     if (Test-Path $KeyPath) {
-        ssh -i $KeyPath $ServerUser@$ServerIP $sshCmd
+        $result = ssh -i $KeyPath $ServerUser@$ServerIP $sshCmd 2>&1
+        Write-Host $result
     } else {
-        ssh $ServerUser@$ServerIP $sshCmd
+        $result = ssh $ServerUser@$ServerIP $sshCmd 2>&1
+        Write-Host $result
     }
     
     if ($LASTEXITCODE -eq 0) {
-        Write-Host "  ✅ 代码同步完成" -ForegroundColor Green
+        Write-Host "  [OK] 代码同步完成" -ForegroundColor Green
     } else {
-        Write-Host "  ⚠️  代码同步可能失败，请检查服务器连接" -ForegroundColor Yellow
+        Write-Host "  [警告] 代码同步可能失败，请检查服务器连接" -ForegroundColor Yellow
     }
 }
 
@@ -123,27 +124,27 @@ if ($syncDatabase) {
         
         Write-Host "  正在上传..." -ForegroundColor White
         if (Test-Path $KeyPath) {
-            scp -i $KeyPath $dbFile "${ServerUser}@${ServerIP}:${remoteDbPath}"
+            scp -i $KeyPath $dbFile "${ServerUser}@${ServerIP}:${remoteDbPath}" 2>&1 | Out-Null
         } else {
-            scp $dbFile "${ServerUser}@${ServerIP}:${remoteDbPath}"
+            scp $dbFile "${ServerUser}@${ServerIP}:${remoteDbPath}" 2>&1 | Out-Null
         }
         
         if ($LASTEXITCODE -eq 0) {
-            Write-Host "  ✅ 数据库同步完成" -ForegroundColor Green
+            Write-Host "  [OK] 数据库同步完成" -ForegroundColor Green
             
             # 设置权限
             Write-Host "  设置文件权限..." -ForegroundColor White
-            $permCmd = "chmod 644 $remoteDbPath && chown root:root $remoteDbPath"
+            $permCmd = "chmod 644 $remoteDbPath; chown root:root $remoteDbPath"
             if (Test-Path $KeyPath) {
-                ssh -i $KeyPath $ServerUser@$ServerIP $permCmd
+                ssh -i $KeyPath $ServerUser@$ServerIP $permCmd 2>&1 | Out-Null
             } else {
-                ssh $ServerUser@$ServerIP $permCmd
+                ssh $ServerUser@$ServerIP $permCmd 2>&1 | Out-Null
             }
         } else {
-            Write-Host "  ⚠️  数据库同步失败" -ForegroundColor Yellow
+            Write-Host "  [警告] 数据库同步失败" -ForegroundColor Yellow
         }
     } else {
-        Write-Host "  ⚠️  数据库文件不存在: $dbFile" -ForegroundColor Yellow
+        Write-Host "  [警告] 数据库文件不存在: $dbFile" -ForegroundColor Yellow
     }
 }
 
@@ -163,7 +164,8 @@ if ($syncImages) {
         $remotePath = $dir.Remote
         
         if (Test-Path $localPath) {
-            $fileCount = (Get-ChildItem -Path $localPath -Recurse -File).Count
+            $files = Get-ChildItem -Path $localPath -Recurse -File -ErrorAction SilentlyContinue
+            $fileCount = $files.Count
             if ($fileCount -gt 0) {
                 Write-Host "  同步目录: $localPath ($fileCount 个文件)..." -ForegroundColor White
                 
@@ -171,30 +173,30 @@ if ($syncImages) {
                 if (Get-Command rsync -ErrorAction SilentlyContinue) {
                     # 使用 rsync（更高效）
                     if (Test-Path $KeyPath) {
-                        rsync -avz -e "ssh -i $KeyPath" "$localPath/" "${ServerUser}@${ServerIP}:${remotePath}/"
+                        rsync -avz -e "ssh -i $KeyPath" "$localPath/" "${ServerUser}@${ServerIP}:${remotePath}/" 2>&1 | Out-Null
                     } else {
-                        rsync -avz "$localPath/" "${ServerUser}@${ServerIP}:${remotePath}/"
+                        rsync -avz "$localPath/" "${ServerUser}@${ServerIP}:${remotePath}/" 2>&1 | Out-Null
                     }
                 } else {
                     # 使用 scp -r（较慢但兼容性好）
-                    Write-Host "    ⚠️  建议安装 rsync 以提高同步效率" -ForegroundColor Yellow
+                    Write-Host "    [提示] 建议安装 rsync 以提高同步效率" -ForegroundColor Yellow
                     if (Test-Path $KeyPath) {
-                        scp -r -i $KeyPath "$localPath" "${ServerUser}@${ServerIP}:${remotePath}/../"
+                        scp -r -i $KeyPath "$localPath" "${ServerUser}@${ServerIP}:${remotePath}/../" 2>&1 | Out-Null
                     } else {
-                        scp -r "$localPath" "${ServerUser}@${ServerIP}:${remotePath}/../"
+                        scp -r "$localPath" "${ServerUser}@${ServerIP}:${remotePath}/../" 2>&1 | Out-Null
                     }
                 }
                 
                 if ($LASTEXITCODE -eq 0) {
-                    Write-Host "    ✅ $localPath 同步完成" -ForegroundColor Green
+                    Write-Host "    [OK] $localPath 同步完成" -ForegroundColor Green
                 } else {
-                    Write-Host "    ⚠️  $localPath 同步可能失败" -ForegroundColor Yellow
+                    Write-Host "    [警告] $localPath 同步可能失败" -ForegroundColor Yellow
                 }
             } else {
-                Write-Host "  ℹ️  $localPath 目录为空，跳过" -ForegroundColor Gray
+                Write-Host "  [信息] $localPath 目录为空，跳过" -ForegroundColor Gray
             }
         } else {
-            Write-Host "  ℹ️  $localPath 目录不存在，跳过" -ForegroundColor Gray
+            Write-Host "  [信息] $localPath 目录不存在，跳过" -ForegroundColor Gray
         }
     }
 }
@@ -212,13 +214,13 @@ if ($restartConfirm -eq "Y" -or $restartConfirm -eq "y") {
     Write-Host "重启服务..." -ForegroundColor Cyan
     $restartCmd = "systemctl restart aistudio"
     if (Test-Path $KeyPath) {
-        ssh -i $KeyPath $ServerUser@$ServerIP $restartCmd
+        ssh -i $KeyPath $ServerUser@$ServerIP $restartCmd 2>&1 | Out-Null
     } else {
-        ssh $ServerUser@$ServerIP $restartCmd
+        ssh $ServerUser@$ServerIP $restartCmd 2>&1 | Out-Null
     }
     
     if ($LASTEXITCODE -eq 0) {
-        Write-Host "✅ 服务已重启" -ForegroundColor Green
+        Write-Host "[OK] 服务已重启" -ForegroundColor Green
     }
 }
 

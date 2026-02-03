@@ -1,4 +1,97 @@
 <!-- 统一导航栏模板 -->
+<style>
+    .navbar-custom .navbar-nav .nav-link {
+        font-size: 0.85rem;
+        padding: 0.4rem 0.6rem;
+    }
+    .navbar-custom .navbar-brand {
+        font-size: 1rem;
+    }
+    .navbar-custom .dropdown-toggle::after {
+        margin-left: 0.3rem;
+    }
+</style>
+{% set has_permission = namespace() %}
+{% if current_user and current_user.is_authenticated %}
+    {% if current_user.role == 'admin' %}
+        {% set has_permission.dashboard = True %}
+        {% set has_permission.orders = True %}
+        {% set has_permission.shop_orders = True %}
+        {% set has_permission.photo_selection = True %}
+        {% set has_permission.franchisee = True %}
+        {% set has_permission.products = True %}
+        {% set has_permission.shop_products = True %}
+        {% set has_permission.styles = True %}
+        {% set has_permission.playground = True %}
+        {% set has_permission.ai_tasks = True %}
+        {% set has_permission.meitu_tasks = True %}
+        {% set has_permission.system_config = True %}
+        {% set has_permission.meitu_config = True %}
+        {% set has_permission.ai_provider_config = True %}
+        {% set has_permission.image_cleanup = True %}
+        {% set has_permission.polling_config = True %}
+        {% set has_permission.print_config = True %}
+        {% set has_permission.printer = True %}
+        {% set has_permission.coupons = True %}
+        {% set has_permission.promotion = True %}
+        {% set has_permission.homepage = True %}
+        {% set has_permission.miniprogram_config = True %}
+        {% set has_permission.profile = True %}
+        {% set has_permission.payment = True %}
+    {% else %}
+        {# 操作员需要检查权限配置 #}
+        {% set user_permissions = get_user_page_permissions(current_user) %}
+        {% set has_permission.dashboard = 'dashboard' in user_permissions %}
+        {% set has_permission.orders = 'orders' in user_permissions %}
+        {% set has_permission.shop_orders = 'shop_orders' in user_permissions %}
+        {% set has_permission.photo_selection = 'photo_selection' in user_permissions %}
+        {% set has_permission.franchisee = 'franchisee' in user_permissions %}
+        {% set has_permission.products = 'products' in user_permissions %}
+        {% set has_permission.shop_products = 'shop_products' in user_permissions %}
+        {% set has_permission.styles = 'styles' in user_permissions %}
+        {% set has_permission.playground = 'playground' in user_permissions %}
+        {% set has_permission.ai_tasks = 'ai_tasks' in user_permissions %}
+        {% set has_permission.meitu_tasks = 'meitu_tasks' in user_permissions %}
+        {% set has_permission.system_config = 'system_config' in user_permissions %}
+        {% set has_permission.meitu_config = 'meitu_config' in user_permissions %}
+        {% set has_permission.ai_provider_config = 'ai_provider_config' in user_permissions %}
+        {% set has_permission.image_cleanup = 'image_cleanup' in user_permissions %}
+        {% set has_permission.polling_config = 'polling_config' in user_permissions %}
+        {% set has_permission.print_config = 'print_config' in user_permissions %}
+        {% set has_permission.printer = 'printer' in user_permissions %}
+        {% set has_permission.coupons = 'coupons' in user_permissions %}
+        {% set has_permission.promotion = 'promotion' in user_permissions %}
+        {% set has_permission.homepage = 'homepage' in user_permissions %}
+        {% set has_permission.miniprogram_config = 'miniprogram_config' in user_permissions %}
+        {% set has_permission.profile = True %} {# 个人中心始终允许访问 #}
+        {% set has_permission.payment = 'payment' in user_permissions %}
+    {% endif %}
+{% else %}
+    {% set has_permission.dashboard = False %}
+    {% set has_permission.orders = False %}
+    {% set has_permission.shop_orders = False %}
+    {% set has_permission.photo_selection = False %}
+    {% set has_permission.franchisee = False %}
+    {% set has_permission.products = False %}
+    {% set has_permission.shop_products = False %}
+    {% set has_permission.styles = False %}
+    {% set has_permission.playground = False %}
+    {% set has_permission.ai_tasks = False %}
+    {% set has_permission.meitu_tasks = False %}
+    {% set has_permission.system_config = False %}
+    {% set has_permission.meitu_config = False %}
+    {% set has_permission.ai_provider_config = False %}
+    {% set has_permission.image_cleanup = False %}
+    {% set has_permission.polling_config = False %}
+    {% set has_permission.print_config = False %}
+    {% set has_permission.printer = False %}
+    {% set has_permission.coupons = False %}
+    {% set has_permission.promotion = False %}
+    {% set has_permission.homepage = False %}
+    {% set has_permission.miniprogram_config = False %}
+    {% set has_permission.profile = False %}
+{% endif %}
+
 <nav class="navbar navbar-expand-lg navbar-dark navbar-custom fixed-top">
     <div class="container">
         <a class="navbar-brand" href="/admin/dashboard">{{ brand_name }}后台</a>
@@ -8,104 +101,189 @@
         <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav ms-auto">
                 <!-- 仪表盘 -->
+                {% if has_permission.dashboard %}
                 <li class="nav-item">
                     <a class="nav-link {% if request.endpoint and 'dashboard' in request.endpoint or request.path == '/admin/dashboard' %}active{% endif %}" href="/admin/dashboard">仪表盘</a>
                 </li>
+                {% endif %}
                 <!-- 订单管理下拉菜单 -->
+                {% if has_permission.orders or has_permission.shop_orders %}
                 <li class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle {% if request.path == '/admin/orders' or '/admin/order/' in request.path or request.path == '/admin/shop/orders' %}active{% endif %}" href="#" id="ordersDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                         订单管理
                     </a>
                     <ul class="dropdown-menu dropdown-menu-dark" aria-labelledby="ordersDropdown">
+                        {% if has_permission.orders %}
                         <li><a class="dropdown-item {% if request.path == '/admin/orders' or '/admin/order/' in request.path %}active{% endif %}" href="/admin/orders">
                             <i class="fas fa-shopping-cart me-2"></i>订单管理
                         </a></li>
+                        {% endif %}
+                        {% if has_permission.shop_orders %}
                         <li><a class="dropdown-item {% if request.path == '/admin/shop/orders' %}active{% endif %}" href="/admin/shop/orders">
                             <i class="fas fa-store me-2"></i>商城订单
                         </a></li>
+                        {% endif %}
                     </ul>
                 </li>
+                {% endif %}
                 <!-- 选片页面 -->
+                {% if has_permission.photo_selection %}
                 <li class="nav-item">
                     <a class="nav-link {% if request.path == '/admin/photo-selection' %}active{% endif %}" href="/admin/photo-selection">选片页面</a>
                 </li>
+                {% endif %}
                 <!-- 加盟商 -->
+                {% if has_permission.franchisee %}
                 <li class="nav-item">
                     <a class="nav-link {% if '/franchisee/admin' in request.path or '/admin/franchisee' in request.path %}active{% endif %}" href="/franchisee/admin/accounts">加盟商</a>
                 </li>
-                <!-- 产品管理下拉菜单 -->
+                {% endif %}
+                <!-- 支付管理下拉菜单 -->
+                {% if has_permission.payment or has_permission.coupons or current_user.role == 'admin' %}
                 <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle {% if request.endpoint and 'sizes' in request.endpoint or request.path == '/admin/sizes' or request.path == '/admin/shop/products' %}active{% endif %}" href="#" id="productsDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                        产品管理
+                    <a class="nav-link dropdown-toggle {% if '/admin/payment' in request.path or request.path == '/admin/coupons' %}active{% endif %}" href="#" id="paymentDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="fas fa-wallet me-1"></i>支付管理
                     </a>
-                    <ul class="dropdown-menu dropdown-menu-dark" aria-labelledby="productsDropdown">
-                        <li><a class="dropdown-item {% if request.endpoint and 'sizes' in request.endpoint or request.path == '/admin/sizes' %}active{% endif %}" href="/admin/sizes">
-                            <i class="fas fa-box me-2"></i>产品管理
+                    <ul class="dropdown-menu dropdown-menu-dark" aria-labelledby="paymentDropdown">
+                        <li><a class="dropdown-item {% if request.path == '/admin/payment' %}active{% endif %}" href="/admin/payment">
+                            <i class="fas fa-wallet me-2"></i>支付管理首页
                         </a></li>
-                        <li><a class="dropdown-item {% if request.path == '/admin/shop/products' %}active{% endif %}" href="/admin/shop/products">
-                            <i class="fas fa-store me-2"></i>商城产品
-                        </a></li>
-                    </ul>
-                </li>
-                <!-- 风格管理 -->
-                <li class="nav-item">
-                    <a class="nav-link {% if request.endpoint and 'styles' in request.endpoint or request.path == '/admin/styles' %}active{% endif %}" href="/admin/styles">风格管理</a>
-                </li>
-                <!-- AI任务管理 -->
-                <li class="nav-item">
-                    <a class="nav-link {% if request.endpoint and 'ai.tasks' in request.endpoint or request.path == '/admin/ai/tasks' %}active{% endif %}" href="/admin/ai/tasks">AI任务管理</a>
-                </li>
-                <!-- 美颜任务管理 -->
-                <li class="nav-item">
-                    <a class="nav-link {% if request.endpoint and 'meitu.tasks' in request.endpoint or request.path == '/admin/meitu/tasks' %}active{% endif %}" href="/admin/meitu/tasks">美颜任务管理</a>
-                </li>
-                <!-- 系统配置下拉菜单 -->
-                <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle {% if request.path == '/admin/system-config' or request.path == '/admin/meitu/config' or request.path == '/admin/ai-provider/config' %}active{% endif %}" href="#" id="systemConfigDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                        系统配置
-                    </a>
-                    <ul class="dropdown-menu dropdown-menu-dark" aria-labelledby="systemConfigDropdown">
-                        <li><a class="dropdown-item {% if request.path == '/admin/system-config' %}active{% endif %}" href="/admin/system-config">
-                            <i class="fas fa-cog me-2"></i>系统配置
-                        </a></li>
-                        <li><a class="dropdown-item {% if request.path == '/admin/meitu/config' %}active{% endif %}" href="/admin/meitu/config">
-                            <i class="fas fa-sparkles me-2"></i>美颜API配置
-                        </a></li>
-                        <li><a class="dropdown-item {% if request.path == '/admin/ai-provider/config' %}active{% endif %}" href="/admin/ai-provider/config">
-                            <i class="fas fa-server me-2"></i>API服务商配置
-                        </a></li>
-                        <li><a class="dropdown-item {% if request.path == '/admin/image-cleanup' %}active{% endif %}" href="/admin/image-cleanup">
-                            <i class="fas fa-trash-alt me-2"></i>过期图片清理
-                        </a></li>
-                        <li><a class="dropdown-item {% if request.path == '/admin/system-config' %}active{% endif %}" href="/admin/system-config#image-path-config">
-                            <i class="fas fa-images me-2"></i>图片路径配置
-                        </a></li>
-                        <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item {% if request.path == '/admin/print-config' %}active{% endif %}" href="/admin/print-config">
-                            <i class="fas fa-print me-2"></i>打印配置
-                        </a></li>
-                        <li><a class="dropdown-item {% if request.path == '/admin/printer' %}active{% endif %}" href="/admin/printer">
-                            <i class="fas fa-server me-2"></i>打印机管理
-                        </a></li>
-                    </ul>
-                </li>
-                <!-- 小程序下拉菜单 -->
-                <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle {% if request.path == '/admin/coupons' or request.path == '/admin/promotion' or request.path == '/admin/homepage' %}active{% endif %}" href="#" id="miniprogramDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                        小程序
-                    </a>
-                    <ul class="dropdown-menu dropdown-menu-dark" aria-labelledby="miniprogramDropdown">
                         <li><a class="dropdown-item {% if request.path == '/admin/coupons' %}active{% endif %}" href="/admin/coupons">
                             <i class="fas fa-ticket-alt me-2"></i>优惠券管理
                         </a></li>
-                        <li><a class="dropdown-item {% if request.path == '/admin/promotion' %}active{% endif %}" href="/admin/promotion">
-                            <i class="fas fa-share-alt me-2"></i>小程序用户管理
+                        <li><a class="dropdown-item {% if '/admin/payment/refunds' in request.path %}active{% endif %}" href="/admin/payment/refunds">
+                            <i class="fas fa-undo me-2"></i>退款审核
                         </a></li>
-                        <li><a class="dropdown-item {% if request.path == '/admin/homepage' %}active{% endif %}" href="/admin/homepage">
-                            <i class="fas fa-home me-2"></i>首页配置
+                        <li><a class="dropdown-item {% if '/admin/groupon/verify' in request.path %}active{% endif %}" href="/admin/groupon/verify">
+                            <i class="fas fa-qrcode me-2"></i>团购核销
                         </a></li>
                     </ul>
                 </li>
+                {% endif %}
+                <!-- 产品管理下拉菜单 -->
+                {% if has_permission.products or has_permission.shop_products %}
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle {% if request.endpoint and 'sizes' in request.endpoint or request.path == '/admin/sizes' or request.path == '/admin/products' or request.path == '/admin/shop/products' %}active{% endif %}" href="#" id="productsDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        产品管理
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-dark" aria-labelledby="productsDropdown">
+                        {% if has_permission.products %}
+                        <li><a class="dropdown-item {% if request.path == '/admin/products' %}active{% endif %}" href="/admin/products">
+                            <i class="fas fa-th me-2"></i>产品管理
+                        </a></li>
+                        {% endif %}
+                        {% if has_permission.shop_products %}
+                        <li><a class="dropdown-item {% if request.path == '/admin/shop/products' %}active{% endif %}" href="/admin/shop/products">
+                            <i class="fas fa-store me-2"></i>商城产品
+                        </a></li>
+                        {% endif %}
+                    </ul>
+                </li>
+                {% endif %}
+                <!-- 风格管理 -->
+                {% if has_permission.styles %}
+                <li class="nav-item">
+                    <a class="nav-link {% if request.endpoint and 'styles' in request.endpoint or request.path == '/admin/styles' %}active{% endif %}" href="/admin/styles">风格管理</a>
+                </li>
+                {% endif %}
+                <!-- Playground -->
+                {% if has_permission.playground %}
+                <li class="nav-item">
+                    <a class="nav-link {% if request.path == '/playground' %}active{% endif %}" href="/playground">
+                        <i class="fas fa-gamepad me-1"></i>Playground
+                    </a>
+                </li>
+                {% endif %}
+                <!-- AI任务管理 -->
+                {% if has_permission.ai_tasks %}
+                <li class="nav-item">
+                    <a class="nav-link {% if request.endpoint and 'ai.tasks' in request.endpoint or request.path == '/admin/ai/tasks' %}active{% endif %}" href="/admin/ai/tasks">AI任务管理</a>
+                </li>
+                {% endif %}
+                <!-- 美颜任务管理 -->
+                {% if has_permission.meitu_tasks %}
+                <li class="nav-item">
+                    <a class="nav-link {% if request.endpoint and 'meitu.tasks' in request.endpoint or request.path == '/admin/meitu/tasks' %}active{% endif %}" href="/admin/meitu/tasks">美颜任务管理</a>
+                </li>
+                {% endif %}
+                <!-- 系统配置下拉菜单 -->
+                {% if has_permission.system_config or has_permission.meitu_config or has_permission.ai_provider_config or has_permission.image_cleanup or has_permission.polling_config or has_permission.print_config or has_permission.printer %}
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle {% if request.path == '/admin/system-config' or request.path == '/admin/meitu/config' or request.path == '/admin/ai-provider/config' or request.path == '/admin/polling-config' %}active{% endif %}" href="#" id="systemConfigDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        系统配置
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-dark" aria-labelledby="systemConfigDropdown">
+                        {% if has_permission.system_config %}
+                        <li><a class="dropdown-item {% if request.path == '/admin/system-config' %}active{% endif %}" href="/admin/system-config">
+                            <i class="fas fa-cog me-2"></i>系统配置
+                        </a></li>
+                        {% endif %}
+                        {% if has_permission.meitu_config %}
+                        <li><a class="dropdown-item {% if request.path == '/admin/meitu/config' %}active{% endif %}" href="/admin/meitu/config">
+                            <i class="fas fa-sparkles me-2"></i>美颜API配置
+                        </a></li>
+                        {% endif %}
+                        {% if has_permission.ai_provider_config %}
+                        <li><a class="dropdown-item {% if request.path == '/admin/ai-provider/config' %}active{% endif %}" href="/admin/ai-provider/config">
+                            <i class="fas fa-server me-2"></i>API服务商配置
+                        </a></li>
+                        {% endif %}
+                        {% if has_permission.image_cleanup %}
+                        <li><a class="dropdown-item {% if request.path == '/admin/image-cleanup' %}active{% endif %}" href="/admin/image-cleanup">
+                            <i class="fas fa-trash-alt me-2"></i>过期图片清理
+                        </a></li>
+                        {% endif %}
+                        {% if has_permission.system_config %}
+                        <li><a class="dropdown-item {% if request.path == '/admin/system-config' %}active{% endif %}" href="/admin/system-config#image-path-config">
+                            <i class="fas fa-images me-2"></i>图片路径配置
+                        </a></li>
+                        {% endif %}
+                        {% if has_permission.polling_config %}
+                        <li><a class="dropdown-item {% if request.path == '/admin/polling-config' %}active{% endif %}" href="/admin/polling-config">
+                            <i class="fas fa-sync-alt me-2"></i>轮询配置
+                        </a></li>
+                        {% endif %}
+                        {% if has_permission.print_config or has_permission.printer %}
+                        <li><hr class="dropdown-divider"></li>
+                        {% endif %}
+                        {% if has_permission.print_config %}
+                        <li><a class="dropdown-item {% if request.path == '/admin/print-config' %}active{% endif %}" href="/admin/print-config">
+                            <i class="fas fa-print me-2"></i>打印配置
+                        </a></li>
+                        {% endif %}
+                        {% if has_permission.printer %}
+                        <li><a class="dropdown-item {% if request.path == '/admin/printer' %}active{% endif %}" href="/admin/printer">
+                            <i class="fas fa-server me-2"></i>打印机管理
+                        </a></li>
+                        {% endif %}
+                    </ul>
+                </li>
+                {% endif %}
+                <!-- 小程序下拉菜单 -->
+                {% if has_permission.promotion or has_permission.homepage or has_permission.miniprogram_config %}
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle {% if request.path == '/admin/promotion' or request.path == '/admin/homepage' or request.path == '/admin/miniprogram-config' %}active{% endif %}" href="#" id="miniprogramDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        小程序
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-dark" aria-labelledby="miniprogramDropdown">
+                        {% if has_permission.miniprogram_config %}
+                        <li><a class="dropdown-item {% if request.path == '/admin/miniprogram-config' %}active{% endif %}" href="/admin/miniprogram-config">
+                            <i class="fas fa-cog me-2"></i>小程序配置
+                        </a></li>
+                        {% endif %}
+                        {% if has_permission.promotion %}
+                        <li><a class="dropdown-item {% if request.path == '/admin/promotion' %}active{% endif %}" href="/admin/promotion">
+                            <i class="fas fa-share-alt me-2"></i>小程序用户管理
+                        </a></li>
+                        {% endif %}
+                        {% if has_permission.homepage %}
+                        <li><a class="dropdown-item {% if request.path == '/admin/homepage' %}active{% endif %}" href="/admin/homepage">
+                            <i class="fas fa-home me-2"></i>首页配置
+                        </a></li>
+                        {% endif %}
+                    </ul>
+                </li>
+                {% endif %}
                 <!-- 个人中心 -->
                 <li class="nav-item">
                     <a class="nav-link {% if request.path == '/admin/profile' %}active{% endif %}" href="/admin/profile">

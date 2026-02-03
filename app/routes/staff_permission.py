@@ -93,13 +93,10 @@ def staff_add(franchisee_id):
                 flash('该用户已存在', 'error')
                 return render_template('admin/staff_add.html', franchisee=franchisee)
             
-            # 权限配置
+            # 权限配置（只保留团购核销和退款申请）
             permissions = {
-                'view_today_orders': request.form.get('view_today_orders') == 'on',
-                'view_store_images': request.form.get('view_store_images') == 'on',
-                'view_all_orders': request.form.get('view_all_orders') == 'on',
-                'view_statistics': request.form.get('view_statistics') == 'on',
                 'groupon_verify': request.form.get('groupon_verify') == 'on',
+                'refund_request': request.form.get('refund_request') == 'on',
             }
             
             staff_user = StaffUser(
@@ -190,13 +187,10 @@ def staff_edit(franchisee_id, staff_id):
             staff_user.status = status
             staff_user.notes = notes
             
-            # 权限配置
+            # 权限配置（只保留团购核销和退款申请）
             permissions = {
-                'view_today_orders': request.form.get('view_today_orders') == 'on',
-                'view_store_images': request.form.get('view_store_images') == 'on',
-                'view_all_orders': request.form.get('view_all_orders') == 'on',
-                'view_statistics': request.form.get('view_statistics') == 'on',
                 'groupon_verify': request.form.get('groupon_verify') == 'on',
+                'refund_request': request.form.get('refund_request') == 'on',
             }
             staff_user.permissions = json.dumps(permissions, ensure_ascii=False)
             staff_user.updated_at = datetime.now()

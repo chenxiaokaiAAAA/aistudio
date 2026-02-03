@@ -27,7 +27,7 @@ def check_cert_files():
     print(f"📁 SSL目录中的文件: {files}")
     
     # 检查私钥文件
-    key_file = os.path.join(ssl_dir, "moeart.cc.key")
+    key_file = os.path.join(ssl_dir, "photogooo.key")
     if os.path.exists(key_file):
         print(f"✅ 私钥文件存在: {key_file}")
         # 检查私钥文件内容
@@ -76,12 +76,12 @@ def create_nginx_config():
     files = os.listdir(ssl_dir)
     cert_files = [f for f in files if f.endswith(('.crt', '.pem', '.cer'))]
     cert_file = os.path.join(ssl_dir, cert_files[0]) if cert_files else ""
-    key_file = os.path.join(ssl_dir, "moeart.cc.key")
+    key_file = os.path.join(ssl_dir, "photogooo.key")
     
     nginx_config = f"""# HTTP服务器 - 重定向到HTTPS
 server {{
     listen 80;
-    server_name moeart.cc www.moeart.cc;  # AI自拍机-域名
+    server_name photogooo www.photogooo;  # AI自拍机-域名
     
     # 重定向所有HTTP请求到HTTPS
     return 301 https://$server_name$request_uri;
@@ -90,7 +90,7 @@ server {{
 # HTTPS服务器
 server {{
     listen 443 ssl http2;
-    server_name moeart.cc www.moeart.cc;  # AI自拍机-域名
+    server_name photogooo www.photogooo;  # AI自拍机-域名
 
     # SSL证书配置 - 阿里云证书
     ssl_certificate "{cert_file}";
@@ -239,7 +239,7 @@ def main():
         return
     
     print("\n🎉 HTTPS证书配置完成！")
-    print("现在您可以通过 https://moeart.cc 访问您的网站了")
+    print("现在您可以通过 https://photogooo 访问您的网站了")
     print("浏览器应该不再显示不安全提示")
 
 if __name__ == "__main__":

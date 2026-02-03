@@ -178,29 +178,63 @@
                         <div class="mb-3">
                             <label for="serverBaseUrl" class="form-label">服务器基础URL</label>
                             <input type="text" class="form-control" id="serverBaseUrl" 
-                                   placeholder="http://192.168.2.54:8000 或 https://moeart.cc" required>
+                                   placeholder="http://192.168.2.54:8000 或 https://photogooo" required>
                             <div class="help-text">用于生成二维码、图片链接等。本地开发使用 http://192.168.x.x:8000，生产环境使用 https://域名</div>
                         </div>
                         <div class="mb-3">
                             <label for="serverApiUrl" class="form-label">API基础URL</label>
                             <input type="text" class="form-control" id="serverApiUrl" 
-                                   placeholder="http://192.168.2.54:8000/api 或 https://moeart.cc/api" required>
+                                   placeholder="http://192.168.2.54:8000/api 或 https://photogooo/api" required>
                             <div class="help-text">API接口的基础URL</div>
                         </div>
                         <div class="mb-3">
                             <label for="serverMediaUrl" class="form-label">媒体文件URL</label>
                             <input type="text" class="form-control" id="serverMediaUrl" 
-                                   placeholder="http://192.168.2.54:8000/media 或 https://moeart.cc/media" required>
+                                   placeholder="http://192.168.2.54:8000/media 或 https://photogooo/media" required>
                             <div class="help-text">媒体文件（图片等）的访问URL</div>
                         </div>
                         <div class="mb-3">
                             <label for="serverStaticUrl" class="form-label">静态文件URL</label>
                             <input type="text" class="form-control" id="serverStaticUrl" 
-                                   placeholder="http://192.168.2.54:8000/static 或 https://moeart.cc/static" required>
+                                   placeholder="http://192.168.2.54:8000/static 或 https://photogooo/static" required>
                             <div class="help-text">静态文件（CSS、JS等）的访问URL</div>
                         </div>
                         <button type="submit" class="btn btn-primary">
                             <i class="fas fa-save"></i> 保存服务器URL配置
+                        </button>
+                    </form>
+                </div>
+
+                <!-- 图片上传管理配置 -->
+                <div class="config-card">
+                    <h5><i class="fas fa-cloud-upload-alt"></i> 图片上传管理</h5>
+                    <form id="imageUploadConfigForm">
+                        <div class="mb-3">
+                            <label class="form-label">运行环境</label>
+                            <select class="form-select" id="imageUploadEnvironment">
+                                <option value="local">本地测试环境</option>
+                                <option value="production">云端生产环境</option>
+                            </select>
+                            <div class="help-text">选择当前运行环境。本地测试环境：图片需要上传到GRSAI服务器；云端生产环境：直接使用云端自身的公开URL，无需额外上传</div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">上传策略</label>
+                            <select class="form-select" id="imageUploadStrategy">
+                                <option value="grsai">上传到GRSAI服务器</option>
+                                <option value="direct">直接使用云端URL（不额外上传）</option>
+                            </select>
+                            <div class="help-text">选择图片上传策略。本地测试环境建议使用"上传到GRSAI服务器"，云端生产环境建议使用"直接使用云端URL"</div>
+                        </div>
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i> 
+                            <strong>说明：</strong>
+                            <ul class="mb-0 mt-2">
+                                <li><strong>本地测试环境 + 上传到GRSAI服务器：</strong>图片会先保存到本地，然后上传到GRSAI文件服务器，返回云端URL用于API调用</li>
+                                <li><strong>云端生产环境 + 直接使用云端URL：</strong>如果图片已经是云端URL（如CDN、OSS等），则直接使用，不再额外上传到GRSAI</li>
+                            </ul>
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> 保存图片上传配置
                         </button>
                     </form>
                 </div>
@@ -520,6 +554,13 @@
                     if (configs.image_oss_domain) {
                         document.getElementById('ossDomain').value = configs.image_oss_domain;
                     }
+                    // 填充图片上传配置
+                    if (configs.image_upload_strategy) {
+                        document.getElementById('imageUploadStrategy').value = configs.image_upload_strategy;
+                    }
+                    if (configs.image_upload_environment) {
+                        document.getElementById('imageUploadEnvironment').value = configs.image_upload_environment;
+                    }
                 }
             } catch (error) {
                 console.error('加载配置失败:', error);
@@ -683,6 +724,35 @@
                 }
             } catch (error) {
                 console.error('保存支付配置失败:', error);
+                alert('保存失败: ' + error.message);
+            }
+        });
+
+        // 保存图片上传配置
+        document.getElementById('imageUploadConfigForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const data = {
+                image_upload_strategy: document.getElementById('imageUploadStrategy').value,
+                image_upload_environment: document.getElementById('imageUploadEnvironment').value
+            };
+            
+            try {
+                const response = await fetch('/api/admin/system-config/image-upload', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                if (result.status === 'success') {
+                    alert('图片上传配置保存成功！');
+                } else {
+                    alert('保存失败: ' + result.message);
+                }
+            } catch (error) {
                 alert('保存失败: ' + error.message);
             }
         });

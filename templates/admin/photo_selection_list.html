@@ -63,9 +63,27 @@
         <div class="row">
             <div class="col-12">
                 <div class="card">
-                    <div class="card-header">
-                        <h4 class="mb-0">选片页面</h4>
-                        <small class="text-muted">显示所有订单，当任务状态全部完成时可进行选片</small>
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <div>
+                            <h4 class="mb-0">选片页面</h4>
+                            <small class="text-muted">
+                                {% if franchisee_info %}
+                                    显示 <strong>{{ franchisee_info.company_name }}</strong> 的订单，当任务状态全部完成时可进行选片
+                                {% else %}
+                                    显示所有订单，当任务状态全部完成时可进行选片
+                                {% endif %}
+                            </small>
+                        </div>
+                        <div class="d-flex gap-2">
+                            {% if franchisee_info %}
+                            <button type="button" class="btn btn-primary btn-sm" onclick="showSelectionQRCode({{ franchisee_info.id }})">
+                                <i class="fas fa-qrcode"></i> 生成选片二维码
+                            </button>
+                            <a href="/franchisee/admin/accounts/{{ franchisee_info.id }}" class="btn btn-secondary btn-sm">
+                                <i class="fas fa-arrow-left"></i> 返回加盟商详情
+                            </a>
+                            {% endif %}
+                        </div>
                     </div>
                     <div class="card-body">
                         <table class="table table-hover">
@@ -126,6 +144,79 @@
         </div>
     </div>
 
+    <!-- 选片二维码模态框 -->
+    <div class="modal fade" id="selectionQRCodeModal" tabindex="-1" aria-labelledby="selectionQRCodeModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="selectionQRCodeModalLabel">选片登录二维码</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body text-center">
+                    <p class="text-muted mb-3">用户扫描此二维码后，可进入小程序查看自己的订单并进行选片</p>
+                    <div id="qrcodeContainer" class="mb-3">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">加载中...</span>
+                        </div>
+                    </div>
+                    <p class="text-muted small">二维码有效期：5分钟</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                    <button type="button" class="btn btn-primary" onclick="refreshQRCode()">刷新二维码</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="/static/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let currentFranchiseeId = null;
+        let currentToken = null;
+
+        function showSelectionQRCode(franchiseeId) {
+            currentFranchiseeId = franchiseeId;
+            const modal = new bootstrap.Modal(document.getElementById('selectionQRCodeModal'));
+            modal.show();
+            generateQRCode(franchiseeId);
+        }
+
+        function generateQRCode(franchiseeId) {
+            const container = document.getElementById('qrcodeContainer');
+            container.innerHTML = '<div class="spinner-border text-primary" role="status"><span class="visually-hidden">加载中...</span></div>';
+
+            fetch('/admin/photo-selection/generate-qrcode', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    franchisee_id: franchiseeId
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    currentToken = data.token;
+                    container.innerHTML = `<img src="${data.qrcode}" alt="选片二维码" class="img-fluid" style="max-width: 300px;">`;
+                    
+                    // 每30秒检查一次token状态（可选）
+                    // checkTokenStatus(data.token);
+                } else {
+                    container.innerHTML = `<div class="alert alert-danger">${data.message || '生成二维码失败'}</div>`;
+                }
+            })
+            .catch(error => {
+                console.error('生成二维码失败:', error);
+                container.innerHTML = `<div class="alert alert-danger">生成二维码失败，请重试</div>`;
+            });
+        }
+
+        function refreshQRCode() {
+            if (currentFranchiseeId) {
+                generateQRCode(currentFranchiseeId);
+            }
+        }
+    </script>
 </body>
 </html>

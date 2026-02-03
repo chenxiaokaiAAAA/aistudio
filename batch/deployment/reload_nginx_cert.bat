@@ -6,17 +6,17 @@ echo.
 
 REM 检查证书文件是否存在
 echo 检查证书文件...
-if exist "C:\nginx\ssl\moeart.cc.pem" (
-    echo ✅ 找到证书文件: C:\nginx\ssl\moeart.cc.pem
+if exist "C:\nginx\ssl\photogooo.pem" (
+    echo ✅ 找到证书文件: C:\nginx\ssl\photogooo.pem
 ) else (
-    echo ❌ 未找到证书文件: C:\nginx\ssl\moeart.cc.pem
+    echo ❌ 未找到证书文件: C:\nginx\ssl\photogooo.pem
     echo 请确认证书文件位置是否正确
 )
 
-if exist "C:\nginx\ssl\moeart.cc.key" (
-    echo ✅ 找到私钥文件: C:\nginx\ssl\moeart.cc.key
+if exist "C:\nginx\ssl\photogooo.key" (
+    echo ✅ 找到私钥文件: C:\nginx\ssl\photogooo.key
 ) else (
-    echo ❌ 未找到私钥文件: C:\nginx\ssl\moeart.cc.key
+    echo ❌ 未找到私钥文件: C:\nginx\ssl\photogooo.key
     echo 请确认私钥文件位置是否正确
 )
 
@@ -39,7 +39,7 @@ if %errorlevel% equ 0 (
     echo ✅ Nginx配置重新加载成功！
     echo 新证书已生效，无需重启服务
     echo.
-    echo 请访问 https://moeart.cc 测试证书是否正常
+    echo 请访问 https://photogooo 测试证书是否正常
 ) else (
     echo.
     echo ❌ 重新加载失败，尝试重启Nginx...

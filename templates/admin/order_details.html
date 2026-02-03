@@ -45,7 +45,7 @@
             <div class="col-md-12">
                 <div class="d-flex justify-content-between align-items-center mb-4">
                     <h3>订单详情</h3>
-                    <a href="{{ url_for('admin_orders.admin_orders') }}" class="btn btn-secondary">返回订单列表</a>
+                    <a href="{{ url_for('admin_orders.admin_orders_list.admin_orders') }}" class="btn btn-secondary">返回订单列表</a>
                 </div>
                 
                 <div class="card mb-4">
@@ -58,10 +58,53 @@
                                 <p><strong>订单号:</strong> {{ order.order_number }}</p>
                                 <p><strong>客户姓名:</strong> {{ order.customer_name }}</p>
                                 <p><strong>客户电话:</strong> {{ order.customer_phone }}</p>
+                                <!-- 多个商品模式 -->
+                                {% if all_orders and all_orders|length > 1 %}
+                                <div class="mb-3">
+                                    <p><strong>商品列表（{{ all_orders|length }}件）:</strong></p>
+                                    <div class="table-responsive">
+                                        <table class="table table-sm table-bordered">
+                                            <thead>
+                                                <tr>
+                                                    <th>产品名称</th>
+                                                    <th>艺术风格</th>
+                                                    <th>尺寸</th>
+                                                    <th>价格</th>
+                                                    <th>状态</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for item in all_orders %}
+                                                <tr>
+                                                    <td>{{ item.product_name or '未选择' }}</td>
+                                                    <td>{{ item.style_name or '未选择' }}</td>
+                                                    <td>{{ item.size|size_name if item.size else '未选择' }}</td>
+                                                    <td>¥{{ '%.2f'|format(item.price) }}</td>
+                                                    <td>
+                                                        {% if item.status == 'paid' %}
+                                                            <span class="badge bg-info">已支付</span>
+                                                        {% elif item.status == 'pending' %}
+                                                            <span class="badge bg-warning">待制作</span>
+                                                        {% elif item.status == 'completed' %}
+                                                            <span class="badge bg-success">已完成</span>
+                                                        {% else %}
+                                                            <span class="badge bg-secondary">{{ item.status }}</span>
+                                                        {% endif %}
+                                                    </td>
+                                                </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <p class="mt-2"><strong>总金额:</strong> ¥{{ '%.2f'|format(all_orders|sum(attribute='price')) }}</p>
+                                </div>
+                                {% else %}
+                                <!-- 单个商品模式（向后兼容） -->
                                 <p><strong>艺术风格:</strong> {{ order.style_name or '未选择' }}</p>
                                 <p><strong>产品类型:</strong> {{ order.product_name or '未选择' }}</p>
                                 <p><strong>产品ID:</strong> {{ order.size|product_id }}</p>
                                 <p><strong>尺寸:</strong> {{ order.size|size_name if order.size else '未选择' }}</p>
+                                {% endif %}
                                 
                                 <!-- 网页下单客户产品选择按钮 -->
                                 {% if not order.product_name or not order.size %}
@@ -352,11 +395,17 @@
                                     <div class="position-absolute top-0 end-0 m-1">
                                         <span class="badge bg-primary" style="font-size: 10px;">{{ loop.index }}</span>
                                     </div>
-                                    <div class="position-absolute bottom-0 start-50 translate-middle-x mb-1">
+                                    <div class="position-absolute bottom-0 start-0 w-100 d-flex justify-content-center gap-1 mb-1" style="bottom: 0;">
                                         <a href="{{ url_for('media.download_hd', filename=img.filename) }}" 
                                            class="btn btn-sm btn-success" 
                                            style="font-size: 10px; padding: 2px 6px;"
                                            onclick="event.stopPropagation();">下载</a>
+                                        <button type="button" 
+                                                class="btn btn-sm btn-danger" 
+                                                style="font-size: 10px; padding: 2px 6px;"
+                                                onclick="event.stopPropagation(); deleteEffectImage({{ order.id }}, {{ img.id }}, '{{ img.filename }}', {{ loop.index }})">
+                                            删除
+                                        </button>
                                     </div>
                                 </div>
                                 {% endfor %}
@@ -498,7 +547,7 @@
                         <h5>更新订单信息</h5>
                     </div>
                     <div class="card-body">
-                        <form method="POST" enctype="multipart/form-data" action="{{ url_for('admin_orders.admin_order_detail', order_id=order.id) }}" id="updateOrderForm" onsubmit="return handleFormSubmit(event);">
+                        <form method="POST" enctype="multipart/form-data" action="{{ url_for('admin_orders.admin_orders_detail.admin_order_detail', order_id=order.id) }}" id="updateOrderForm" onsubmit="return handleFormSubmit(event);">
                             <!-- 隐藏字段用于存储产品名称 -->
                             <input type="hidden" id="product_name" name="product_name" value="{{ order.product_name or '' }}">
                             
@@ -740,7 +789,7 @@
                 </div>
                 <div class="card mt-3">
                     <div class="card-body">
-                        <form method="POST" action="{{ url_for('admin_orders.admin_order_delete', order_id=order.id) }}" onsubmit="return confirm('确认删除该订单？此操作不可恢复。');">
+                        <form method="POST" action="{{ url_for('admin_orders.admin_orders_operations.admin_order_delete', order_id=order.id) }}" onsubmit="return confirm('确认删除该订单？此操作不可恢复。');">
                             <button type="submit" class="btn btn-outline-danger">删除订单</button>
                         </form>
                     </div>
@@ -777,6 +826,49 @@
             document.getElementById('effectImageInfo').textContent = `效果图 ${index} - ${filename}`;
             document.getElementById('effectImageDownload').href = `/media/download/hd/${encodeURIComponent(filename)}`;
             modal.show();
+        }
+        
+        // 删除效果图
+        function deleteEffectImage(orderId, taskId, filename, index) {
+            if (!confirm(`确定要删除效果图 ${index} (${filename}) 吗？\n\n此操作将删除AI任务记录和效果图文件，无法恢复！`)) {
+                return;
+            }
+            
+            // 显示加载状态
+            const deleteBtn = event.target;
+            const originalText = deleteBtn.textContent;
+            deleteBtn.disabled = true;
+            deleteBtn.textContent = '删除中...';
+            
+            // 发送删除请求
+            fetch(`/admin/order/${orderId}/delete-effect-image`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    task_id: taskId,
+                    filename: filename
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('效果图删除成功');
+                    // 刷新页面
+                    window.location.reload();
+                } else {
+                    alert('删除失败: ' + (data.message || '未知错误'));
+                    deleteBtn.disabled = false;
+                    deleteBtn.textContent = originalText;
+                }
+            })
+            .catch(error => {
+                console.error('删除效果图失败:', error);
+                alert('删除失败: ' + error.message);
+                deleteBtn.disabled = false;
+                deleteBtn.textContent = originalText;
+            });
         }
         
         // 查看选片大图

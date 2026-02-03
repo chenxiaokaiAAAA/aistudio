@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>优惠券管理 - {{ account.company_name }}</title>
+    <link href="/static/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body {
+            background: #f5f7fa;
+            min-height: 100vh;
+            padding-top: 70px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+        }
+        .navbar-custom {
+            background: #0a0a0a !important;
+            border-bottom: 1px solid #1a1a1a;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        }
+        .navbar-brand, .nav-link {
+            color: #e0e0e0 !important;
+        }
+        .nav-link:hover {
+            color: #ffffff !important;
+        }
+        .nav-link.active {
+            color: #ffffff !important;
+            font-weight: 600;
+        }
+        .container {
+            max-width: 1400px;
+        }
+        .card {
+            border: none;
+            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+        }
+        .stat-card {
+            background: #ffffff;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 16px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            border-left: 3px solid #007bff;
+        }
+    </style>
+</head>
+<body>
+    <!-- 导航栏 -->
+    {% include 'franchisee/_navbar.html' %}
+
+    <div class="container mt-4">
+        <!-- 统计卡片 -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="stat-card" style="border-left-color: #007bff;">
+                    <h6 class="text-muted mb-2">总优惠券</h6>
+                    <h3 class="mb-0">{{ total_coupons }}</h3>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card" style="border-left-color: #28a745;">
+                    <h6 class="text-muted mb-2">有效优惠券</h6>
+                    <h3 class="mb-0">{{ active_coupons }}</h3>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card" style="border-left-color: #ffc107;">
+                    <h6 class="text-muted mb-2">已过期</h6>
+                    <h3 class="mb-0">{{ expired_coupons }}</h3>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card" style="border-left-color: #dc3545;">
+                    <h6 class="text-muted mb-2">团购核销券</h6>
+                    <h3 class="mb-0">{{ groupon_coupons }}</h3>
+                </div>
+            </div>
+        </div>
+
+        <!-- 筛选器 -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h6 class="mb-0">筛选条件</h6>
+            </div>
+            <div class="card-body">
+                <form method="GET" class="row g-3">
+                    <div class="col-md-3">
+                        <label for="search" class="form-label">搜索</label>
+                        <input type="text" class="form-control" id="search" name="search" 
+                               placeholder="优惠券名称/代码/订单号" value="{{ search or '' }}">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="status" class="form-label">状态</label>
+                        <select class="form-select" id="status" name="status">
+                            <option value="">全部状态</option>
+                            <option value="active" {% if status == 'active' %}selected{% endif %}>有效</option>
+                            <option value="inactive" {% if status == 'inactive' %}selected{% endif %}>已停用</option>
+                            <option value="expired" {% if status == 'expired' %}selected{% endif %}>已过期</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="source_type" class="form-label">来源类型</label>
+                        <select class="form-select" id="source_type" name="source_type">
+                            <option value="">全部来源</option>
+                            <option value="groupon" {% if source_type == 'groupon' %}selected{% endif %}>团购核销</option>
+                            <option value="system" {% if source_type == 'system' %}selected{% endif %}>系统</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary me-2">筛选</button>
+                        <a href="/franchisee/coupons" class="btn btn-secondary">重置</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- 优惠券列表 -->
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">优惠券列表</h5>
+                <small class="text-muted">共 {{ pagination.total }} 条记录，第 {{ pagination.page }}/{{ pagination.pages }} 页</small>
+            </div>
+            <div class="card-body p-0">
+                <div style="overflow-x: auto;">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>优惠券名称</th>
+                                <th>优惠券代码</th>
+                                <th>金额</th>
+                                <th>创建人</th>
+                                <th>来源</th>
+                                <th>团购订单号</th>
+                                <th>领取数/使用数</th>
+                                <th>状态</th>
+                                <th>有效期</th>
+                                <th>创建时间</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in coupons_data %}
+                            {% set coupon = item.coupon %}
+                            <tr>
+                                <td>{{ coupon.name }}</td>
+                                <td><code>{{ coupon.code }}</code></td>
+                                <td>¥{{ '%.2f'|format(coupon.value) }}</td>
+                                <td>{{ item.creator_info }}</td>
+                                <td>
+                                    {% if coupon.source_type == 'groupon' %}
+                                        <span class="badge bg-danger">团购核销</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">系统</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ coupon.groupon_order_id or '-' }}</td>
+                                <td>{{ item.claimed_count }}/{{ item.used_count }}</td>
+                                <td>
+                                    {% if coupon.status == 'active' %}
+                                        <span class="badge bg-success">有效</span>
+                                    {% elif coupon.status == 'expired' %}
+                                        <span class="badge bg-secondary">已过期</span>
+                                    {% else %}
+                                        <span class="badge bg-warning">已停用</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div>{{ coupon.start_time.strftime('%Y-%m-%d') }}</div>
+                                    <div class="text-muted" style="font-size: 0.85rem;">至 {{ coupon.end_time.strftime('%Y-%m-%d') }}</div>
+                                </td>
+                                <td>{{ coupon.create_time.strftime('%Y-%m-%d %H:%M') }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <!-- 分页 -->
+            {% if pagination.pages > 1 %}
+            <div class="card-footer">
+                <nav aria-label="优惠券分页">
+                    <ul class="pagination justify-content-center mb-0">
+                        {% if pagination.has_prev %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ pagination.prev_num }}{% if search %}&search={{ search }}{% endif %}{% if status %}&status={{ status }}{% endif %}{% if source_type %}&source_type={{ source_type }}{% endif %}">上一页</a>
+                        </li>
+                        {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">上一页</span>
+                        </li>
+                        {% endif %}
+                        
+                        {% for page_num in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+                            {% if page_num %}
+                                {% if page_num == pagination.page %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ page_num }}</span>
+                                </li>
+                                {% else %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_num }}{% if search %}&search={{ search }}{% endif %}{% if status %}&status={{ status }}{% endif %}{% if source_type %}&source_type={{ source_type }}{% endif %}">{{ page_num }}</a>
+                                </li>
+                                {% endif %}
+                            {% else %}
+                                <li class="page-item disabled">
+                                    <span class="page-link">...</span>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if pagination.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ pagination.next_num }}{% if search %}&search={{ search }}{% endif %}{% if status %}&status={{ status }}{% endif %}{% if source_type %}&source_type={{ source_type }}{% endif %}">下一页</a>
+                        </li>
+                        {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">下一页</span>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <script src="/static/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

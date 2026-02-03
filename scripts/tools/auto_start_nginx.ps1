@@ -44,7 +44,7 @@ try {
     $nginxRunning = netstat -ano | Select-String ":80" | Select-String "LISTENING"
     if ($nginxRunning) {
         Write-Host "✅ HTTPS服务启动成功！" -ForegroundColor Green
-        Write-Host "可以通过 https://moeart.cc 访问您的网站" -ForegroundColor Cyan
+        Write-Host "可以通过 https://photogooo 访问您的网站" -ForegroundColor Cyan
     } else {
         Write-Host "❌ HTTPS服务启动失败，请检查日志" -ForegroundColor Red
     }

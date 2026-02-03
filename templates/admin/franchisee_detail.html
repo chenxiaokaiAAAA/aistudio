@@ -24,6 +24,35 @@
             color: #ffffff !important;
             font-weight: 600;
         }
+        /* 底部标签页使用深色文字（背景是白色） */
+        #detailTabs.nav-tabs {
+            background-color: #fff;
+            border-bottom: 1px solid #dee2e6;
+        }
+        #detailTabs.nav-tabs .nav-link {
+            color: #495057 !important;
+            background-color: transparent;
+        }
+        #detailTabs.nav-tabs .nav-link:hover {
+            color: #495057 !important;
+            border-color: #e9ecef #e9ecef #dee2e6;
+        }
+        #detailTabs.nav-tabs .nav-link.active {
+            color: #495057 !important;
+            background-color: #fff;
+            border-color: #dee2e6 #dee2e6 #fff;
+        }
+        /* 确保card-header中的按钮和文字正常显示 */
+        .card-header {
+            background-color: #fff !important;
+        }
+        .card-header h5,
+        .card-header .btn {
+            color: inherit !important;
+        }
+        .card-header .btn-primary {
+            color: #fff !important;
+        }
         .info-card { border-left: 4px solid #007bff; }
         .quota-card { border-left: 4px solid #28a745; }
         .order-card { border-left: 4px solid #ffc107; }
@@ -65,6 +94,9 @@
                 <a href="/franchisee/admin/accounts/{{ account.id }}/recharge" class="btn btn-success">
                     <i class="fas fa-plus"></i> 充值
                 </a>
+                <a href="/admin/photo-selection?franchisee_id={{ account.id }}" class="btn btn-primary">
+                    <i class="fas fa-images"></i> 选片系统
+                </a>
                 <button type="button" class="btn btn-info" onclick="previewQrcode({{ account.id }})">
                     <i class="fas fa-qrcode"></i> 预览二维码
                 </button>
@@ -94,7 +126,7 @@
 
         <div class="row">
             <!-- 基本信息 -->
-            <div class="col-md-4">
+            <div class="col-md-6">
                 <div class="card info-card mb-4">
                     <div class="card-header">
                         <h5 class="mb-0">📋 基本信息</h5>
@@ -157,56 +189,8 @@
                 </div>
             </div>
 
-            <!-- 额度信息 -->
-            <div class="col-md-4">
-                <div class="card quota-card mb-4">
-                    <div class="card-header">
-                        <h5 class="mb-0">💰 额度信息</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="text-center mb-3">
-                            <h3 class="text-success">¥{{ "%.2f"|format(account.remaining_quota) }}</h3>
-                            <p class="text-muted">剩余额度</p>
-                        </div>
-                        <table class="table table-borderless table-sm">
-                            <tr>
-                                <td>总额度:</td>
-                                <td class="text-end"><strong>¥{{ "%.2f"|format(account.total_quota) }}</strong></td>
-                            </tr>
-                            <tr>
-                                <td>已使用:</td>
-                                <td class="text-end text-warning">¥{{ "%.2f"|format(account.used_quota) }}</td>
-                            </tr>
-                            <tr>
-                                <td>使用率:</td>
-                                <td class="text-end">
-                                    {% if account.total_quota > 0 %}
-                                        {{ "%.1f"|format((account.used_quota / account.total_quota) * 100) }}%
-                                    {% else %}
-                                        0%
-                                    {% endif %}
-                                </td>
-                            </tr>
-                        </table>
-                        <div class="progress mb-3">
-                            {% if account.total_quota > 0 %}
-                                {% set usage_percent = (account.used_quota / account.total_quota) * 100 %}
-                            {% else %}
-                                {% set usage_percent = 0 %}
-                            {% endif %}
-                            <div class="progress-bar bg-warning" style="width: {{ usage_percent }}%"></div>
-                        </div>
-                        <div class="d-grid">
-                            <a href="/franchisee/admin/accounts/{{ account.id }}/recharge" class="btn btn-success btn-sm">
-                                <i class="fas fa-plus"></i> 立即充值
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
             <!-- 统计信息 -->
-            <div class="col-md-4">
+            <div class="col-md-6">
                 <div class="card order-card mb-4">
                     <div class="card-header">
                         <h5 class="mb-0">📊 统计信息</h5>
@@ -222,13 +206,6 @@
                                 <small class="text-muted">订单总额</small>
                             </div>
                         </div>
-                        <hr>
-                        <div class="row text-center">
-                            <div class="col-12">
-                                <h4 class="text-warning">¥{{ "%.2f"|format(total_deduction) }}</h4>
-                                <small class="text-muted">累计扣除</small>
-                            </div>
-                        </div>
                     </div>
                 </div>
             </div>
@@ -242,11 +219,6 @@
                 </button>
             </li>
             <li class="nav-item" role="presentation">
-                <button class="nav-link" id="recharge-tab" data-bs-toggle="tab" data-bs-target="#recharge" type="button" role="tab">
-                    充值记录 ({{ recharge_records|length }})
-                </button>
-            </li>
-            <li class="nav-item" role="presentation">
                 <button class="nav-link" id="machines-tab" data-bs-toggle="tab" data-bs-target="#machines" type="button" role="tab">
                     自拍机设备 ({{ machines|length }})
                 </button>
@@ -254,6 +226,11 @@
             <li class="nav-item" role="presentation">
                 <button class="nav-link" id="staff-tab" data-bs-toggle="tab" data-bs-target="#staff" type="button" role="tab">
                     子用户管理 ({{ staff_users|length }})
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="refunds-tab" data-bs-toggle="tab" data-bs-target="#refunds" type="button" role="tab">
+                    退款申请 ({{ refund_requests|length }})
                 </button>
             </li>
         </ul>
@@ -327,57 +304,6 @@
                 </div>
             </div>
 
-            <!-- 充值记录 -->
-            <div class="tab-pane fade" id="recharge" role="tabpanel">
-                <div class="card">
-                    <div class="card-body">
-                        {% if recharge_records %}
-                        <div class="table-responsive">
-                            <table class="table table-hover">
-                                <thead>
-                                    <tr>
-                                        <th>充值金额</th>
-                                        <th>类型</th>
-                                        <th>操作员</th>
-                                        <th>说明</th>
-                                        <th>时间</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for record in recharge_records %}
-                                    <tr>
-                                        <td>
-                                            <span class="text-success">+¥{{ "%.2f"|format(record.amount) }}</span>
-                                            {% if record.bonus_amount and record.bonus_amount > 0 %}
-                                                <br><small class="text-danger">（含赠送¥{{ "%.2f"|format(record.bonus_amount) }}）</small>
-                                            {% endif %}
-                                        </td>
-                                        <td>
-                                            {% if record.recharge_type == 'manual' %}
-                                                <span class="badge bg-primary">手动充值</span>
-                                            {% elif record.recharge_type == 'refund' %}
-                                                <span class="badge bg-warning">退款</span>
-                                            {% else %}
-                                                <span class="badge bg-info">调整</span>
-                                            {% endif %}
-                                        </td>
-                                        <td>{{ record.admin_user.username }}</td>
-                                        <td>{{ record.description or '无' }}</td>
-                                        <td>{{ record.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
-                        {% else %}
-                        <div class="text-center py-4">
-                            <p class="text-muted">暂无充值记录</p>
-                        </div>
-                        {% endif %}
-                    </div>
-                </div>
-            </div>
-            
             <!-- 自拍机设备 -->
             <div class="tab-pane fade" id="machines" role="tabpanel">
                 <div class="card">
@@ -489,22 +415,13 @@
                                             {% else %}
                                                 {% set perms = {} %}
                                             {% endif %}
-                                            {% if perms.get('view_today_orders') %}
-                                                <span class="badge bg-info">今日订单</span>
-                                            {% endif %}
-                                            {% if perms.get('view_store_images') %}
-                                                <span class="badge bg-success">门店图片</span>
-                                            {% endif %}
-                                            {% if perms.get('view_all_orders') %}
-                                                <span class="badge bg-primary">全部订单</span>
-                                            {% endif %}
-                                            {% if perms.get('view_statistics') %}
-                                                <span class="badge bg-warning">统计数据</span>
-                                            {% endif %}
                                             {% if perms.get('groupon_verify') %}
                                                 <span class="badge bg-danger">团购核销</span>
                                             {% endif %}
-                                            {% if not perms or (not perms.get('view_today_orders') and not perms.get('view_store_images') and not perms.get('view_all_orders') and not perms.get('view_statistics') and not perms.get('groupon_verify')) %}
+                                            {% if perms.get('refund_request') %}
+                                                <span class="badge bg-warning">退款申请</span>
+                                            {% endif %}
+                                            {% if not perms or (not perms.get('groupon_verify') and not perms.get('refund_request')) %}
                                                 <span class="text-muted">无权限</span>
                                             {% endif %}
                                         </td>
@@ -543,6 +460,74 @@
                     </div>
                 </div>
             </div>
+            
+            <!-- 退款申请 -->
+            <div class="tab-pane fade" id="refunds" role="tabpanel">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">退款申请列表</h5>
+                    </div>
+                    <div class="card-body">
+                        {% if refund_requests %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>订单号</th>
+                                        <th>客户信息</th>
+                                        <th>订单金额</th>
+                                        <th>退款原因</th>
+                                        <th>申请时间</th>
+                                        <th>状态</th>
+                                        <th>操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for order in refund_requests %}
+                                    <tr>
+                                        <td>{{ order.order_number }}</td>
+                                        <td>
+                                            {{ order.customer_name or '-' }}<br>
+                                            <small class="text-muted">{{ order.customer_phone }}</small>
+                                        </td>
+                                        <td>¥{{ '%.2f'|format(order.price or 0) }}</td>
+                                        <td>
+                                            <small>{{ order.refund_request_reason[:50] }}{% if order.refund_request_reason|length > 50 %}...{% endif %}</small>
+                                        </td>
+                                        <td>
+                                            {% if order.refund_request_time %}
+                                                {{ order.refund_request_time.strftime('%Y-%m-%d %H:%M') }}
+                                            {% else %}
+                                                -
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if order.refund_request_status == 'pending' %}
+                                                <span class="badge bg-warning">待审核</span>
+                                            {% elif order.refund_request_status == 'approved' %}
+                                                <span class="badge bg-success">已批准</span>
+                                            {% elif order.refund_request_status == 'rejected' %}
+                                                <span class="badge bg-danger">已拒绝</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <a href="/admin/payment/refunds" class="btn btn-sm btn-primary">查看详情</a>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% else %}
+                        <div class="text-center text-muted py-5">
+                            <i class="fas fa-inbox fa-3x mb-3"></i>
+                            <p>暂无退款申请</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
         </div>
     </div>
 
@@ -654,6 +639,36 @@
                     </div>
                 </div>
                 <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 小程序码预览模态框 -->
+    <div class="modal fade" id="miniprogramQrcodeModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">小程序码预览</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body text-center">
+                    <div id="miniprogramQrcodeContainer">
+                        <div class="spinner-border" role="status">
+                            <span class="visually-hidden">生成中...</span>
+                        </div>
+                    </div>
+                    <div id="miniprogramQrcodeInfo" class="mt-3" style="display: none;">
+                        <p class="text-muted"><strong>门店名称：</strong><span id="miniprogramFranchiseeName"></span></p>
+                        <p class="text-muted"><strong>二维码标识：</strong><code id="miniprogramQrCode"></code></p>
+                        <p class="text-muted small">用户通过此小程序码进入小程序下单时，订单将自动关联到该门店</p>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" id="downloadMiniprogramQrcodeBtn" style="display: none;" onclick="downloadMiniprogramQrcode()">
+                        <i class="fas fa-download"></i> 下载小程序码
+                    </button>
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
                 </div>
             </div>
@@ -804,6 +819,68 @@
                     container.innerHTML = `<div class="alert alert-danger">加载失败: ${error.message}</div>`;
                 });
         }
+
+    // 生成小程序码
+    let currentMiniprogramQrcodeUrl = '';
+    
+    function generateMiniprogramQrcode(accountId) {
+        const modal = new bootstrap.Modal(document.getElementById('miniprogramQrcodeModal'));
+        const container = document.getElementById('miniprogramQrcodeContainer');
+        const info = document.getElementById('miniprogramQrcodeInfo');
+        const downloadBtn = document.getElementById('downloadMiniprogramQrcodeBtn');
+        
+        // 显示加载状态
+        container.innerHTML = '<div class="spinner-border" role="status"><span class="visually-hidden">生成中...</span></div>';
+        info.style.display = 'none';
+        downloadBtn.style.display = 'none';
+        currentMiniprogramQrcodeUrl = '';
+        
+        // 显示模态框
+        modal.show();
+        
+        // 调用API生成小程序码
+        fetch('/api/qrcode/generate-franchisee', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                franchiseeId: accountId
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                container.innerHTML = `<img src="${data.qrcode_url}" class="img-fluid" alt="小程序码" style="max-width: 300px;">`;
+                document.getElementById('miniprogramFranchiseeName').textContent = data.franchisee_name;
+                document.getElementById('miniprogramQrCode').textContent = data.qr_code;
+                info.style.display = 'block';
+                downloadBtn.style.display = 'inline-block';
+                currentMiniprogramQrcodeUrl = data.qrcode_url;
+            } else {
+                container.innerHTML = `<div class="alert alert-danger">${data.message || '生成失败'}</div>`;
+            }
+        })
+        .catch(error => {
+            container.innerHTML = `<div class="alert alert-danger">生成失败: ${error.message}</div>`;
+        });
+    }
+    
+    // 下载小程序码
+    function downloadMiniprogramQrcode() {
+        if (!currentMiniprogramQrcodeUrl) {
+            alert('没有可下载的小程序码');
+            return;
+        }
+        
+        // 创建下载链接
+        const link = document.createElement('a');
+        link.href = currentMiniprogramQrcodeUrl;
+        link.download = `miniprogram_qrcode_${Date.now()}.jpg`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
     </script>
 </body>
 </html>

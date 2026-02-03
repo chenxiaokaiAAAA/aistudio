@@ -69,6 +69,18 @@
                                     <input type="text" class="form-control" id="wechatId">
                                 </div>
                             </div>
+                            <div class="row mb-3">
+                                <div class="col-md-12">
+                                    <div class="alert alert-info">
+                                        <h6 class="mb-2"><i class="bi bi-info-circle"></i> Playground 使用情况</h6>
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <span>今日已使用: <strong id="playgroundUsedToday">0</strong> 次</span>
+                                            <span>每日限制: <strong id="playgroundDailyLimit">无限制</strong></span>
+                                            <span>剩余次数: <strong id="playgroundRemaining" class="text-primary">无限制</strong></span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                             <button type="button" class="btn btn-primary" onclick="updateProfile()">
                                 <i class="bi bi-save"></i> 保存修改
                             </button>
@@ -106,6 +118,41 @@
                     </div>
                 </div>
 
+                <!-- 管理员账户配置（仅admin可见） -->
+                <div class="card profile-card" id="adminAccountConfig" style="display: none;">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <i class="bi bi-people"></i> 管理员账户配置
+                        </h5>
+                        <button class="btn btn-sm btn-primary" onclick="showAddUserModal()">
+                            <i class="bi bi-plus-circle"></i> 新增账户
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>用户名</th>
+                                        <th>角色</th>
+                                        <th>预览权限</th>
+                                        <th>Playground每日限制</th>
+                                        <th>今日已使用</th>
+                                        <th>操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="usersTableBody">
+                                    <tr>
+                                        <td colspan="6" class="text-center text-muted">
+                                            <i class="bi bi-hourglass-split"></i> 正在加载...
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- 操作日志 -->
                 <div class="card profile-card">
                     <div class="card-header d-flex justify-content-between align-items-center">
@@ -140,13 +187,468 @@
         </div>
     </div>
 
+    <!-- 修改密码模态框 -->
+    <div class="modal fade" id="changePasswordModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="changePasswordTitle">修改密码</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="changePasswordForm">
+                        <input type="hidden" id="changePasswordUserId">
+                        <div class="mb-3">
+                            <label class="form-label">用户名</label>
+                            <input type="text" class="form-control" id="changePasswordUsername" readonly>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">新密码 <span class="text-danger">*</span></label>
+                            <input type="password" class="form-control" id="changePasswordNewPassword" minlength="6" required>
+                            <small class="text-muted">至少6位字符</small>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">确认新密码 <span class="text-danger">*</span></label>
+                            <input type="password" class="form-control" id="changePasswordConfirmPassword" minlength="6" required>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" onclick="savePasswordChange()">保存</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 用户编辑模态框 -->
+    <div class="modal fade" id="userModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="userFormTitle">新增管理员账户</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="userForm">
+                        <input type="hidden" id="userId">
+                        <div class="mb-3">
+                            <label class="form-label">用户名 <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="userUsername" required>
+                        </div>
+                        <div class="mb-3" id="userPasswordGroup">
+                            <label class="form-label">密码 <span class="text-danger">*</span></label>
+                            <input type="password" class="form-control" id="userPassword" minlength="6" required>
+                            <small class="text-muted">至少6位字符</small>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">角色 <span class="text-danger">*</span></label>
+                            <select class="form-select" id="userRole" required onchange="updatePagePermissionsVisibility()">
+                                <option value="operator">操作员</option>
+                                <option value="admin">管理员</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="userCanPreview" checked>
+                                <label class="form-check-label" for="userCanPreview">
+                                    预览权限
+                                </label>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Playground每日使用次数限制</label>
+                            <input type="number" class="form-control" id="userPlaygroundLimit" value="0" min="0">
+                            <small class="text-muted">0表示无限制</small>
+                        </div>
+                        <div class="mb-3" id="pagePermissionsGroup">
+                            <label class="form-label">页面权限配置</label>
+                            <small class="text-muted d-block mb-2">选择该账户可以访问的页面（操作员角色需要配置）</small>
+                            <div class="border rounded p-3" style="max-height: 300px; overflow-y: auto; background: #f8f9fa;">
+                                <div id="pagePermissionsList">
+                                    <!-- 页面权限列表将在这里动态生成 -->
+                                </div>
+                            </div>
+                            <small class="text-muted">管理员角色拥有所有权限，无需配置</small>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" onclick="saveUser()">保存</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         // 页面加载时获取用户信息
         document.addEventListener('DOMContentLoaded', function() {
             loadProfile();
             loadLogs();
+            // 如果是admin，加载管理员账户配置
+            checkAdminRole();
         });
+        
+        // 检查是否为admin角色
+        function checkAdminRole() {
+            fetch('/api/admin/profile', {
+                credentials: 'same-origin'
+            })
+            .then(function(response) {
+                return response.json();
+            })
+            .then(function(data) {
+                if (data.success && data.user && data.user.role === 'admin') {
+                    document.getElementById('adminAccountConfig').style.display = 'block';
+                    loadAdminUsers();
+                }
+            })
+            .catch(function(error) {
+                console.error('检查角色失败:', error);
+            });
+        }
+        
+        // 加载管理员账户列表
+        function loadAdminUsers() {
+            fetch('/api/admin/users', {
+                credentials: 'same-origin'
+            })
+            .then(function(response) {
+                return response.json();
+            })
+            .then(function(data) {
+                if (data.success && data.users) {
+                    renderUsersTable(data.users);
+                } else {
+                    document.getElementById('usersTableBody').innerHTML = 
+                        '<tr><td colspan="6" class="text-center text-muted">加载失败: ' + (data.message || '未知错误') + '</td></tr>';
+                }
+            })
+            .catch(function(error) {
+                console.error('加载账户列表失败:', error);
+                document.getElementById('usersTableBody').innerHTML = 
+                    '<tr><td colspan="6" class="text-center text-muted">加载失败，请刷新重试</td></tr>';
+            });
+        }
+        
+        // 渲染用户表格
+        function renderUsersTable(users) {
+            var tbody = document.getElementById('usersTableBody');
+            if (users.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">暂无账户</td></tr>';
+                return;
+            }
+            
+            var html = '';
+            users.forEach(function(user) {
+                var roleText = user.role === 'admin' ? '管理员' : (user.role === 'operator' ? '操作员' : user.role);
+                var canPreviewText = user.can_preview ? '<span class="badge bg-success">是</span>' : '<span class="badge bg-danger">否</span>';
+                var dailyLimitText = user.playground_daily_limit === 0 ? '无限制' : user.playground_daily_limit;
+                var usedToday = user.playground_used_today || 0;
+                
+                html += '<tr>';
+                html += '<td>' + (user.username || '') + '</td>';
+                html += '<td>' + roleText + '</td>';
+                html += '<td>' + canPreviewText + '</td>';
+                html += '<td>' + dailyLimitText + '</td>';
+                html += '<td>' + usedToday + '</td>';
+                html += '<td>';
+                html += '<button class="btn btn-sm btn-primary me-1" onclick="editUser(' + user.id + ')">编辑</button>';
+                html += '<button class="btn btn-sm btn-warning me-1" onclick="changeUserPassword(' + user.id + ', \'' + user.username + '\')">修改密码</button>';
+                if (user.role !== 'admin' || users.filter(u => u.role === 'admin').length > 1) {
+                    html += '<button class="btn btn-sm btn-danger" onclick="deleteUser(' + user.id + ', \'' + user.username + '\')">删除</button>';
+                }
+                html += '</td>';
+                html += '</tr>';
+            });
+            tbody.innerHTML = html;
+        }
+        
+        // 定义所有页面权限列表（基于导航栏）
+        const pagePermissions = [
+            { id: 'dashboard', name: '仪表盘', path: '/admin/dashboard', category: '基础功能' },
+            { id: 'orders', name: '订单管理', path: '/admin/orders', category: '订单管理' },
+            { id: 'shop_orders', name: '商城订单', path: '/admin/shop/orders', category: '订单管理' },
+            { id: 'photo_selection', name: '选片页面', path: '/admin/photo-selection', category: '订单管理' },
+            { id: 'franchisee', name: '加盟商', path: '/franchisee/admin/accounts', category: '加盟商管理' },
+            { id: 'products', name: '产品管理', path: '/admin/sizes', category: '产品管理' },
+            { id: 'shop_products', name: '商城产品', path: '/admin/shop/products', category: '产品管理' },
+            { id: 'styles', name: '风格管理', path: '/admin/styles', category: '风格管理' },
+            { id: 'playground', name: 'Playground', path: '/playground', category: '测试工具' },
+            { id: 'ai_tasks', name: 'AI任务管理', path: '/admin/ai/tasks', category: '任务管理' },
+            { id: 'meitu_tasks', name: '美颜任务管理', path: '/admin/meitu/tasks', category: '任务管理' },
+            { id: 'system_config', name: '系统配置', path: '/admin/system-config', category: '系统配置' },
+            { id: 'meitu_config', name: '美颜API配置', path: '/admin/meitu/config', category: '系统配置' },
+            { id: 'ai_provider_config', name: 'API服务商配置', path: '/admin/ai-provider/config', category: '系统配置' },
+            { id: 'image_cleanup', name: '过期图片清理', path: '/admin/image-cleanup', category: '系统配置' },
+            { id: 'polling_config', name: '轮询配置', path: '/admin/polling-config', category: '系统配置' },
+            { id: 'print_config', name: '打印配置', path: '/admin/print-config', category: '系统配置' },
+            { id: 'printer', name: '打印机管理', path: '/admin/printer', category: '系统配置' },
+            { id: 'coupons', name: '优惠券管理', path: '/admin/coupons', category: '小程序' },
+            { id: 'promotion', name: '小程序用户管理', path: '/admin/promotion', category: '小程序' },
+            { id: 'homepage', name: '首页配置', path: '/admin/homepage', category: '小程序' },
+            { id: 'profile', name: '个人中心', path: '/admin/profile', category: '个人设置' }
+        ];
+        
+        // 渲染页面权限列表
+        function renderPagePermissions(selectedPermissions) {
+            var container = document.getElementById('pagePermissionsList');
+            if (!container) return;
+            
+            // 按分类分组
+            var categories = {};
+            pagePermissions.forEach(function(page) {
+                if (!categories[page.category]) {
+                    categories[page.category] = [];
+                }
+                categories[page.category].push(page);
+            });
+            
+            var html = '';
+            for (var category in categories) {
+                html += '<div class="mb-3">';
+                html += '<h6 class="text-primary mb-2">' + category + '</h6>';
+                categories[category].forEach(function(page) {
+                    var isChecked = selectedPermissions && selectedPermissions.includes(page.id);
+                    html += '<div class="form-check">';
+                    html += '<input class="form-check-input" type="checkbox" value="' + page.id + '" id="perm_' + page.id + '" ' + (isChecked ? 'checked' : '') + '>';
+                    html += '<label class="form-check-label" for="perm_' + page.id + '">' + page.name + '</label>';
+                    html += '<small class="text-muted ms-2">(' + page.path + ')</small>';
+                    html += '</div>';
+                });
+                html += '</div>';
+            }
+            container.innerHTML = html;
+        }
+        
+        // 显示新增用户模态框
+        function showAddUserModal() {
+            document.getElementById('userFormTitle').textContent = '新增管理员账户';
+            document.getElementById('userForm').reset();
+            document.getElementById('userId').value = '';
+            document.getElementById('userPassword').required = true;
+            document.getElementById('userPasswordGroup').style.display = 'block';
+            renderPagePermissions([]);
+            updatePagePermissionsVisibility();
+            var modal = new bootstrap.Modal(document.getElementById('userModal'));
+            modal.show();
+        }
+        
+        // 更新页面权限配置的显示/隐藏
+        function updatePagePermissionsVisibility() {
+            var roleSelect = document.getElementById('userRole');
+            var pagePermissionsGroup = document.getElementById('pagePermissionsGroup');
+            if (roleSelect && pagePermissionsGroup) {
+                if (roleSelect.value === 'admin') {
+                    pagePermissionsGroup.style.display = 'none';  // 管理员拥有所有权限，无需配置
+                } else {
+                    pagePermissionsGroup.style.display = 'block';  // 操作员需要配置权限
+                }
+            }
+        }
+        
+        // 编辑用户
+        function editUser(userId) {
+            fetch('/api/admin/users/' + userId, {
+                credentials: 'same-origin'
+            })
+            .then(function(response) {
+                return response.json();
+            })
+            .then(function(data) {
+                if (data.success && data.user) {
+                    var user = data.user;
+                    document.getElementById('userFormTitle').textContent = '编辑账户';
+                    document.getElementById('userId').value = user.id;
+                    document.getElementById('userUsername').value = user.username || '';
+                    document.getElementById('userRole').value = user.role || 'operator';
+                    document.getElementById('userCanPreview').checked = user.can_preview !== false;
+                    document.getElementById('userPlaygroundLimit').value = user.playground_daily_limit || 0;
+                    document.getElementById('userPassword').required = false;
+                    document.getElementById('userPasswordGroup').style.display = 'none';
+                    
+                    // 加载页面权限
+                    var selectedPermissions = [];
+                    if (user.page_permissions) {
+                        try {
+                            selectedPermissions = JSON.parse(user.page_permissions);
+                        } catch (e) {
+                            console.error('解析页面权限失败:', e);
+                        }
+                    }
+                    renderPagePermissions(selectedPermissions);
+                    updatePagePermissionsVisibility();
+                    
+                    var modal = new bootstrap.Modal(document.getElementById('userModal'));
+                    modal.show();
+                } else {
+                    alert('加载用户信息失败: ' + (data.message || '未知错误'));
+                }
+            })
+            .catch(function(error) {
+                console.error('加载用户信息失败:', error);
+                alert('加载失败，请重试');
+            });
+        }
+        
+        // 保存用户
+        function saveUser() {
+            var form = document.getElementById('userForm');
+            if (!form.checkValidity()) {
+                form.reportValidity();
+                return;
+            }
+            
+            // 收集页面权限
+            var selectedPermissions = [];
+            var checkboxes = document.querySelectorAll('#pagePermissionsList input[type="checkbox"]:checked');
+            checkboxes.forEach(function(checkbox) {
+                selectedPermissions.push(checkbox.value);
+            });
+            
+            var data = {
+                username: document.getElementById('userUsername').value,
+                role: document.getElementById('userRole').value,
+                can_preview: document.getElementById('userCanPreview').checked,
+                playground_daily_limit: parseInt(document.getElementById('userPlaygroundLimit').value) || 0,
+                page_permissions: JSON.stringify(selectedPermissions)
+            };
+            
+            var userId = document.getElementById('userId').value;
+            var password = document.getElementById('userPassword').value;
+            
+            if (userId) {
+                // 编辑模式
+                if (password) {
+                    data.password = password;
+                }
+            } else {
+                // 新增模式
+                if (!password) {
+                    alert('新增账户必须设置密码');
+                    return;
+                }
+                data.password = password;
+            }
+            
+            var url = userId ? '/api/admin/users/' + userId : '/api/admin/users';
+            var method = userId ? 'PUT' : 'POST';
+            
+            fetch(url, {
+                method: method,
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                credentials: 'same-origin',
+                body: JSON.stringify(data)
+            })
+            .then(function(response) {
+                return response.json();
+            })
+            .then(function(data) {
+                if (data.success) {
+                    alert('保存成功');
+                    var modal = bootstrap.Modal.getInstance(document.getElementById('userModal'));
+                    modal.hide();
+                    loadAdminUsers();
+                } else {
+                    alert('保存失败: ' + (data.message || '未知错误'));
+                }
+            })
+            .catch(function(error) {
+                console.error('保存失败:', error);
+                alert('保存失败，请重试');
+            });
+        }
+        
+        // 修改用户密码
+        function changeUserPassword(userId, username) {
+            document.getElementById('changePasswordTitle').textContent = '修改密码 - ' + username;
+            document.getElementById('changePasswordUserId').value = userId;
+            document.getElementById('changePasswordUsername').value = username;
+            document.getElementById('changePasswordForm').reset();
+            var modal = new bootstrap.Modal(document.getElementById('changePasswordModal'));
+            modal.show();
+        }
+        
+        // 保存密码修改
+        function savePasswordChange() {
+            var form = document.getElementById('changePasswordForm');
+            if (!form.checkValidity()) {
+                form.reportValidity();
+                return;
+            }
+            
+            var userId = document.getElementById('changePasswordUserId').value;
+            var newPassword = document.getElementById('changePasswordNewPassword').value;
+            var confirmPassword = document.getElementById('changePasswordConfirmPassword').value;
+            
+            if (newPassword.length < 6) {
+                alert('密码长度至少6位');
+                return;
+            }
+            
+            if (newPassword !== confirmPassword) {
+                alert('两次输入的密码不一致');
+                return;
+            }
+            
+            fetch('/api/admin/users/' + userId + '/password', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                credentials: 'same-origin',
+                body: JSON.stringify({
+                    password: newPassword
+                })
+            })
+            .then(function(response) {
+                return response.json();
+            })
+            .then(function(data) {
+                if (data.success) {
+                    alert('密码修改成功');
+                    var modal = bootstrap.Modal.getInstance(document.getElementById('changePasswordModal'));
+                    modal.hide();
+                } else {
+                    alert('密码修改失败: ' + (data.message || '未知错误'));
+                }
+            })
+            .catch(function(error) {
+                console.error('密码修改失败:', error);
+                alert('密码修改失败，请重试');
+            });
+        }
+        
+        // 删除用户
+        function deleteUser(userId, username) {
+            if (!confirm('确定要删除账户 "' + username + '" 吗？此操作不可恢复！')) {
+                return;
+            }
+            
+            fetch('/api/admin/users/' + userId, {
+                method: 'DELETE',
+                credentials: 'same-origin'
+            })
+            .then(function(response) {
+                return response.json();
+            })
+            .then(function(data) {
+                if (data.success) {
+                    alert('删除成功');
+                    loadAdminUsers();
+                } else {
+                    alert('删除失败: ' + (data.message || '未知错误'));
+                }
+            })
+            .catch(function(error) {
+                console.error('删除失败:', error);
+                alert('删除失败，请重试');
+            });
+        }
 
         // 加载个人信息
         function loadProfile() {
@@ -164,6 +666,33 @@
                     document.getElementById('contactPerson').value = user.contact_person || '';
                     document.getElementById('contactPhone').value = user.contact_phone || '';
                     document.getElementById('wechatId').value = user.wechat_id || '';
+                    
+                    // 显示 Playground 使用情况
+                    var usedToday = user.playground_used_today || 0;
+                    var dailyLimit = user.playground_daily_limit || 0;
+                    var remaining = user.playground_remaining;
+                    
+                    document.getElementById('playgroundUsedToday').textContent = usedToday;
+                    if (dailyLimit === 0) {
+                        document.getElementById('playgroundDailyLimit').textContent = '无限制';
+                        document.getElementById('playgroundRemaining').textContent = '无限制';
+                        document.getElementById('playgroundRemaining').className = 'text-primary';
+                    } else {
+                        document.getElementById('playgroundDailyLimit').textContent = dailyLimit + ' 次';
+                        if (remaining >= 0) {
+                            document.getElementById('playgroundRemaining').textContent = remaining + ' 次';
+                            if (remaining === 0) {
+                                document.getElementById('playgroundRemaining').className = 'text-danger';
+                            } else if (remaining <= 3) {
+                                document.getElementById('playgroundRemaining').className = 'text-warning';
+                            } else {
+                                document.getElementById('playgroundRemaining').className = 'text-success';
+                            }
+                        } else {
+                            document.getElementById('playgroundRemaining').textContent = '无限制';
+                            document.getElementById('playgroundRemaining').className = 'text-primary';
+                        }
+                    }
                 }
             })
             .catch(function(error) {

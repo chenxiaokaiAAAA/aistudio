@@ -1,66 +1,96 @@
 <!DOCTYPE html>
-<html lang="zh">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ account.company_name }} - 加盟商管理面板</title>
     <link href="/static/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        body { background-color: #f8f9fa; }
-        .navbar-brand { font-weight: 600; }
+        body {
+            background: #f5f7fa;
+            min-height: 100vh;
+            padding-top: 70px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+        }
+        .navbar-custom {
+            background: #0a0a0a !important;
+            border-bottom: 1px solid #1a1a1a;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        }
+        .navbar-brand, .nav-link {
+            color: #e0e0e0 !important;
+        }
+        .nav-link:hover {
+            color: #ffffff !important;
+        }
+        .nav-link.active {
+            color: #ffffff !important;
+            font-weight: 600;
+        }
+        .dashboard-container {
+            padding: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        .section-title {
+            color: #333;
+            font-size: 1.2rem;
+            font-weight: 500;
+            margin-bottom: 20px;
+        }
+        .stat-card {
+            background: #ffffff;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 16px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e8e8e8;
+            transition: box-shadow 0.2s;
+        }
+        .stat-card:hover {
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+        }
+        .stat-card .icon {
+            font-size: 1.8rem;
+            opacity: 0.7;
+            margin-bottom: 8px;
+        }
+        .stat-card .value {
+            font-size: 1.8rem;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 4px;
+        }
+        .stat-card .label {
+            font-size: 0.85rem;
+            color: #666;
+            font-weight: 400;
+        }
+        .stat-card.primary { border-left: 3px solid #007bff; }
+        .stat-card.success { border-left: 3px solid #28a745; }
+        .stat-card.warning { border-left: 3px solid #ffc107; }
+        .stat-card.info { border-left: 3px solid #17a2b8; }
+        .stat-card.danger { border-left: 3px solid #dc3545; }
+        .stat-card.purple { border-left: 3px solid #6f42c1; }
+        .clickable-card {
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .clickable-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
         .card { border: none; box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075); }
         .card-header { background-color: #fff; border-bottom: 1px solid #dee2e6; }
-        .quota-card { border-left: 4px solid #28a745; }
-        .order-card { border-left: 4px solid #007bff; }
-        .recharge-card { border-left: 4px solid #ffc107; }
-        .stat-number { font-size: 2rem; font-weight: 700; }
         .table-sm th, .table-sm td { padding: 0.5rem; }
     </style>
 </head>
 <body>
     <!-- 导航栏 -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-        <div class="container">
-            <a class="navbar-brand" href="/franchisee/dashboard">
-                <i class="fas fa-building"></i> {{ account.company_name }}
-            </a>
-            <div class="collapse navbar-collapse">
-                <ul class="navbar-nav me-auto">
-                    <li class="nav-item">
-                        <a class="nav-link active" href="/franchisee/dashboard">首页</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/franchisee/orders">订单管理</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/franchisee/recharge-records">充值记录</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/franchisee/qrcode">我的二维码</a>
-                    </li>
-                </ul>
-                <ul class="navbar-nav">
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                            <i class="fas fa-user"></i> {{ account.contact_person }}
-                        </a>
-                        <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="/franchisee/change-password">
-                                <i class="fas fa-key"></i> 修改密码
-                            </a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="/franchisee/logout">
-                                <i class="fas fa-sign-out-alt"></i> 退出登录
-                            </a></li>
-                        </ul>
-                    </li>
-                </ul>
-            </div>
-        </div>
-    </nav>
+    {% include 'franchisee/_navbar.html' %}
 
-    <div class="container mt-4">
+    <div class="container-fluid dashboard-container">
         <!-- 消息提示 -->
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
@@ -73,228 +103,92 @@
             {% endif %}
         {% endwith %}
 
-        <!-- 欢迎信息和下单入口 -->
-        <div class="row mb-4">
-            <div class="col-12">
-                <div class="card">
-                    <div class="card-body">
-                        <div class="row align-items-center">
-                            <div class="col-md-6">
-                                <h4 class="mb-1">欢迎回来，{{ account.company_name }}！</h4>
-                                <p class="text-muted mb-0">联系人：{{ account.contact_person }} | 电话：{{ account.contact_phone }}</p>
-                            </div>
-                            <div class="col-md-6 text-end">
-                                <div class="d-flex justify-content-end align-items-center gap-3">
-                                    <div class="text-muted">
-                                        <small>最后登录：{{ account.updated_at.strftime('%Y-%m-%d %H:%M') }}</small>
-                                    </div>
-                                    <a href="/franchisee/fran-order" class="btn btn-primary btn-lg">
-                                        <i class="fas fa-plus-circle"></i> 立即下单
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+        <h2 class="section-title">
+            <i class="fas fa-chart-line"></i> 数据概览
+        </h2>
 
-        <!-- 统计卡片 -->
+        <!-- 业绩统计 -->
         <div class="row mb-4">
             <div class="col-md-3">
-                <div class="card quota-card">
-                    <div class="card-body text-center">
-                        <h5 class="card-title text-success">剩余额度</h5>
-                        <h2 class="stat-number text-success">¥{{ "%.2f"|format(account.remaining_quota) }}</h2>
-                        <small class="text-muted">可用余额</small>
+                <div class="stat-card success">
+                    <div class="icon text-success">
+                        <i class="fas fa-yen-sign"></i>
                     </div>
+                    <div class="value text-success">¥{{ '%.2f'|format(yesterday_revenue) }}</div>
+                    <div class="label">昨日业绩</div>
                 </div>
             </div>
             <div class="col-md-3">
-                <div class="card order-card">
-                    <div class="card-body text-center">
-                        <h5 class="card-title text-primary">本月订单</h5>
-                        <h2 class="stat-number text-primary">{{ total_orders }}</h2>
-                        <small class="text-muted">最近30天</small>
+                <div class="stat-card success">
+                    <div class="icon text-success">
+                        <i class="fas fa-yen-sign"></i>
                     </div>
+                    <div class="value text-success">¥{{ '%.2f'|format(daily_revenue) }}</div>
+                    <div class="label">今日业绩</div>
                 </div>
             </div>
             <div class="col-md-3">
-                <div class="card">
-                    <div class="card-body text-center">
-                        <h5 class="card-title text-info">订单金额</h5>
-                        <h2 class="stat-number text-info">¥{{ "%.2f"|format(total_amount) }}</h2>
-                        <small class="text-muted">最近30天</small>
+                <div class="stat-card warning">
+                    <div class="icon text-warning">
+                        <i class="fas fa-yen-sign"></i>
                     </div>
+                    <div class="value text-warning">¥{{ '%.2f'|format(week_revenue) }}</div>
+                    <div class="label">本周业绩</div>
                 </div>
             </div>
             <div class="col-md-3">
-                <div class="card recharge-card">
-                    <div class="card-body text-center">
-                        <h5 class="card-title text-warning">累计扣除</h5>
-                        <h2 class="stat-number text-warning">¥{{ "%.2f"|format(total_deduction) }}</h2>
-                        <small class="text-muted">最近30天</small>
+                <div class="stat-card info">
+                    <div class="icon text-info">
+                        <i class="fas fa-yen-sign"></i>
                     </div>
+                    <div class="value text-info">¥{{ '%.2f'|format(month_revenue) }}</div>
+                    <div class="label">本月业绩</div>
                 </div>
             </div>
         </div>
 
-        <div class="row">
-            <!-- 额度信息 -->
-            <div class="col-md-4">
-                <div class="card quota-card mb-4">
-                    <div class="card-header">
-                        <h5 class="mb-0"><i class="fas fa-wallet"></i> 额度信息</h5>
+        <!-- 订单状态统计 -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="stat-card primary">
+                    <div class="icon text-primary">
+                        <i class="fas fa-shopping-cart"></i>
                     </div>
-                    <div class="card-body">
-                        <div class="mb-3">
-                            <div class="d-flex justify-content-between">
-                                <span>总额度</span>
-                                <strong class="text-primary">¥{{ "%.2f"|format(account.total_quota) }}</strong>
-                            </div>
-                        </div>
-                        <div class="mb-3">
-                            <div class="d-flex justify-content-between">
-                                <span>已使用</span>
-                                <span class="text-warning">¥{{ "%.2f"|format(account.used_quota) }}</span>
-                            </div>
-                        </div>
-                        <div class="mb-3">
-                            <div class="d-flex justify-content-between">
-                                <span>剩余额度</span>
-                                <strong class="text-success">¥{{ "%.2f"|format(account.remaining_quota) }}</strong>
-                            </div>
-                        </div>
-                        {% if account.total_quota > 0 %}
-                            {% set usage_percent = (account.used_quota / account.total_quota) * 100 %}
-                        {% else %}
-                            {% set usage_percent = 0 %}
-                        {% endif %}
-                        <div class="progress mb-3">
-                            <div class="progress-bar bg-warning" style="width: {{ usage_percent }}%"></div>
-                        </div>
-                        <div class="text-center">
-                            <small class="text-muted">使用率：{{ "%.1f"|format(usage_percent) }}%</small>
-                        </div>
-                    </div>
+                    <div class="value text-primary">{{ total_orders }}</div>
+                    <div class="label">总订单数</div>
                 </div>
             </div>
-
-            <!-- 最近订单 -->
-            <div class="col-md-8">
-                <div class="card order-card mb-4">
-                    <div class="card-header d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0"><i class="fas fa-shopping-cart"></i> 最近订单</h5>
-                        <a href="/franchisee/orders" class="btn btn-sm btn-outline-primary">查看全部</a>
+            <div class="col-md-3">
+                <div class="stat-card info">
+                    <div class="icon text-info">
+                        <i class="fas fa-cog fa-spin"></i>
                     </div>
-                    <div class="card-body">
-                        {% if recent_orders %}
-                        <div class="table-responsive">
-                            <table class="table table-sm">
-                                <thead>
-                                    <tr>
-                                        <th>订单号</th>
-                                        <th>客户</th>
-                                        <th>产品</th>
-                                        <th>金额</th>
-                                        <th>状态</th>
-                                        <th>时间</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for order in recent_orders[:5] %}
-                                    <tr>
-                                        <td><code>{{ order.order_number[:12] }}...</code></td>
-                                        <td>{{ order.customer_name }}</td>
-                                        <td>{{ order.product_name[:15] }}{% if order.product_name|length > 15 %}...{% endif %}</td>
-                                        <td>¥{{ "%.2f"|format(order.price) }}</td>
-                                        <td>
-                                            {% if order.status == 'completed' %}
-                                                <span class="badge bg-success">已完成</span>
-                                            {% elif order.status == 'processing' %}
-                                                <span class="badge bg-warning">处理中</span>
-                                            {% elif order.status == 'shipped' %}
-                                                <span class="badge bg-info">已发货</span>
-                                            {% elif order.status == 'delivered' %}
-                                                <span class="badge bg-info">已发货</span>
-                                            {% else %}
-                                                <span class="badge bg-secondary">{{ order.status }}</span>
-                                            {% endif %}
-                                        </td>
-                                        <td>{{ order.created_at.strftime('%m-%d %H:%M') }}</td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
-                        {% else %}
-                        <div class="text-center py-4">
-                            <i class="fas fa-shopping-cart fa-3x text-muted mb-3"></i>
-                            <p class="text-muted">暂无订单记录</p>
-                        </div>
-                        {% endif %}
+                    <div class="value text-info">{{ processing_orders }}</div>
+                    <div class="label">处理中订单</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card success">
+                    <div class="icon text-success">
+                        <i class="fas fa-check-circle"></i>
                     </div>
+                    <div class="value text-success">{{ completed_orders }}</div>
+                    <div class="label">已完成订单</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card danger">
+                    <div class="icon text-danger">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <div class="value text-danger">{{ error_orders }}</div>
+                    <div class="label">异常订单</div>
                 </div>
             </div>
         </div>
 
-        <!-- 最近充值记录 -->
-        <div class="row">
-            <div class="col-12">
-                <div class="card recharge-card">
-                    <div class="card-header d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0"><i class="fas fa-plus-circle"></i> 最近充值记录</h5>
-                        <a href="/franchisee/recharge-records" class="btn btn-sm btn-outline-warning">查看全部</a>
-                    </div>
-                    <div class="card-body">
-                        {% if recent_recharges %}
-                        <div class="table-responsive">
-                            <table class="table table-sm">
-                                <thead>
-                                    <tr>
-                                        <th>充值金额</th>
-                                        <th>类型</th>
-                                        <th>说明</th>
-                                        <th>时间</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for record in recent_recharges[:5] %}
-                                    <tr>
-                                        <td class="text-success">+¥{{ "%.2f"|format(record.amount) }}</td>
-                                        <td>
-                                            {% if record.recharge_type == 'manual' %}
-                                                <span class="badge bg-primary">手动充值</span>
-                                            {% elif record.recharge_type == 'refund' %}
-                                                <span class="badge bg-warning">退款</span>
-                                            {% else %}
-                                                <span class="badge bg-info">调整</span>
-                                            {% endif %}
-                                        </td>
-                                        <td>{{ record.description or '无' }}</td>
-                                        <td>{{ record.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
-                        {% else %}
-                        <div class="text-center py-4">
-                            <i class="fas fa-plus-circle fa-3x text-muted mb-3"></i>
-                            <p class="text-muted">暂无充值记录</p>
-                        </div>
-                        {% endif %}
-                    </div>
-                </div>
-            </div>
-        </div>
     </div>
 
     <script src="/static/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
-
-
-
-
-

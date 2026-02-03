@@ -144,9 +144,9 @@ def main():
     create_optimized_gunicorn_config()
     
     print("🌐 使用优化的Gunicorn启动Web服务器...")
-    print("📱 小程序API: http://moeart.cc:8000/api/miniprogram/")
-    print("🖥️  管理后台: http://moeart.cc:8000/admin/")
-    print("🌍 网页版: http://moeart.cc:8000/")
+    print("📱 小程序API: http://photogooo:8000/api/miniprogram/")
+    print("🖥️  管理后台: http://photogooo:8000/admin/")
+    print("🌍 网页版: http://photogooo:8000/")
     print("=" * 50)
     
     # 启动Gunicorn

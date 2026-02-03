@@ -39,6 +39,8 @@ def get_models():
         'Commission': test_server_module.Commission,
         'Withdrawal': test_server_module.Withdrawal,
         'UserVisit': test_server_module.UserVisit,
+        'Coupon': getattr(test_server_module, 'Coupon', None),
+        'UserCoupon': getattr(test_server_module, 'UserCoupon', None),
         'WECHAT_PAY_CONFIG': test_server_module.WECHAT_PAY_CONFIG,
         'get_user_openid_service': test_server_module.get_user_openid_service,
     }
@@ -60,6 +62,66 @@ def get_utils():
         'generate_stable_promotion_code': generate_stable_promotion_code,
         'generate_stable_user_id': generate_stable_user_id,
     }
+
+
+@user_api_bp.route('/check', methods=['POST'])
+def check_user():
+    """检查用户是否存在接口"""
+    try:
+        data = request.get_json()
+        phone_number = data.get('phoneNumber')
+        open_id = data.get('openId')
+        
+        if not phone_number and not open_id:
+            return jsonify({
+                'success': False,
+                'message': '缺少必要参数：phoneNumber 或 openId'
+            }), 400
+        
+        models = get_models()
+        if not models:
+            return jsonify({'success': False, 'message': '系统未初始化'}), 500
+        
+        db = models['db']
+        PromotionUser = models['PromotionUser']
+        
+        # 优先通过手机号查找（PromotionUser表中有phone_number字段）
+        if phone_number:
+            promotion_user = PromotionUser.query.filter_by(phone_number=phone_number).first()
+            if promotion_user:
+                return jsonify({
+                    'success': True,
+                    'exists': True,
+                    'userId': promotion_user.user_id,
+                    'promotionCode': promotion_user.promotion_code
+                })
+        
+        # 通过openId查找
+        if open_id:
+            promotion_user = PromotionUser.query.filter_by(open_id=open_id).first()
+            if promotion_user:
+                return jsonify({
+                    'success': True,
+                    'exists': True,
+                    'userId': promotion_user.user_id,
+                    'promotionCode': promotion_user.promotion_code
+                })
+        
+        # 用户不存在
+        return jsonify({
+            'success': True,
+            'exists': False,
+            'userId': None
+        })
+        
+    except Exception as e:
+        print(f"检查用户异常: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'success': False,
+            'message': f'检查用户失败: {str(e)}'
+        }), 500
 
 
 @user_api_bp.route('/openid', methods=['POST'])
@@ -111,7 +173,7 @@ def register_user():
         user_id = data.get('userId')
         promotion_code = data.get('promotionCode')
         open_id = data.get('openId')
-        user_info = data.get('userInfo', {})
+        user_info = data.get('userInfo') or {}
         promotion_params = data.get('promotion_params')
         
         print(f"用户注册请求: userId={user_id}, open_id={open_id}, promotion_params={promotion_params}")
@@ -325,7 +387,7 @@ def update_user_info():
     try:
         data = request.get_json()
         user_id = data.get('userId')
-        user_info = data.get('userInfo', {})
+        user_info = data.get('userInfo') or {}
         
         if not user_id:
             return jsonify({
@@ -794,12 +856,17 @@ def get_user_phone():
         if not models:
             return jsonify({'success': False, 'message': '系统未初始化'}), 500
         
-        WECHAT_PAY_CONFIG = models['WECHAT_PAY_CONFIG']
+        # 优先从数据库读取配置，如果没有则使用test_server.py中的默认配置
+        from app.services.payment_service import get_wechat_pay_config
+        WECHAT_PAY_CONFIG = get_wechat_pay_config()
+        
+        if not WECHAT_PAY_CONFIG:
+            return jsonify({'success': False, 'message': '微信支付配置未初始化'}), 500
         
         url = 'https://api.weixin.qq.com/sns/jscode2session'
         params = {
-            'appid': WECHAT_PAY_CONFIG['appid'],
-            'secret': WECHAT_PAY_CONFIG['app_secret'],
+            'appid': WECHAT_PAY_CONFIG.get('appid', ''),
+            'secret': WECHAT_PAY_CONFIG.get('app_secret', ''),
             'js_code': code,
             'grant_type': 'authorization_code'
         }
@@ -977,24 +1044,62 @@ def update_user_phone():
         }), 500
 
 
-@user_api_bp.route('/visit', methods=['POST'])
+@user_api_bp.route('/visit', methods=['POST', 'OPTIONS'])
 def record_user_visit():
-    """记录用户访问（支持完整访问追踪）"""
+    """记录用户访问（支持完整访问追踪）- 优化版本：快速响应，避免超时"""
+    # 处理 OPTIONS 预检请求
+    if request.method == 'OPTIONS':
+        response = jsonify({'status': 'ok'})
+        # CORS头由after_request统一处理，这里不需要重复设置
+        return response
+    
+    # 先快速返回响应，避免小程序超时
+    response_data = {
+        'success': True,
+        'message': '用户访问记录成功',
+        'visitId': None,
+        'promotionCode': None,
+        'isNewUser': False
+    }
+    
     try:
-        data = request.get_json()
-        session_id = data.get('sessionId')
-        openid = data.get('openId')
-        user_id = data.get('userId')
-        visit_type = data.get('visitType', 'launch')
-        promotion_code = data.get('promotionCode')
-        referrer_user_id = data.get('referrerUserId')
+        # 添加调试日志
+        print(f"📥 [用户访问记录] 收到请求: {request.method} {request.path}")
+        print(f"📥 [用户访问记录] Content-Type: {request.content_type}")
+        print(f"📥 [用户访问记录] Content-Length: {request.content_length}")
+        
+        # 安全地获取JSON数据，避免JSONDecodeError
+        try:
+            data = request.get_json(force=True, silent=True) or {}
+        except Exception as json_error:
+            print(f"⚠️ [用户访问记录] JSON解析失败: {json_error}")
+            # 尝试从原始数据获取
+            try:
+                raw_data = request.get_data(as_text=True)
+                print(f"📥 [用户访问记录] 原始数据: {raw_data[:200]}")
+                if raw_data:
+                    import json
+                    data = json.loads(raw_data)
+                else:
+                    data = {}
+            except:
+                data = {}
+        
+        session_id = data.get('sessionId') or data.get('session_id')
+        openid = data.get('openId') or data.get('openid')
+        user_id = data.get('userId') or data.get('user_id')
+        visit_type = data.get('visitType') or data.get('type', 'launch')
+        promotion_code = data.get('promotionCode') or data.get('promotion_code')
+        referrer_user_id = data.get('referrerUserId') or data.get('referrer_user_id')
         scene = data.get('scene')
-        user_info = data.get('userInfo', {})
-        page_path = data.get('pagePath', '')
+        user_info = data.get('userInfo') or data.get('user_info') or {}
         ip_address = request.remote_addr
         user_agent = request.headers.get('User-Agent', '')
         
+        print(f"📥 [用户访问记录] 数据: sessionId={session_id}, type={visit_type}, userId={user_id}")
+        
         if not session_id:
+            print("⚠️ [用户访问记录] 缺少sessionId")
             return jsonify({
                 'success': False,
                 'message': '会话ID不能为空'
@@ -1002,126 +1107,121 @@ def record_user_visit():
         
         models = get_models()
         if not models:
-            return jsonify({'success': False, 'message': '系统未初始化'}), 500
+            print("⚠️ [用户访问记录] 系统未初始化，返回默认响应")
+            # 即使系统未初始化，也返回成功，避免阻塞小程序
+            return jsonify(response_data)
         
-        db = models['db']
-        PromotionUser = models['PromotionUser']
-        PromotionTrack = models['PromotionTrack']
+        # ⚡ 优化：先快速返回响应，避免超时
+        # 数据库操作在后台异步处理，不阻塞响应
+        print(f"✅ [用户访问记录] 准备快速返回响应")
         
-        assigned_promotion_code = None
+        # 使用线程异步处理数据库操作
+        import threading
+        from flask import current_app
         
-        if openid:
-            user_result = db.session.execute(
-                db.text("SELECT promotion_code FROM promotion_users WHERE open_id = :openid"),
-                {'openid': openid}
-            ).fetchone()
-            
-            if user_result:
-                assigned_promotion_code = user_result[0]
-            else:
-                if promotion_code:
-                    assigned_promotion_code = promotion_code
+        def save_visit_async():
+            # 在异步线程中需要创建应用上下文
+            try:
+                # 获取应用实例
+                if 'test_server' in sys.modules:
+                    test_server_module = sys.modules['test_server']
+                    app_instance = test_server_module.app
                 else:
-                    assigned_promotion_code = f"PET{''.join(random.choices(string.ascii_uppercase + string.digits, k=6))}"
-                    try:
-                        db.session.execute(
+                    print("⚠️ [用户访问记录] 异步保存：无法获取应用实例")
+                    return
+                
+                # 在应用上下文中执行数据库操作
+                with app_instance.app_context():
+                    # 重新获取models，确保线程安全
+                    async_models = get_models()
+                    if not async_models:
+                        print("⚠️ [用户访问记录] 异步保存：系统未初始化")
+                        return
+                        
+                    db = async_models['db']
+                    UserVisit = async_models.get('UserVisit')
+                    
+                    if UserVisit:
+                        # 使用 ORM 快速插入
+                        new_visit = UserVisit(
+                            session_id=session_id,
+                            openid=openid if openid and openid != 'anonymous' else None,
+                            user_id=user_id if user_id and user_id != 'anonymous' else None,
+                            visit_type=visit_type,
+                            source='miniprogram',
+                            scene=scene,
+                            user_info=json.dumps(user_info) if user_info else None,
+                            is_authorized=bool(openid and openid != 'anonymous'),
+                            is_registered=bool(user_id and user_id != 'anonymous'),
+                            has_ordered=(visit_type == 'order'),
+                            ip_address=ip_address,
+                            user_agent=user_agent,
+                            promotion_code=promotion_code,
+                            referrer_user_id=referrer_user_id
+                        )
+                        db.session.add(new_visit)
+                        db.session.commit()
+                        print(f"✅ [用户访问记录] 异步保存成功: visitId={new_visit.id}")
+                    else:
+                        # 使用原始 SQL（如果模型不存在）
+                        result = db.session.execute(
                             db.text("""
-                                INSERT INTO promotion_users 
-                                (user_id, promotion_code, open_id, nickname, avatar_url, phone_number, 
-                                 total_earnings, total_orders, eligible_for_promotion, create_time, update_time)
-                                VALUES (:user_id, :promotion_code, :open_id, :nickname, :avatar_url, :phone_number,
-                                        0.0, 0, 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                                INSERT INTO user_visits 
+                                (session_id, openid, user_id, promotion_code, referrer_user_id,
+                                 visit_time, visit_type, source, scene, user_info, is_authorized, 
+                                 is_registered, has_ordered, ip_address, user_agent)
+                                VALUES (:session_id, :openid, :user_id, :promotion_code, :referrer_user_id,
+                                        CURRENT_TIMESTAMP, :visit_type, :source, :scene, :user_info, :is_authorized, 
+                                        :is_registered, :has_ordered, :ip_address, :user_agent)
                             """),
                             {
-                                'user_id': user_id or f"USER{''.join(random.choices(string.ascii_uppercase + string.digits, k=10))}",
-                                'promotion_code': assigned_promotion_code,
-                                'open_id': openid,
-                                'nickname': user_info.get('nickName', ''),
-                                'avatar_url': user_info.get('avatarUrl', ''),
-                                'phone_number': ''
+                                'session_id': session_id, 
+                                'openid': openid if openid and openid != 'anonymous' else None, 
+                                'user_id': user_id if user_id and user_id != 'anonymous' else None,
+                                'promotion_code': promotion_code,
+                                'referrer_user_id': referrer_user_id,
+                                'visit_type': visit_type, 
+                                'source': 'miniprogram', 
+                                'scene': scene,
+                                'user_info': json.dumps(user_info) if user_info else None,
+                                'is_authorized': bool(openid and openid != 'anonymous'), 
+                                'is_registered': bool(user_id and user_id != 'anonymous'),
+                                'has_ordered': (visit_type == 'order'), 
+                                'ip_address': ip_address,
+                                'user_agent': user_agent
                             }
                         )
                         db.session.commit()
-                    except Exception as e:
-                        print(f"⚠️ 创建用户记录失败: {e}")
-        
-        visit_id = None
-        try:
-            existing_visit = db.session.execute(
-                db.text("""
-                    SELECT id FROM user_access_logs 
-                    WHERE session_id = :session_id 
-                    AND visit_type = :visit_type 
-                    AND visit_time >= datetime('now', '-5 minutes')
-                """),
-                {'session_id': session_id, 'visit_type': visit_type}
-            ).fetchone()
-            
-            if existing_visit:
-                visit_id = existing_visit[0]
-            else:
-                result = db.session.execute(
-                    db.text("""
-                        INSERT INTO user_access_logs 
-                        (session_id, openid, user_id, temp_promotion_code, final_promotion_code,
-                         visit_time, visit_type, source, scene, user_info, is_authorized, 
-                         is_registered, has_ordered, ip_address, user_agent, page_path)
-                        VALUES (:session_id, :openid, :user_id, :temp_promotion_code, :final_promotion_code,
-                                CURRENT_TIMESTAMP, :visit_type, :source, :scene, :user_info, :is_authorized, 
-                                :is_registered, :has_ordered, :ip_address, :user_agent, :page_path)
-                    """),
-                    {
-                        'session_id': session_id, 'openid': openid, 'user_id': user_id,
-                        'temp_promotion_code': promotion_code, 'final_promotion_code': assigned_promotion_code,
-                        'visit_type': visit_type, 'source': 'miniprogram', 'scene': scene,
-                        'user_info': json.dumps(user_info) if user_info else None,
-                        'is_authorized': bool(openid), 'is_registered': bool(user_id),
-                        'has_ordered': (visit_type == 'order'), 'ip_address': ip_address,
-                        'user_agent': user_agent, 'page_path': page_path
-                    }
-                )
-                db.session.commit()
-                visit_id = db.session.execute(db.text("SELECT last_insert_rowid()")).fetchone()[0]
-        except Exception as e:
-            print(f"❌ 记录访问失败: {e}")
-            db.session.rollback()
-        
-        if visit_type == 'scan' and assigned_promotion_code:
-            try:
-                existing_track = db.session.execute(
-                    db.text("SELECT id FROM promotion_tracks WHERE promotion_code = :code AND visitor_user_id = :visitor"),
-                    {'code': assigned_promotion_code, 'visitor': session_id}
-                ).fetchone()
-                
-                if not existing_track:
-                    track = PromotionTrack(
-                        promotion_code=assigned_promotion_code,
-                        referrer_user_id=referrer_user_id or 'OFFICIAL',
-                        visitor_user_id=session_id,
-                        visit_time=int(datetime.now().timestamp() * 1000)
-                    )
-                    db.session.add(track)
-                    db.session.commit()
+                        print(f"✅ [用户访问记录] 异步保存成功（SQL方式）")
             except Exception as e:
-                print(f"⚠️ 推广追踪记录失败: {e}")
-                db.session.rollback()
+                # 如果是重复记录错误，忽略
+                if 'UNIQUE' not in str(e) and 'duplicate' not in str(e).lower():
+                    print(f"⚠️ [用户访问记录] 异步保存失败: {e}")
+                    import traceback
+                    traceback.print_exc()
         
-        return jsonify({
-            'success': True,
-            'message': '用户访问记录成功',
-            'visitId': visit_id,
-            'promotionCode': assigned_promotion_code,
-            'isNewUser': assigned_promotion_code is not None
-        })
+        # 启动异步保存线程
+        thread = threading.Thread(target=save_visit_async, daemon=True)
+        thread.start()
+        
+        # 立即返回响应，不等待数据库操作完成
+        print(f"✅ [用户访问记录] 快速返回响应")
+        response = jsonify(response_data)
+        # 确保响应头正确设置（使用set避免重复，让after_request处理CORS）
+        # Content-Type由jsonify自动设置，这里只确保CORS头
+        # 注意：不要在这里设置CORS头，让after_request统一处理，避免重复
+        print(f"✅ [用户访问记录] 响应已准备: {response_data}")
+        return response
         
     except Exception as e:
-        print(f"❌ 记录用户访问失败: {e}")
+        print(f"❌ [用户访问记录] 异常: {e}")
         import traceback
         traceback.print_exc()
-        return jsonify({
-            'success': False,
-            'message': f'记录用户访问失败: {str(e)}'
-        }), 500
+        # 即使异常也返回成功，避免阻塞小程序
+        print(f"⚠️ [用户访问记录] 返回默认成功响应")
+        response = jsonify(response_data)
+        # CORS头由after_request统一处理，这里不需要重复设置
+        return response
 
 
 @user_api_bp.route('/visit/stats', methods=['GET'])
@@ -1283,6 +1383,79 @@ def get_user_messages():
         return jsonify({"success": False, "message": str(e)}), 500
 
 
+@user_api_bp.route('/messages/check', methods=['GET'])
+def check_user_messages():
+    """检查用户是否有新消息"""
+    try:
+        user_id = request.args.get('userId')
+        session_id = request.args.get('sessionId')
+        
+        if not user_id and not session_id:
+            return jsonify({
+                "success": False,
+                "hasNewMessage": False,
+                "message": "用户ID或会话ID不能为空"
+            }), 400
+        
+        models = get_models()
+        if not models:
+            return jsonify({
+                'success': False,
+                'hasNewMessage': False,
+                'message': '系统未初始化'
+            }), 500
+        
+        db = models['db']
+        
+        # 查询是否有未读消息
+        result = db.session.execute(
+            db.text("""
+                SELECT 
+                    id,
+                    title,
+                    content,
+                    message_type,
+                    action,
+                    url
+                FROM user_messages 
+                WHERE (user_id = :user_id OR session_id = :session_id) 
+                AND is_read = 0
+                ORDER BY created_at DESC
+                LIMIT 1
+            """),
+            {'user_id': user_id, 'session_id': session_id}
+        )
+        
+        row = result.fetchone()
+        
+        if row:
+            return jsonify({
+                "success": True,
+                "hasNewMessage": True,
+                "message": {
+                    "id": row[0],
+                    "title": row[1],
+                    "content": row[2],
+                    "type": row[3],
+                    "action": row[4],
+                    "url": row[5]
+                }
+            })
+        else:
+            return jsonify({
+                "success": True,
+                "hasNewMessage": False
+            })
+        
+    except Exception as e:
+        print(f"❌ 检查消息失败: {e}")
+        return jsonify({
+            "success": False,
+            "hasNewMessage": False,
+            "message": str(e)
+        }), 500
+
+
 @user_api_bp.route('/messages/read', methods=['POST'])
 def mark_messages_as_read():
     """标记消息为已读"""
@@ -1324,3 +1497,73 @@ def mark_messages_as_read():
         if models:
             models['db'].session.rollback()
         return jsonify({"success": False, "message": str(e)}), 500
+
+
+@user_api_bp.route('/coupons/available-count', methods=['GET'])
+def get_available_coupon_count():
+    """获取用户可领取的优惠券数量"""
+    try:
+        models = get_models()
+        if not models:
+            return jsonify({
+                'success': True,
+                'availableCount': 0
+            })
+        
+        Coupon = models.get('Coupon')
+        UserCoupon = models.get('UserCoupon')
+        
+        # 如果优惠券模型不存在，返回0
+        if not Coupon or not UserCoupon:
+            return jsonify({
+                'success': True,
+                'availableCount': 0
+            })
+        
+        db = models['db']
+        user_id = request.args.get('userId')
+        
+        if not user_id:
+            return jsonify({
+                'success': True,
+                'availableCount': 0
+            })
+        
+        # 查询可领取的优惠券（状态为active，在有效期内，还有剩余数量）
+        now = datetime.now()
+        available_coupons = Coupon.query.filter(
+            Coupon.status == 'active',
+            Coupon.start_time <= now,
+            Coupon.end_time > now
+        ).all()
+        
+        available_count = 0
+        for coupon in available_coupons:
+            # 检查用户是否已经领取过
+            user_coupon_count = UserCoupon.query.filter_by(
+                user_id=user_id,
+                coupon_id=coupon.id
+            ).count()
+            
+            # 检查是否达到每用户限领数量
+            if user_coupon_count < coupon.per_user_limit:
+                # 计算剩余数量
+                claimed_count = UserCoupon.query.filter_by(coupon_id=coupon.id).count()
+                remaining_count = max(0, (coupon.total_count or 0) - claimed_count)
+                
+                # 如果还有剩余数量，则计入可领取数量
+                if remaining_count > 0:
+                    available_count += 1
+        
+        return jsonify({
+            'success': True,
+            'availableCount': available_count
+        })
+        
+    except Exception as e:
+        print(f'❌ 获取可用优惠券数量失败: {str(e)}')
+        # 即使出错也返回0，避免前端报错
+        return jsonify({
+            'success': True,
+            'availableCount': 0
+        })

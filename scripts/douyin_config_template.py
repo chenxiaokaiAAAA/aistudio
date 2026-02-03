@@ -13,7 +13,7 @@ DOUYIN_API_BASE_URL = "https://open.douyin.com"
 DOUYIN_API_VERSION = "v1"
 
 # Webhook配置
-DOUYIN_WEBHOOK_URL = "https://moeart.cc/api/douyin/webhook"
+DOUYIN_WEBHOOK_URL = "https://photogooo/api/douyin/webhook"
 DOUYIN_WEBHOOK_SECRET = "your_webhook_secret_here"  # 自定义webhook密钥
 
 # 同步配置

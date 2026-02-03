@@ -146,7 +146,7 @@ def test_logistics_callback():
     """测试物流信息回传"""
     
     # 接口地址
-    url = "http://moeart.cc/api/logistics/callback"
+    url = "http://photogooo/api/logistics/callback"
     
     # 测试数据
     test_data = {
@@ -205,18 +205,18 @@ if __name__ == '__main__':
     
     print("✅ 物流信息回传接口已创建!")
     print("\\n📋 接口信息:")
-    print("  URL: http://moeart.cc/api/logistics/callback")
+    print("  URL: http://photogooo/api/logistics/callback")
     print("  方法: POST")
     print("  必要参数: order_number, tracking_number, logistics_company")
     print("  可选参数: estimated_delivery, status, remark")
     
     print("\\n🧪 测试接口:")
-    print("  URL: http://moeart.cc/api/logistics/test")
+    print("  URL: http://photogooo/api/logistics/test")
     print("  方法: GET")
     
     print("\\n📝 厂家调用示例:")
     print("""
-    POST http://moeart.cc/api/logistics/callback
+    POST http://photogooo/api/logistics/callback
     Content-Type: application/json
     
     {

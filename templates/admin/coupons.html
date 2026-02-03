@@ -82,13 +82,7 @@
                 <div class="card">
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <h5 class="mb-0">🎫 优惠券管理</h5>
-                        <div>
-                            <button class="btn btn-success me-2" data-bs-toggle="modal" data-bs-target="#grouponVerifyModal">
-                                <i class="fas fa-qrcode"></i> 团购核销
-                            </button>
-                            <button class="btn btn-info me-2" data-bs-toggle="modal" data-bs-target="#thirdPartyGrouponConfigModal">
-                                <i class="fas fa-cog"></i> 第三方团购API配置
-                            </button>
+                        <!-- 团购相关按钮已移至团购核销页面 -->
                             <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createCouponModal">
                                 <i class="fas fa-plus"></i> 创建优惠券
                             </button>
@@ -285,9 +279,28 @@
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="mb-3">
+                                    <label for="grouponPlatform" class="form-label">平台 *</label>
+                                    <select class="form-select" id="grouponPlatform" required onchange="loadPackagesByPlatform()">
+                                        <option value="">请选择平台</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="grouponPackage" class="form-label">团购套餐 *</label>
+                                    <select class="form-select" id="grouponPackage" required onchange="updateVerifyAmount()">
+                                        <option value="">请先选择平台</option>
+                                    </select>
+                                    <div class="form-text" id="packageAmountText">选择套餐后自动填充金额</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
                                     <label for="verifyAmount" class="form-label">核销金额 *</label>
-                                    <input type="number" class="form-control" id="verifyAmount" step="0.01" placeholder="0.00" required>
-                                    <div class="form-text">对应金额的免拍券</div>
+                                    <input type="number" class="form-control" id="verifyAmount" step="0.01" placeholder="0.00" readonly required>
+                                    <div class="form-text">根据选择的套餐自动填充</div>
                                 </div>
                             </div>
                             <div class="col-md-6">
@@ -335,6 +348,104 @@
                     <button type="button" class="btn btn-success" onclick="verifyGrouponOrder()" id="verifyBtn">
                         <i class="fas fa-check"></i> 确认核销
                     </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 团购套餐配置模态框 -->
+    <div class="modal fade" id="grouponPackageModal" tabindex="-1">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">团购套餐配置</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <button class="btn btn-primary" onclick="showAddPackageForm()">
+                            <i class="fas fa-plus"></i> 添加套餐
+                        </button>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>平台</th>
+                                    <th>套餐名称</th>
+                                    <th>套餐金额</th>
+                                    <th>描述</th>
+                                    <th>状态</th>
+                                    <th>排序</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="packageList">
+                                <tr><td colspan="7" class="text-center">加载中...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- 添加/编辑套餐表单 -->
+                    <div id="packageForm" style="display: none;" class="mt-4">
+                        <hr>
+                        <h6 id="packageFormTitle">添加套餐</h6>
+                        <form id="packageFormData">
+                            <input type="hidden" id="packageId">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="packagePlatform" class="form-label">平台 *</label>
+                                        <input type="text" class="form-control" id="packagePlatform" list="platformList" required>
+                                        <datalist id="platformList">
+                                            <option value="美团">
+                                            <option value="抖音">
+                                            <option value="大众点评">
+                                            <option value="其他">
+                                        </datalist>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="packageName" class="form-label">套餐名称 *</label>
+                                        <input type="text" class="form-control" id="packageName" placeholder="如：证件照套餐" required>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="packageAmount" class="form-label">套餐金额 *</label>
+                                        <input type="number" class="form-control" id="packageAmount" step="0.01" min="0.01" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="packageStatus" class="form-label">状态</label>
+                                        <select class="form-select" id="packageStatus">
+                                            <option value="active">启用</option>
+                                            <option value="inactive">停用</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="packageDescription" class="form-label">套餐描述</label>
+                                <textarea class="form-control" id="packageDescription" rows="2"></textarea>
+                            </div>
+                            <div class="mb-3">
+                                <label for="packageSortOrder" class="form-label">排序顺序</label>
+                                <input type="number" class="form-control" id="packageSortOrder" value="0">
+                            </div>
+                            <div class="d-flex gap-2">
+                                <button type="button" class="btn btn-primary" onclick="savePackage()">保存</button>
+                                <button type="button" class="btn btn-secondary" onclick="cancelPackageForm()">取消</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
                 </div>
             </div>
         </div>
@@ -761,10 +872,85 @@
             loadCoupons();
         }
 
+        // 加载平台列表
+        let platforms = [];
+        let packages = [];
+        
+        function loadPlatforms() {
+            fetch('/api/admin/groupon-package/platforms')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        platforms = data.data;
+                        const select = document.getElementById('grouponPlatform');
+                        select.innerHTML = '<option value="">请选择平台</option>';
+                        platforms.forEach(platform => {
+                            const option = document.createElement('option');
+                            option.value = platform;
+                            option.textContent = platform;
+                            select.appendChild(option);
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error('加载平台列表失败:', error);
+                });
+        }
+        
+        // 根据平台加载套餐列表
+        function loadPackagesByPlatform() {
+            const platform = document.getElementById('grouponPlatform').value;
+            const packageSelect = document.getElementById('grouponPackage');
+            packageSelect.innerHTML = '<option value="">请选择套餐</option>';
+            
+            if (!platform) {
+                return;
+            }
+            
+            fetch('/api/admin/groupon-package/list')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        packages = data.data.filter(p => p.platform === platform && p.status === 'active');
+                        packages.forEach(pkg => {
+                            const option = document.createElement('option');
+                            option.value = pkg.id;
+                            option.textContent = `${pkg.package_name} - ¥${pkg.package_amount}`;
+                            option.dataset.amount = pkg.package_amount;
+                            packageSelect.appendChild(option);
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error('加载套餐列表失败:', error);
+                });
+        }
+        
+        // 更新核销金额
+        function updateVerifyAmount() {
+            const packageSelect = document.getElementById('grouponPackage');
+            const amountInput = document.getElementById('verifyAmount');
+            const amountText = document.getElementById('packageAmountText');
+            
+            if (packageSelect.value) {
+                const selectedOption = packageSelect.options[packageSelect.selectedIndex];
+                const amount = parseFloat(selectedOption.dataset.amount);
+                amountInput.value = amount.toFixed(2);
+                amountText.textContent = `套餐金额：¥${amount.toFixed(2)}`;
+            } else {
+                amountInput.value = '';
+                amountText.textContent = '选择套餐后自动填充金额';
+            }
+        }
+        
         // 团购订单核销
         function verifyGrouponOrder() {
+            const platform = document.getElementById('grouponPlatform').value;
+            const packageId = document.getElementById('grouponPackage').value;
             const formData = {
                 groupon_order_id: document.getElementById('grouponOrderId').value,
+                platform: platform,
+                package_id: parseInt(packageId),
                 verify_amount: parseFloat(document.getElementById('verifyAmount').value),
                 customer_phone: document.getElementById('customerPhone').value,
                 customer_name: document.getElementById('customerName').value || '',
@@ -772,7 +958,7 @@
             };
             
             // 验证必填字段
-            if (!formData.groupon_order_id || !formData.verify_amount || !formData.customer_phone) {
+            if (!formData.groupon_order_id || !formData.platform || !formData.package_id || !formData.verify_amount || !formData.customer_phone) {
                 showAlert('请填写所有必填字段', 'warning');
                 return;
             }
@@ -834,7 +1020,174 @@
             document.getElementById('grouponVerifyForm').reset();
             document.getElementById('verifyResult').style.display = 'none';
             document.getElementById('expireDays').value = '30';
+            document.getElementById('grouponPackage').innerHTML = '<option value="">请先选择平台</option>';
+            document.getElementById('verifyAmount').value = '';
+            document.getElementById('packageAmountText').textContent = '选择套餐后自动填充金额';
         }
+        
+        // 加载团购套餐列表
+        function loadPackageList() {
+            fetch('/api/admin/groupon-package/list')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        displayPackageList(data.data);
+                    }
+                })
+                .catch(error => {
+                    console.error('加载套餐列表失败:', error);
+                    document.getElementById('packageList').innerHTML = '<tr><td colspan="7" class="text-center text-danger">加载失败</td></tr>';
+                });
+        }
+        
+        // 显示套餐列表
+        function displayPackageList(packageList) {
+            const tbody = document.getElementById('packageList');
+            if (packageList.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">暂无套餐，请添加</td></tr>';
+                return;
+            }
+            
+            let html = '';
+            packageList.forEach(pkg => {
+                html += `
+                    <tr>
+                        <td>${pkg.platform}</td>
+                        <td>${pkg.package_name}</td>
+                        <td>¥${pkg.package_amount.toFixed(2)}</td>
+                        <td>${pkg.description || '-'}</td>
+                        <td><span class="badge ${pkg.status === 'active' ? 'bg-success' : 'bg-secondary'}">${pkg.status === 'active' ? '启用' : '停用'}</span></td>
+                        <td>${pkg.sort_order}</td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary" onclick="editPackage(${pkg.id})">编辑</button>
+                            <button class="btn btn-sm btn-outline-danger" onclick="deletePackage(${pkg.id})">删除</button>
+                        </td>
+                    </tr>
+                `;
+            });
+            tbody.innerHTML = html;
+        }
+        
+        // 显示添加套餐表单
+        function showAddPackageForm() {
+            document.getElementById('packageForm').style.display = 'block';
+            document.getElementById('packageFormTitle').textContent = '添加套餐';
+            document.getElementById('packageFormData').reset();
+            document.getElementById('packageId').value = '';
+            document.getElementById('packageStatus').value = 'active';
+            document.getElementById('packageSortOrder').value = '0';
+        }
+        
+        // 编辑套餐
+        function editPackage(packageId) {
+            fetch('/api/admin/groupon-package/list')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        const pkg = data.data.find(p => p.id === packageId);
+                        if (pkg) {
+                            document.getElementById('packageForm').style.display = 'block';
+                            document.getElementById('packageFormTitle').textContent = '编辑套餐';
+                            document.getElementById('packageId').value = pkg.id;
+                            document.getElementById('packagePlatform').value = pkg.platform;
+                            document.getElementById('packageName').value = pkg.package_name;
+                            document.getElementById('packageAmount').value = pkg.package_amount;
+                            document.getElementById('packageDescription').value = pkg.description || '';
+                            document.getElementById('packageStatus').value = pkg.status;
+                            document.getElementById('packageSortOrder').value = pkg.sort_order;
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('加载套餐详情失败:', error);
+                    showAlert('加载套餐详情失败', 'danger');
+                });
+        }
+        
+        // 保存套餐
+        function savePackage() {
+            const packageId = document.getElementById('packageId').value;
+            const formData = {
+                platform: document.getElementById('packagePlatform').value.trim(),
+                package_name: document.getElementById('packageName').value.trim(),
+                package_amount: parseFloat(document.getElementById('packageAmount').value),
+                description: document.getElementById('packageDescription').value.trim(),
+                status: document.getElementById('packageStatus').value,
+                sort_order: parseInt(document.getElementById('packageSortOrder').value) || 0
+            };
+            
+            if (!formData.platform || !formData.package_name || !formData.package_amount) {
+                showAlert('请填写所有必填字段', 'warning');
+                return;
+            }
+            
+            const url = packageId ? `/api/admin/groupon-package/update/${packageId}` : '/api/admin/groupon-package/create';
+            const method = packageId ? 'POST' : 'POST';
+            
+            fetch(url, {
+                method: method,
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(formData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    showAlert(data.message, 'success');
+                    cancelPackageForm();
+                    loadPackageList();
+                    loadPlatforms();
+                } else {
+                    showAlert(data.message, 'danger');
+                }
+            })
+            .catch(error => {
+                console.error('保存套餐失败:', error);
+                showAlert('保存套餐失败', 'danger');
+            });
+        }
+        
+        // 删除套餐
+        function deletePackage(packageId) {
+            if (!confirm('确定要删除这个套餐吗？')) {
+                return;
+            }
+            
+            fetch(`/api/admin/groupon-package/delete/${packageId}`, {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    showAlert(data.message, 'success');
+                    loadPackageList();
+                    loadPlatforms();
+                } else {
+                    showAlert(data.message, 'danger');
+                }
+            })
+            .catch(error => {
+                console.error('删除套餐失败:', error);
+                showAlert('删除套餐失败', 'danger');
+            });
+        }
+        
+        // 取消套餐表单
+        function cancelPackageForm() {
+            document.getElementById('packageForm').style.display = 'none';
+            document.getElementById('packageFormData').reset();
+        }
+        
+        // 打开团购套餐配置模态框时加载数据
+        document.getElementById('grouponPackageModal')?.addEventListener('show.bs.modal', function() {
+            loadPackageList();
+        });
+        
+        // 打开团购核销模态框时加载平台列表
+        document.getElementById('grouponVerifyModal')?.addEventListener('show.bs.modal', function() {
+            loadPlatforms();
+        });
 
         // 加载第三方团购API配置
         function loadThirdPartyConfig() {
@@ -1009,10 +1362,52 @@
 
         // 编辑优惠券
         function editCoupon(couponId) {
-            // 这里应该先获取优惠券详情，然后填充表单
-            // 为了简化，我们直接显示模态框
-            document.getElementById('editCouponId').value = couponId;
-            bootstrap.Modal.getInstance(document.getElementById('editCouponModal')).show();
+            // 先获取优惠券详情
+            fetch(`/api/admin/coupons/${couponId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.coupon) {
+                        const coupon = data.coupon;
+                        // 填充表单
+                        document.getElementById('editCouponId').value = couponId;
+                        document.getElementById('editCouponName').value = coupon.name || '';
+                        document.getElementById('editCouponType').value = coupon.type || 'cash';
+                        document.getElementById('editCouponValue').value = coupon.value || 0;
+                        document.getElementById('editMinAmount').value = coupon.min_amount || 0;
+                        document.getElementById('editMaxDiscount').value = coupon.max_discount || '';
+                        document.getElementById('editTotalCount').value = coupon.total_count || 1;
+                        document.getElementById('editPerUserLimit').value = coupon.per_user_limit || 1;
+                        document.getElementById('editCouponStatus').value = coupon.status || 'active';
+                        
+                        // 格式化时间
+                        if (coupon.start_time) {
+                            const startTime = new Date(coupon.start_time);
+                            document.getElementById('editStartTime').value = startTime.toISOString().slice(0, 16);
+                        }
+                        if (coupon.end_time) {
+                            const endTime = new Date(coupon.end_time);
+                            document.getElementById('editEndTime').value = endTime.toISOString().slice(0, 16);
+                        }
+                        
+                        document.getElementById('editCouponDescription').value = coupon.description || '';
+                        
+                        // 显示模态框
+                        const modalElement = document.getElementById('editCouponModal');
+                        if (modalElement) {
+                            const modal = new bootstrap.Modal(modalElement);
+                            modal.show();
+                        } else {
+                            console.error('编辑优惠券模态框不存在');
+                            alert('编辑功能暂不可用');
+                        }
+                    } else {
+                        alert('获取优惠券详情失败: ' + (data.message || '未知错误'));
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('获取优惠券详情失败');
+                });
         }
 
         // 更新优惠券

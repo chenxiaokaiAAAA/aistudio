@@ -170,7 +170,7 @@ import os
 
 def test_download():
     """测试下载功能"""
-    base_url = "http://moeart.cc"  # 替换为您的域名
+    base_url = "http://photogooo"  # 替换为您的域名
     
     # 测试文件（替换为实际存在的文件）
     test_files = [

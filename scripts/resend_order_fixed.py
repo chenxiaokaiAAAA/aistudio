@@ -47,7 +47,7 @@ def resend_order_fixed():
         print(f"✅ 高清图片文件存在: {hd_image_path}")
         
         # 显示公开访问链接
-        base_url = PRINTER_SYSTEM_CONFIG.get('file_access_base_url', "http://moeart.cc")
+        base_url = PRINTER_SYSTEM_CONFIG.get('file_access_base_url', "http://photogooo")
         public_url = f"{base_url}/public/hd/{order.hd_image}"
         print(f"🔗 公开访问链接: {public_url}")
         

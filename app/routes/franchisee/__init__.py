@@ -9,9 +9,12 @@ from flask import Blueprint
 franchisee_bp = Blueprint('franchisee', __name__, url_prefix='/franchisee')
 
 # 导入并注册所有子模块
-from . import admin, frontend, api
+from . import admin, frontend, api, permissions, groupon, coupons
 
 # 注册子蓝图到主蓝图
 franchisee_bp.register_blueprint(admin.bp)
 franchisee_bp.register_blueprint(frontend.bp)
 franchisee_bp.register_blueprint(api.bp)
+franchisee_bp.register_blueprint(permissions.bp)
+franchisee_bp.register_blueprint(groupon.bp)  # 注册团购核销蓝图
+franchisee_bp.register_blueprint(coupons.bp)  # 注册优惠券管理蓝图

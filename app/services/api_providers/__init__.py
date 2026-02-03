@@ -81,12 +81,21 @@ def _lazy_import_providers():
     except ImportError as e:
         print(f"⚠️ 导入 runninghub-rhart-edit 服务商实现失败: {str(e)}")
     
-    # 其他服务商实现将在后续逐步添加
-    # try:
-    #     from . import veo_video_provider
-    #     from . import runninghub_comfyui_workflow_provider
-    # except ImportError as e:
-    #     print(f"⚠️ 导入其他服务商实现失败: {str(e)}")
+    try:
+        from . import veo_video_provider
+        # 注册 veo-video 服务商
+        if hasattr(veo_video_provider, 'VeoVideoProvider'):
+            register_provider('veo-video', veo_video_provider.VeoVideoProvider)
+    except ImportError as e:
+        print(f"⚠️ 导入 veo-video 服务商实现失败: {str(e)}")
+    
+    try:
+        from . import runninghub_comfyui_workflow_provider
+        # 注册 runninghub-comfyui-workflow 服务商
+        if hasattr(runninghub_comfyui_workflow_provider, 'RunningHubComfyUIWorkflowProvider'):
+            register_provider('runninghub-comfyui-workflow', runninghub_comfyui_workflow_provider.RunningHubComfyUIWorkflowProvider)
+    except ImportError as e:
+        print(f"⚠️ 导入 runninghub-comfyui-workflow 服务商实现失败: {str(e)}")
 
 # 自动导入（首次使用时）
 _lazy_import_providers()

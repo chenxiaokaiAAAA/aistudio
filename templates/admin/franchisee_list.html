@@ -85,7 +85,6 @@
                                         <th>联系人</th>
                                         <th>联系电话</th>
                                         <th>状态</th>
-                                        <th>额度信息</th>
                                         <th>创建时间</th>
                                         <th>操作</th>
                                     </tr>
@@ -108,17 +107,14 @@
                                                 <span class="badge bg-danger">已暂停</span>
                                             {% endif %}
                                         </td>
-                                        <td class="quota-info">
-                                            <div>总额度: <strong>¥{{ "%.2f"|format(account.total_quota) }}</strong></div>
-                                            <div>已使用: <span class="text-warning">¥{{ "%.2f"|format(account.used_quota) }}</span></div>
-                                            <div>剩余: <span class="text-success">¥{{ "%.2f"|format(account.remaining_quota) }}</span></div>
-                                        </td>
                                         <td>{{ account.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
                                         <td>
                                             <div class="btn-group btn-group-sm">
                                                 <a href="/franchisee/admin/accounts/{{ account.id }}" class="btn btn-outline-info">详情</a>
                                                 <a href="/franchisee/admin/accounts/{{ account.id }}/edit" class="btn btn-outline-warning">编辑</a>
-                                                <a href="/franchisee/admin/accounts/{{ account.id }}/recharge" class="btn btn-outline-success">充值</a>
+                                                <button type="button" class="btn btn-outline-success" onclick="generateMiniprogramQrcode({{ account.id }})">
+                                                    <i class="fas fa-mobile-alt"></i> 小程序码
+                                                </button>
                                                 <button type="button" class="btn btn-outline-danger" onclick="confirmDelete({{ account.id }}, '{{ account.company_name }}')">删除</button>
                                             </div>
                                         </td>
@@ -149,8 +145,100 @@
         </div>
     </div>
 
+    <!-- 小程序码预览模态框 -->
+    <div class="modal fade" id="miniprogramQrcodeModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">小程序码预览</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body text-center">
+                    <div id="miniprogramQrcodeContainer">
+                        <div class="spinner-border" role="status">
+                            <span class="visually-hidden">生成中...</span>
+                        </div>
+                    </div>
+                    <div id="miniprogramQrcodeInfo" class="mt-3" style="display: none;">
+                        <p class="text-muted"><strong>门店名称：</strong><span id="miniprogramFranchiseeName"></span></p>
+                        <p class="text-muted"><strong>二维码标识：</strong><code id="miniprogramQrCode"></code></p>
+                        <p class="text-muted small">用户通过此小程序码进入小程序下单时，订单将自动关联到该门店</p>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" id="downloadMiniprogramQrcodeBtn" style="display: none;" onclick="downloadMiniprogramQrcode()">
+                        <i class="fas fa-download"></i> 下载小程序码
+                    </button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="/static/js/bootstrap.bundle.min.js"></script>
     <script>
+        // 生成小程序码
+        let currentMiniprogramQrcodeUrl = '';
+        
+        function generateMiniprogramQrcode(accountId) {
+            const modal = new bootstrap.Modal(document.getElementById('miniprogramQrcodeModal'));
+            const container = document.getElementById('miniprogramQrcodeContainer');
+            const info = document.getElementById('miniprogramQrcodeInfo');
+            const downloadBtn = document.getElementById('downloadMiniprogramQrcodeBtn');
+            
+            // 显示加载状态
+            container.innerHTML = '<div class="spinner-border" role="status"><span class="visually-hidden">生成中...</span></div>';
+            info.style.display = 'none';
+            downloadBtn.style.display = 'none';
+            currentMiniprogramQrcodeUrl = '';
+            
+            // 显示模态框
+            modal.show();
+            
+            // 调用API生成小程序码
+            fetch('/api/qrcode/generate-franchisee', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    franchiseeId: accountId
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    container.innerHTML = `<img src="${data.qrcode_url}" class="img-fluid" alt="小程序码" style="max-width: 300px;">`;
+                    document.getElementById('miniprogramFranchiseeName').textContent = data.franchisee_name;
+                    document.getElementById('miniprogramQrCode').textContent = data.qr_code;
+                    info.style.display = 'block';
+                    downloadBtn.style.display = 'inline-block';
+                    currentMiniprogramQrcodeUrl = data.qrcode_url;
+                } else {
+                    container.innerHTML = `<div class="alert alert-danger">${data.message || '生成失败'}</div>`;
+                }
+            })
+            .catch(error => {
+                container.innerHTML = `<div class="alert alert-danger">生成失败: ${error.message}</div>`;
+            });
+        }
+        
+        // 下载小程序码
+        function downloadMiniprogramQrcode() {
+            if (!currentMiniprogramQrcodeUrl) {
+                alert('没有可下载的小程序码');
+                return;
+            }
+            
+            // 创建下载链接
+            const link = document.createElement('a');
+            link.href = currentMiniprogramQrcodeUrl;
+            link.download = `miniprogram_qrcode_${Date.now()}.jpg`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+        
         // 确认删除加盟商账户
         function confirmDelete(accountId, companyName) {
             if (confirm(`确定要删除加盟商账户 "${companyName}" 吗？\n\n注意：如果该账户关联了订单，将无法删除。\n\n此操作不可恢复！`)) {

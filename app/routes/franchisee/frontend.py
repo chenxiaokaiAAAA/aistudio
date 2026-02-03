@@ -84,25 +84,90 @@ def dashboard():
     FranchiseeAccount = models['FranchiseeAccount']
     Order = models['Order']
     FranchiseeRecharge = models['FranchiseeRecharge']
+    db = models['db']
     
     account = FranchiseeAccount.query.get(franchisee_id)
     if not account or account.status != 'active':
         flash('账户不存在或已被禁用', 'error')
         return redirect(url_for('franchisee.franchisee_frontend.franchisee_login'))
     
+    from sqlalchemy import func, or_
+    
+    today = datetime.now().date()
+    yesterday = today - timedelta(days=1)
+    this_week_start = today - timedelta(days=today.weekday())
+    this_month_start = today.replace(day=1)
+    
+    # 基础查询：只查询该加盟商的订单
+    base_query = Order.query.filter(Order.franchisee_id == franchisee_id)
+    
+    # 订单统计
+    total_orders = base_query.filter(Order.status != 'unpaid').count()
+    daily_orders = base_query.filter(
+        func.date(Order.created_at) == today,
+        Order.status != 'unpaid'
+    ).count()
+    yesterday_orders = base_query.filter(
+        func.date(Order.created_at) == yesterday,
+        Order.status != 'unpaid'
+    ).count()
+    week_orders = base_query.filter(
+        func.date(Order.created_at) >= this_week_start,
+        Order.status != 'unpaid'
+    ).count()
+    month_orders = base_query.filter(
+        func.date(Order.created_at) >= this_month_start,
+        Order.status != 'unpaid'
+    ).count()
+    
+    # 业绩统计（基于完成时间）
+    daily_revenue = base_query.filter(
+        func.date(Order.completed_at) == today,
+        Order.status == 'completed'
+    ).with_entities(func.sum(Order.price)).scalar() or 0.0
+    
+    yesterday_revenue = base_query.filter(
+        func.date(Order.completed_at) == yesterday,
+        Order.status == 'completed'
+    ).with_entities(func.sum(Order.price)).scalar() or 0.0
+    
+    week_revenue = base_query.filter(
+        func.date(Order.completed_at) >= this_week_start,
+        Order.status == 'completed'
+    ).with_entities(func.sum(Order.price)).scalar() or 0.0
+    
+    month_revenue = base_query.filter(
+        func.date(Order.completed_at) >= this_month_start,
+        Order.status == 'completed'
+    ).with_entities(func.sum(Order.price)).scalar() or 0.0
+    
+    total_revenue = base_query.filter(
+        Order.status == 'completed'
+    ).with_entities(func.sum(Order.price)).scalar() or 0.0
+    
+    # 订单状态统计
+    pending_orders = base_query.filter(Order.status.in_(['pending', '已支付'])).count()
+    processing_orders = base_query.filter(Order.status == 'processing').count()
+    completed_orders = base_query.filter(Order.status == 'completed').count()
+    error_orders = base_query.filter(
+        or_(
+            Order.status.in_(['failed', 'error']),
+            Order.printer_error_message.isnot(None)
+        )
+    ).count()
+    
+    # 最近30天的订单和充值记录
     thirty_days_ago = datetime.now() - timedelta(days=30)
     
-    recent_orders = Order.query.filter(
-        Order.franchisee_id == franchisee_id,
+    recent_orders = base_query.filter(
         Order.created_at >= thirty_days_ago
-    ).order_by(desc(Order.created_at)).all()
+    ).order_by(desc(Order.created_at)).limit(10).all()
     
     recent_recharges = FranchiseeRecharge.query.filter(
         FranchiseeRecharge.franchisee_id == franchisee_id,
         FranchiseeRecharge.created_at >= thirty_days_ago
-    ).order_by(desc(FranchiseeRecharge.created_at)).all()
+    ).order_by(desc(FranchiseeRecharge.created_at)).limit(10).all()
     
-    total_orders = len(recent_orders)
     total_amount = sum(order.price for order in recent_orders if order.price)
     total_deduction = sum(order.franchisee_deduction for order in recent_orders if order.franchisee_deduction)
     
@@ -111,8 +176,21 @@ def dashboard():
                          recent_orders=recent_orders,
                          recent_recharges=recent_recharges,
                          total_orders=total_orders,
+                         daily_orders=daily_orders,
+                         yesterday_orders=yesterday_orders,
+                         week_orders=week_orders,
+                         month_orders=month_orders,
                          total_amount=total_amount,
-                         total_deduction=total_deduction)
+                         total_deduction=total_deduction,
+                         daily_revenue=float(daily_revenue),
+                         yesterday_revenue=float(yesterday_revenue),
+                         week_revenue=float(week_revenue),
+                         month_revenue=float(month_revenue),
+                         total_revenue=float(total_revenue),
+                         pending_orders=pending_orders,
+                         processing_orders=processing_orders,
+                         completed_orders=completed_orders,
+                         error_orders=error_orders)
 
 
 @bp.route('/qrcode')
@@ -156,7 +234,7 @@ def franchisee_qrcode_preview():
         if not account:
             return jsonify({'success': False, 'message': '账户不存在'}), 404
         
-        qr_content = f"https://moeart.cc/franchisee/scan/{account.qr_code}"
+        qr_content = f"https://photogooo/franchisee/scan/{account.qr_code}"
         
         qr = qrcode.QRCode(
             version=1,
@@ -187,7 +265,196 @@ def franchisee_qrcode_preview():
 
 @bp.route('/orders')
 def franchisee_orders():
-    """加盟商订单列表"""
+    """加盟商订单列表 - 复用管理后台的逻辑，但只显示该加盟商的订单"""
+    franchisee_id = session.get('franchisee_id')
+    if not franchisee_id:
+        flash('请先登录', 'error')
+        return redirect(url_for('franchisee.franchisee_frontend.franchisee_login'))
+    
+    models = get_models()
+    if not models:
+        flash('系统未初始化', 'error')
+        return redirect(url_for('franchisee.franchisee_frontend.franchisee_login'))
+    
+    FranchiseeAccount = models['FranchiseeAccount']
+    Order = models['Order']
+    db = models['db']
+    
+    account = FranchiseeAccount.query.get(franchisee_id)
+    if not account or account.status != 'active':
+        flash('账户不存在或已被禁用', 'error')
+        return redirect(url_for('franchisee.franchisee_frontend.franchisee_login'))
+    
+    from sqlalchemy import func, or_
+    from sqlalchemy.orm import joinedload
+    
+    # 获取筛选参数
+    status = request.args.get('status', '')
+    order_mode = request.args.get('order_mode', '')
+    search = request.args.get('search', '').strip()  # 订单搜索
+    page = request.args.get('page', 1, type=int)  # 分页参数
+    per_page = 10  # 每页显示10条
+    
+    # 构建查询 - 只查询该加盟商的订单，过滤掉未支付订单（除非专门查unpaid状态）
+    if status == 'unpaid':
+        query = Order.query.filter(Order.franchisee_id == franchisee_id)
+    else:
+        query = Order.query.filter(
+            Order.franchisee_id == franchisee_id,
+            Order.status != 'unpaid'
+        )
+    
+    if status and status != 'unpaid':
+        query = query.filter(Order.status == status)
+    elif status == 'unpaid':
+        query = query.filter(Order.status == 'unpaid')
+    
+    # 按订单类型筛选
+    if order_mode:
+        query = query.filter(Order.order_mode == order_mode)
+    
+    # 订单搜索（按订单号、客户姓名、客户电话搜索）
+    if search:
+        query = query.filter(
+            or_(
+                Order.order_number.like(f'%{search}%'),
+                Order.customer_name.like(f'%{search}%'),
+                Order.customer_phone.like(f'%{search}%')
+            )
+        )
+    
+    # 使用joinedload预加载franchisee_account关系，避免N+1查询
+    all_orders = query.options(joinedload(Order.franchisee_account)).order_by(Order.created_at.desc()).all()
+    
+    # 按订单号分组，每个订单号只显示一条记录（使用第一个订单作为主订单）
+    orders_by_number = {}
+    for order in all_orders:
+        if order.order_number not in orders_by_number:
+            orders_by_number[order.order_number] = {
+                'main_order': order,  # 主订单（用于显示基本信息）
+                'items': [],  # 所有商品列表
+                'total_price': 0.0,  # 总金额
+                'item_count': 0  # 商品数量
+            }
+        
+        # 添加商品信息
+        orders_by_number[order.order_number]['items'].append({
+            'id': order.id,
+            'product_name': order.product_name,
+            'price': order.price,
+            'status': order.status
+        })
+        orders_by_number[order.order_number]['total_price'] += float(order.price or 0)
+        orders_by_number[order.order_number]['item_count'] += 1
+    
+    # 转换为列表，每个订单号一条记录
+    orders = []
+    for order_number, order_data in orders_by_number.items():
+        main_order = order_data['main_order']
+        item_count = order_data['item_count']
+        total_price = order_data['total_price']
+        
+        # 创建一个类似Order对象的对象，包含合并后的信息
+        class MergedOrder:
+            def __init__(self, main_order, item_count, total_price, items):
+                # 复制主订单的所有属性
+                for attr in dir(main_order):
+                    if not attr.startswith('_') and not callable(getattr(main_order, attr)):
+                        try:
+                            setattr(self, attr, getattr(main_order, attr))
+                        except:
+                            pass
+                # 覆盖价格
+                self.price = total_price
+                self.item_count = item_count
+                self.items = items
+                # 如果多个商品，修改产品名称显示
+                if item_count > 1:
+                    # 显示第一个商品名称 + "等X件"
+                    first_product = items[0]['product_name'] if items else main_order.product_name
+                    self.product_name = f"{first_product} 等{item_count}件"
+                else:
+                    self.product_name = main_order.product_name
+        
+        merged_order = MergedOrder(main_order, item_count, total_price, order_data['items'])
+        orders.append(merged_order)
+    
+    # 按创建时间排序（最新的在前）
+    orders.sort(key=lambda x: x.created_at, reverse=True)
+    
+    # 分页处理
+    total_count = len(orders)
+    total_pages = (total_count + per_page - 1) // per_page
+    start_idx = (page - 1) * per_page
+    end_idx = start_idx + per_page
+    paginated_orders = orders[start_idx:end_idx]
+    
+    # 统计数据 - 按订单号统计（不重复计算）
+    today = datetime.now().date()
+    total_orders = db.session.query(func.count(func.distinct(Order.order_number))).filter(
+        Order.franchisee_id == franchisee_id,
+        Order.status != 'unpaid'
+    ).scalar() or 0
+    
+    # 计算每日订单数（今天创建的订单，按订单号去重）
+    daily_orders = db.session.query(func.count(func.distinct(Order.order_number))).filter(
+        Order.franchisee_id == franchisee_id,
+        func.date(Order.created_at) == today,
+        Order.status != 'unpaid'
+    ).scalar() or 0
+    
+    # 计算每日业绩总额（今天完成的订单总金额，需要按订单号分组后求和）
+    completed_order_numbers = db.session.query(Order.order_number).filter(
+        Order.franchisee_id == franchisee_id,
+        func.date(Order.completed_at) == today,
+        Order.status == 'completed'
+    ).distinct().all()
+    
+    daily_revenue = 0.0
+    for order_number_tuple in completed_order_numbers:
+        order_number = order_number_tuple[0]
+        # 计算该订单号下所有订单的总金额
+        order_total = db.session.query(func.sum(Order.price)).filter(
+            Order.franchisee_id == franchisee_id,
+            Order.order_number == order_number
+        ).scalar() or 0.0
+        daily_revenue += float(order_total)
+    
+    # 计算待选片订单数（状态为pending_selection的订单，按订单号去重）
+    pending_selection_order_numbers = db.session.query(Order.order_number).filter(
+        Order.franchisee_id == franchisee_id,
+        Order.status == 'pending_selection',
+        Order.status != 'unpaid'
+    ).distinct().all()
+    pending_selection_orders = len(pending_selection_order_numbers)
+    
+    # 计算待发货订单数（状态为completed或hd_ready但未发货的订单，按订单号去重）
+    pending_shipment_order_numbers = db.session.query(Order.order_number).filter(
+        Order.franchisee_id == franchisee_id,
+        Order.status.in_(['completed', 'hd_ready']),
+        ~Order.status.in_(['shipped', 'delivered'])
+    ).distinct().all()
+    pending_shipment_orders = len(pending_shipment_order_numbers)
+    
+    return render_template('franchisee/orders.html',
+                         account=account,
+                         orders=paginated_orders,
+                         status=status,
+                         order_mode=order_mode,
+                         search=search,
+                         total_orders=total_orders,
+                         daily_orders=daily_orders,
+                         daily_revenue=daily_revenue,
+                         pending_selection_orders=pending_selection_orders,
+                         pending_shipment_orders=pending_shipment_orders,
+                         current_page=page,
+                         total_pages=total_pages,
+                         total_count=total_count)
+
+
+@bp.route('/order/<int:order_id>')
+def franchisee_order_detail(order_id):
+    """加盟商订单详情页面"""
     franchisee_id = session.get('franchisee_id')
     if not franchisee_id:
         flash('请先登录', 'error')
@@ -208,65 +475,86 @@ def franchisee_orders():
         flash('账户不存在或已被禁用', 'error')
         return redirect(url_for('franchisee.franchisee_frontend.franchisee_login'))
     
-    status = request.args.get('status', '')
-    start_date = request.args.get('start_date', '')
-    end_date = request.args.get('end_date', '')
+    # 获取订单
+    order = Order.query.get_or_404(order_id)
     
-    query = Order.query.filter_by(franchisee_id=franchisee_id)
+    # 验证订单是否属于该加盟商
+    if order.franchisee_id != franchisee_id:
+        flash('无权访问此订单', 'error')
+        return redirect(url_for('franchisee.franchisee_frontend.franchisee_orders'))
     
-    if status:
-        query = query.filter(Order.status == status)
+    # 获取所有使用相同订单号的订单记录（支持追加产品）
+    order_number = order.order_number
+    all_orders = Order.query.filter_by(
+        order_number=order_number,
+        franchisee_id=franchisee_id  # 确保只获取该加盟商的订单
+    ).order_by(Order.created_at.asc()).all()
     
-    if start_date:
+    # 获取订单图片
+    from urllib.parse import quote
+    try:
+        result = db.session.execute(
+            text("SELECT id, order_id, path, is_main FROM order_image WHERE order_id = :order_id"),
+            {"order_id": order.id}
+        )
+        images_data = result.fetchall()
+        
+        images = []
+        for row in images_data:
+            img_id, order_id_val, path, is_main = row
+            class ImageObj:
+                def __init__(self, id, path, is_main, encoded_path=None):
+                    self.id = id
+                    self.path = path
+                    self.encoded_path = encoded_path or quote(path, safe='')
+                    self.is_main = bool(is_main) if is_main is not None else False
+            images.append(ImageObj(img_id, path, is_main, quote(path, safe='')))
+    except Exception as e:
         try:
-            start_dt = datetime.strptime(start_date, '%Y-%m-%d')
-            query = query.filter(Order.created_at >= start_dt)
-        except ValueError:
-            pass
-    
-    if end_date:
-        try:
-            end_dt = datetime.strptime(end_date, '%Y-%m-%d')
-            query = query.filter(Order.created_at <= end_dt)
-        except ValueError:
-            pass
-    
-    orders = query.order_by(desc(Order.created_at)).all()
-    
-    order_images_dict = {}
-    for order in orders:
-        try:
-            result = db.session.execute(
-                text("SELECT id, order_id, path, is_main FROM order_image WHERE order_id = :order_id"),
-                {"order_id": order.id}
-            )
-            images_data = result.fetchall()
-            
+            order_images = OrderImage.query.filter_by(order_id=order.id).all()
             images = []
-            for row in images_data:
-                img_id, order_id_val, path, is_main = row
+            for img in order_images:
                 class ImageObj:
-                    def __init__(self, id, path, is_main):
+                    def __init__(self, id, path, is_main, encoded_path=None):
                         self.id = id
                         self.path = path
+                        self.encoded_path = encoded_path or quote(path, safe='')
                         self.is_main = bool(is_main) if is_main is not None else False
-                images.append(ImageObj(img_id, path, is_main))
-            order_images_dict[order.id] = images
-        except Exception as e:
-            try:
-                images = OrderImage.query.filter_by(order_id=order.id).all()
-                order_images_dict[order.id] = images
-            except Exception as e2:
-                print(f"查询订单 {order.id} 图片失败: {e2}")
-                order_images_dict[order.id] = []
+                images.append(ImageObj(img.id, img.path, getattr(img, 'is_main', False), quote(img.path, safe='')))
+        except Exception as e2:
+            print(f"查询订单图片失败: {e2}")
+            images = []
     
-    return render_template('franchisee/orders.html',
+    # 获取效果图（如果有）
+    from urllib.parse import quote
+    effect_images = []
+    if order.final_image:
+        encoded_final_filename = quote(order.final_image, safe='')
+        effect_images.append({
+            'path': order.final_image,
+            'encoded_path': encoded_final_filename,
+            'type': 'final',
+            'label': '完成的油画作品'
+        })
+    if order.hd_image:
+        encoded_hd_filename = quote(order.hd_image, safe='')
+        effect_images.append({
+            'path': order.hd_image,
+            'encoded_path': encoded_hd_filename,
+            'type': 'hd',
+            'label': '高清放大图'
+        })
+    
+    # 选片信息（如果有）
+    selected_images = []
+    
+    return render_template('franchisee/order_detail.html',
                          account=account,
-                         orders=orders,
-                         order_images_dict=order_images_dict,
-                         status=status,
-                         start_date=start_date,
-                         end_date=end_date)
+                         order=order,
+                         all_orders=all_orders,
+                         images=images,
+                         effect_images=effect_images,
+                         selected_images=selected_images)
 
 
 @bp.route('/confirm-order/<int:order_id>', methods=['POST'])
@@ -347,6 +635,80 @@ def franchisee_recharge_records():
     return render_template('franchisee/recharge_records.html',
                          account=account,
                          recharge_records=recharge_records)
+
+
+@bp.route('/users')
+def franchisee_users():
+    """加盟商用户管理 - 显示该加盟商的所有客户"""
+    franchisee_id = session.get('franchisee_id')
+    if not franchisee_id:
+        flash('请先登录', 'error')
+        return redirect(url_for('franchisee.franchisee_frontend.franchisee_login'))
+    
+    models = get_models()
+    if not models:
+        flash('系统未初始化', 'error')
+        return redirect(url_for('franchisee.franchisee_frontend.franchisee_login'))
+    
+    FranchiseeAccount = models['FranchiseeAccount']
+    Order = models['Order']
+    db = models['db']
+    
+    account = FranchiseeAccount.query.get(franchisee_id)
+    if not account or account.status != 'active':
+        flash('账户不存在或已被禁用', 'error')
+        return redirect(url_for('franchisee.franchisee_frontend.franchisee_login'))
+    
+    # 获取该加盟商的所有订单
+    orders = Order.query.filter_by(franchisee_id=franchisee_id).all()
+    
+    # 统计每个客户的信息（去重）
+    customers_dict = {}
+    for order in orders:
+        if not order.customer_name and not order.customer_phone:
+            continue
+        
+        # 使用手机号作为唯一标识，如果没有手机号则使用姓名
+        customer_key = order.customer_phone or order.customer_name
+        
+        if customer_key not in customers_dict:
+            customers_dict[customer_key] = {
+                'name': order.customer_name or '未知',
+                'phone': order.customer_phone or '未填写',
+                'order_count': 0,
+                'total_amount': 0.0,
+                'first_order_time': order.created_at,
+                'last_order_time': order.created_at
+            }
+        
+        customers_dict[customer_key]['order_count'] += 1
+        customers_dict[customer_key]['total_amount'] += (order.price or 0.0)
+        
+        if order.created_at < customers_dict[customer_key]['first_order_time']:
+            customers_dict[customer_key]['first_order_time'] = order.created_at
+        
+        if order.created_at > customers_dict[customer_key]['last_order_time']:
+            customers_dict[customer_key]['last_order_time'] = order.created_at
+    
+    # 转换为列表并排序（按最后下单时间倒序）
+    customers = list(customers_dict.values())
+    customers.sort(key=lambda x: x['last_order_time'], reverse=True)
+    
+    # 分页处理
+    page = request.args.get('page', 1, type=int)
+    per_page = 20
+    start = (page - 1) * per_page
+    end = start + per_page
+    paginated_customers = customers[start:end]
+    
+    total_pages = (len(customers) + per_page - 1) // per_page
+    
+    return render_template('franchisee/users.html',
+                         account=account,
+                         customers=paginated_customers,
+                         total_customers=len(customers),
+                         current_page=page,
+                         total_pages=total_pages)
 
 
 @bp.route('/change-password', methods=['GET', 'POST'])

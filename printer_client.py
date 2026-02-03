@@ -492,7 +492,7 @@ class PrinterSystemClient:
     def _get_file_url(self, image_path):
         """获取文件访问URL"""
         filename = os.path.basename(image_path)
-        base_url = self.config.get('file_access_base_url', "http://moeart.cc")
+        base_url = self.config.get('file_access_base_url', "http://photogooo")
         
         # 对文件名进行URL编码，避免厂家系统自动编码导致的问题
         from urllib.parse import quote

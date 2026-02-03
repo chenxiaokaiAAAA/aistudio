@@ -1,0 +1,64 @@
+<!-- 添加/编辑一级分类模态框 -->
+<div class="modal fade" id="addCategoryModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="categoryModalTitle">添加一级分类</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="categoryForm">
+                    <input type="hidden" id="categoryId" name="id">
+                    <div class="mb-3">
+                        <label for="categoryName" class="form-label">分类名称 <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="categoryName" name="name" placeholder="如：证件照" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="categoryCode" class="form-label">分类代码 <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="categoryCode" name="code" placeholder="如：idphoto" required>
+                        <small class="text-muted">用于系统内部识别，建议使用英文小写字母和下划线</small>
+                    </div>
+                    <div class="mb-3">
+                        <label for="categoryIcon" class="form-label">图标</label>
+                        <input type="text" class="form-control" id="categoryIcon" name="icon" placeholder="如：📷" maxlength="10">
+                        <small class="text-muted">可选，用于显示在分类名称前</small>
+                    </div>
+                    <div class="mb-3">
+                        <label for="categoryImage" class="form-label">分类图片</label>
+                        <div class="upload-area" style="border: 2px dashed #dee2e6; border-radius: 8px; padding: 20px; text-align: center; cursor: pointer; background: #f8f9fa;" onclick="document.getElementById('categoryImageFile').click()">
+                            <div id="categoryImageUploadArea">
+                                <i class="fas fa-cloud-upload-alt fa-2x mb-2 text-muted"></i>
+                                <p class="mb-1">点击上传分类图片</p>
+                                <small class="text-muted">支持 JPG、PNG 格式</small>
+                            </div>
+                            <img id="categoryImagePreview" class="img-thumbnail mt-2" style="max-width: 200px; max-height: 200px; display: none;">
+                        </div>
+                        <input type="file" id="categoryImageFile" accept="image/*" style="display: none;" onchange="uploadCategoryImage(this)">
+                        <input type="hidden" id="categoryImageUrl" name="image_url">
+                        <small class="text-muted d-block mt-2">可选，用于在小程序中显示分类图片</small>
+                    </div>
+                    <div class="mb-3">
+                        <label for="categorySortOrder" class="form-label">排序</label>
+                        <input type="number" class="form-control" id="categorySortOrder" name="sort_order" value="0">
+                        <small class="text-muted">数字越小越靠前</small>
+                    </div>
+                    <div class="mb-3">
+                        <label for="categoryStyleRedirectPage" class="form-label">跳转页面（风格库）</label>
+                        <input type="text" class="form-control" id="categoryStyleRedirectPage" name="style_redirect_page" placeholder="如：idphoto_style（风格分类的code）">
+                        <small class="text-muted">可选。如果填写，用户在产品馆点击该分类时会跳转到指定的风格库（填写风格分类的code）。如果留空，则正常进入产品馆的二级目录。</small>
+                    </div>
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="categoryIsActive" name="is_active" checked>
+                            <label class="form-check-label" for="categoryIsActive">启用</label>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" onclick="saveCategory()">保存</button>
+            </div>
+        </div>
+    </div>
+</div>

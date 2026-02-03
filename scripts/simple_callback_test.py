@@ -21,7 +21,7 @@ def test_callback():
     }
     
     # 测试URL
-    url = "https://moeart.cc/api/logistics/callback"
+    url = "https://photogooo/api/logistics/callback"
     
     print(f"🚀 测试物流回调")
     print(f"订单: {data['order_number']}")

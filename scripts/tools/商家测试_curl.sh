@@ -3,7 +3,7 @@
 # 商家物流回调测试 - 超精简版
 # 使用方法: bash 商家测试_curl.sh
 
-API_URL="https://moeart.cc/api/logistics/callback"
+API_URL="https://photogooo/api/logistics/callback"
 ORDER_NUMBER="PET17582664981342618"  # 替换为实际订单号
 
 echo "🚚 测试订单: $ORDER_NUMBER"

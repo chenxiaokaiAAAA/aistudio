@@ -39,7 +39,7 @@ def generate_franchisee_qrcode(franchisee_id):
             return jsonify({'success': False, 'message': '加盟商账户不存在'}), 404
         
         # 生成二维码内容（指向扫码处理路由）
-        qr_content = f"https://moeart.cc/franchisee/scan/{franchisee.qr_code}"
+        qr_content = f"https://photogooo/franchisee/scan/{franchisee.qr_code}"
         
         # 创建二维码
         qr = qrcode.QRCode(

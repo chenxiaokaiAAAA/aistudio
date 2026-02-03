@@ -1,0 +1,44 @@
+<!-- 添加/编辑二级分类模态框 -->
+<div class="modal fade" id="addSubcategoryModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="subcategoryModalTitle">添加二级分类</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="subcategoryForm">
+                    <input type="hidden" id="subcategoryId" name="id">
+                    <input type="hidden" id="subcategoryCategoryId" name="category_id">
+                    <div class="mb-3">
+                        <label for="subcategoryName" class="form-label">分类名称 <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="subcategoryName" name="name" placeholder="如：标准证件照" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="subcategoryCode" class="form-label">分类代码 <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="subcategoryCode" name="code" placeholder="如：standard" required>
+                        <small class="text-muted">用于系统内部识别，建议使用英文小写字母和下划线</small>
+                    </div>
+                    <div class="mb-3">
+                        <label for="subcategoryIcon" class="form-label">图标</label>
+                        <input type="text" class="form-control" id="subcategoryIcon" name="icon" placeholder="如：📷" maxlength="10">
+                    </div>
+                    <div class="mb-3">
+                        <label for="subcategorySortOrder" class="form-label">排序</label>
+                        <input type="number" class="form-control" id="subcategorySortOrder" name="sort_order" value="0">
+                    </div>
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="subcategoryIsActive" name="is_active" checked>
+                            <label class="form-check-label" for="subcategoryIsActive">启用</label>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" onclick="saveSubcategory()">保存</button>
+            </div>
+        </div>
+    </div>
+</div>

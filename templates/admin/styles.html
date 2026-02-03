@@ -474,6 +474,43 @@
             min-width: 0;
         }
         
+        /* 二级分类样式 */
+        .subcategory-list-item {
+            padding: 10px 15px;
+            margin-bottom: 6px;
+            background: #050505;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid #1a1a1a;
+        }
+        
+        .subcategory-list-item:hover {
+            background: #0a0a0a;
+            border-color: #2a2a2a;
+        }
+        
+        .subcategory-list-item.active {
+            background: #0f0f0f;
+            border-color: #3a3a3a;
+        }
+        
+        .subcategory-name {
+            font-weight: 500;
+            color: #e0e0e0;
+            margin-bottom: 4px;
+        }
+        
+        .subcategory-count {
+            font-size: 0.75rem;
+            color: #888;
+        }
+        
+        .subcategory-actions {
+            display: flex;
+            gap: 4px;
+        }
+        
         .category-item-name {
             font-weight: 600;
             margin-bottom: 4px;
@@ -618,18 +655,18 @@
                 </div>
             </div>
 
-            <!-- 主内容区域：三栏布局 -->
-            <div class="row g-3">
-                <!-- 左侧：分类列表 -->
+            <!-- 主内容区域：三栏布局（一级分类 / 二级分类 / 风格图片） -->
+            <div class="row g-3" style="min-height: calc(100vh - 300px);">
+                <!-- 左侧：一级分类列表 -->
                 <div class="col-lg-3">
                     <div class="card h-100">
                         <div class="card-header d-flex justify-content-between align-items-center">
-                            <h6 class="mb-0">风格分类</h6>
+                            <h6 class="mb-0">一级分类</h6>
                             <button class="btn btn-sm btn-outline-light" onclick="toggleCategoryList()">
                                 <i class="fas fa-chevron-down" id="categoryToggleIcon"></i>
                             </button>
                         </div>
-                        <div class="card-body" id="categoryListContainer">
+                        <div class="card-body" id="categoryListContainer" style="max-height: calc(100vh - 350px); overflow-y: auto;">
                             <div id="categoryList">
                                 <!-- 分类列表将通过JavaScript动态加载 -->
                             </div>
@@ -637,13 +674,41 @@
                     </div>
                 </div>
 
-                <!-- 中间：风格图片网格 -->
+                <!-- 中间：二级分类列表 -->
+                <div class="col-lg-3">
+                    <div class="card h-100">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h6 class="mb-0">
+                                <span id="currentCategoryName">二级分类</span>
+                                <small class="text-muted" id="subcategoryCount">(0)</small>
+                            </h6>
+                            <div>
+                                <button class="btn btn-sm btn-outline-info me-1" id="sortSubcategoryBtn" onclick="openSortSubcategoryModal()" style="display: none;" title="排序">
+                                    <i class="fas fa-sort"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-success" id="addSubcategoryBtn" onclick="openAddSubcategoryModal()" style="display: none;">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body" style="max-height: calc(100vh - 350px); overflow-y: auto;">
+                            <div id="subcategoryList">
+                                <div class="text-center text-muted py-5">
+                                    <i class="fas fa-info-circle fa-2x mb-3"></i>
+                                    <p>请先选择一级分类</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 右侧：风格图片网格 -->
                 <div class="col-lg-6">
                     <div class="card h-100">
                         <div class="card-header">
                             <div class="d-flex justify-content-between align-items-center">
                                 <h6 class="mb-0">
-                                    <span id="currentCategoryName">全部风格图片</span>
+                                    <span id="currentImageTitle">风格图片</span>
                                     <small class="text-muted" id="imageCount">(0)</small>
                                 </h6>
                                 <div class="category-tabs" id="categoryTabs">
@@ -651,26 +716,9 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="card-body" style="max-height: calc(100vh - 250px); overflow-y: auto;">
+                        <div class="card-body" style="max-height: calc(100vh - 350px); overflow-y: auto;">
                             <div id="imageList">
                                 <!-- 图片列表将通过JavaScript动态加载 -->
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 右侧：详情面板（分类/图片详情 + AI工作流配置） -->
-                <div class="col-lg-3">
-                    <div class="card h-100">
-                        <div class="card-header">
-                            <h6 class="mb-0">详情配置</h6>
-                        </div>
-                        <div class="card-body" style="max-height: calc(100vh - 250px); overflow-y: auto;">
-                            <div id="detailPanel">
-                                <div class="text-center text-muted py-5">
-                                    <i class="fas fa-info-circle fa-3x mb-3"></i>
-                                    <p>请选择一个分类或图片查看详情</p>
-                                </div>
                             </div>
                         </div>
                     </div>
@@ -743,6 +791,68 @@
         </div>
     </div>
 
+    <!-- 二级分类编辑模态框 -->
+    <div class="modal fade" id="subcategoryModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="subcategoryModalTitle">添加二级分类</h5>
+                    <button type="button" class="close" data-bs-dismiss="modal">
+                        <span>&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form id="subcategoryForm">
+                        <input type="hidden" id="subcategoryId" name="id">
+                        <input type="hidden" id="subcategoryCategoryId" name="category_id">
+                        <div class="mb-3">
+                            <label for="subcategoryName" class="form-label">二级分类名称 *</label>
+                            <input type="text" class="form-control" id="subcategoryName" name="name" placeholder="如：男、女、儿童" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="subcategoryCode" class="form-label">二级分类代码 *</label>
+                            <input type="text" class="form-control" id="subcategoryCode" name="code" placeholder="如：male、female、child" required>
+                            <small class="text-muted">同一一级分类下代码不能重复</small>
+                        </div>
+                        <div class="mb-3">
+                            <label for="subcategoryIcon" class="form-label">图标</label>
+                            <input type="text" class="form-control" id="subcategoryIcon" name="icon" placeholder="如：👨" maxlength="10">
+                        </div>
+                        <div class="mb-3">
+                            <label for="subcategoryCoverImage" class="form-label">封面图片</label>
+                            <div class="upload-area" onclick="document.getElementById('subcategoryCoverImageFile').click()">
+                                <div id="subcategoryCoverImageUpload">
+                                    <i class="fas fa-cloud-upload-alt fa-2x mb-2"></i>
+                                    <p>点击上传封面图片</p>
+                                    <small class="text-muted">支持 JPG、PNG 格式</small>
+                                </div>
+                                <img id="subcategoryCoverImagePreview" class="preview-image" style="display: none;">
+                            </div>
+                            <input type="file" id="subcategoryCoverImageFile" accept="image/*" style="display: none;" onchange="uploadSubcategoryCoverImage(this)">
+                            <input type="hidden" id="subcategoryCoverImageUrl" name="cover_image">
+                        </div>
+                        <div class="mb-3">
+                            <label for="subcategorySortOrder" class="form-label">排序</label>
+                            <input type="number" class="form-control" id="subcategorySortOrder" name="sort_order" value="0">
+                        </div>
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="subcategoryIsActive" name="is_active" checked>
+                                <label class="form-check-label" for="subcategoryIsActive">
+                                    启用
+                                </label>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" onclick="saveSubcategory()">保存</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- 图片编辑模态框 -->
     <div class="modal fade" id="imageModal" tabindex="-1">
         <div class="modal-dialog modal-lg">
@@ -786,6 +896,13 @@
                                             <select class="form-control" id="imageCategory" name="category_id" required onchange="updateImageFormFields()">
                                                 <option value="">请选择分类</option>
                                             </select>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="imageSubcategoryId" class="form-label">所属二级分类</label>
+                                            <select class="form-control" id="imageSubcategoryId" name="subcategory_id">
+                                                <option value="">请选择二级分类（可选）</option>
+                                            </select>
+                                            <small class="form-text text-muted">可选，用于进一步细分分类</small>
                                         </div>
                                         <div class="mb-3">
                                             <label for="imageName" class="form-label">风格名称</label>
@@ -949,7 +1066,7 @@
                                 </div>
                                 <div class="mb-3">
                                     <div class="form-check form-switch">
-                                        <input class="form-check-input" type="checkbox" id="imageApiTemplateEnabled" name="api_template_enabled">
+                                        <input class="form-check-input" type="checkbox" id="imageApiTemplateEnabled" name="api_template_enabled" onchange="toggleApiTemplateConfig()">
                                         <label class="form-check-label" for="imageApiTemplateEnabled">
                                             启用API模板（覆盖工作流配置）
                                         </label>
@@ -1324,6 +1441,17 @@
                 const data = await response.json();
                 if (data.status === 'success') {
                     images = data.data;
+                    // 调试：检查"西装"的数据
+                    const xizhuang = images.find(img => img.name === '西装');
+                    if (xizhuang) {
+                        console.log('🔍 刷新后"西装"的完整数据:', xizhuang);
+                        console.log('🔍 "西装"的API模板字段:', {
+                            api_template_id: xizhuang.api_template_id,
+                            api_config_id: xizhuang.api_config_id,
+                            api_provider: xizhuang.api_provider,
+                            api_template_type: xizhuang.api_template_type
+                        });
+                    }
                     // 先渲染分类列表（需要图片数据来计算计数）
                     renderCategories();
                     // 渲染分类标签（需要图片数据来计算计数）
@@ -1415,7 +1543,12 @@
                 const div = document.createElement('div');
                 div.className = 'category-item';
                 div.setAttribute('data-category-id', category.id);
-                div.onclick = () => selectCategory(category.id);
+                div.onclick = (e) => {
+                    // 如果点击的是编辑按钮，不触发分类选择
+                    if (!e.target.closest('.category-edit-btn')) {
+                        selectCategory(category.id);
+                    }
+                };
                 div.innerHTML = `
                     <div class="category-item-header">
                         ${category.cover_image ? 
@@ -1424,35 +1557,59 @@
                                 <span>${category.icon || '🎨'}</span>
                             </div>`
                         }
-                        <div class="category-item-info">
+                        <div class="category-item-info" style="flex: 1;">
                             <div class="category-item-name">${category.name}</div>
                             <div class="category-item-count">${categoryImages.length} 张图片</div>
                         </div>
+                        <button class="btn btn-sm btn-outline-secondary category-edit-btn" 
+                                onclick="event.stopPropagation(); editCategory(${category.id})" 
+                                style="margin-left: 8px; padding: 4px 8px; border-color: #2a2a2a; color: #b0b0b0;"
+                                title="编辑分类">
+                            <i class="fas fa-edit"></i>
+                        </button>
                     </div>
                 `;
                 container.appendChild(div);
             });
         }
         
-        // 选择分类（显示详情）
+        // 选择分类（显示详情和二级分类）
         function selectCategory(categoryId) {
             // 更新选中状态
             document.querySelectorAll('.category-item').forEach(item => {
                 item.classList.remove('active');
             });
-            event.target.closest('.category-item')?.classList.add('active');
+            const clickedItem = document.querySelector(`.category-item[data-category-id="${categoryId}"]`);
+            if (clickedItem) {
+                clickedItem.classList.add('active');
+            }
             
             // 筛选图片
             currentCategoryId = categoryId;
+            currentSubcategoryId = null; // 重置二级分类选择
             const category = categories.find(c => c.id === categoryId);
-            const filteredImages = images.filter(img => img.category_id === categoryId);
             
-            // 更新中间栏标题
-            document.getElementById('currentCategoryName').textContent = category ? category.name : '全部风格图片';
+            // 加载并渲染二级分类
+            if (category) {
+                subcategories = category.subcategories || [];
+                renderSubcategories();
+                document.getElementById('currentCategoryName').textContent = category.name;
+                document.getElementById('addSubcategoryBtn').style.display = 'inline-block';
+            } else {
+                subcategories = [];
+                renderSubcategories();
+                document.getElementById('currentCategoryName').textContent = '二级分类';
+                document.getElementById('addSubcategoryBtn').style.display = 'none';
+            }
+            
+            // 显示该一级分类下的所有图片（不筛选二级分类）
+            const filteredImages = images.filter(img => img.category_id === categoryId);
+            renderImages(filteredImages);
+            
+            // 更新标题
+            document.getElementById('currentImageTitle').textContent = '风格图片';
             document.getElementById('imageCount').textContent = `(${filteredImages.length})`;
             
-            // 渲染图片
-            renderImages(filteredImages);
             // 更新排序按钮显示
             updateSortButtonVisibility();
             
@@ -1462,9 +1619,87 @@
             }
         }
         
+        // 渲染二级分类列表
+        function renderSubcategories() {
+            const container = document.getElementById('subcategoryList');
+            container.innerHTML = '';
+            
+            if (!currentCategoryId) {
+                container.innerHTML = '<div class="text-center text-muted py-5"><i class="fas fa-info-circle fa-2x mb-3"></i><p>请先选择一级分类</p></div>';
+                document.getElementById('subcategoryCount').textContent = '(0)';
+                document.getElementById('addSubcategoryBtn').style.display = 'none';
+                document.getElementById('sortSubcategoryBtn').style.display = 'none';
+                return;
+            }
+            
+            if (subcategories.length === 0) {
+                container.innerHTML = '<div class="text-center text-muted py-5"><i class="fas fa-folder-open fa-2x mb-3"></i><p>暂无二级分类</p><button class="btn btn-sm btn-outline-success" onclick="openAddSubcategoryModal()"><i class="fas fa-plus"></i> 添加二级分类</button></div>';
+                document.getElementById('subcategoryCount').textContent = '(0)';
+                document.getElementById('sortSubcategoryBtn').style.display = 'none';
+                return;
+            }
+            
+            document.getElementById('subcategoryCount').textContent = `(${subcategories.length})`;
+            document.getElementById('sortSubcategoryBtn').style.display = subcategories.length > 1 ? 'inline-block' : 'none';
+            
+            subcategories.forEach(subcategory => {
+                const subcategoryImages = images.filter(img => img.subcategory_id === subcategory.id);
+                const div = document.createElement('div');
+                div.className = 'subcategory-list-item';
+                div.setAttribute('data-subcategory-id', subcategory.id);
+                div.onclick = () => selectSubcategory(subcategory.id);
+                div.innerHTML = `
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="flex-grow-1">
+                            <div class="subcategory-name">${subcategory.name}</div>
+                            <div class="subcategory-count" style="font-size: 0.75rem; color: #888;">${subcategoryImages.length} 张图片</div>
+                        </div>
+                        <div class="subcategory-actions">
+                            <button class="btn btn-sm btn-outline-primary me-1" onclick="event.stopPropagation(); editSubcategory(${subcategory.id})" title="编辑">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger" onclick="event.stopPropagation(); deleteSubcategory(${subcategory.id})" title="删除">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+        
+        // 选择二级分类
+        function selectSubcategory(subcategoryId) {
+            // 更新选中状态
+            document.querySelectorAll('.subcategory-list-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            const clickedItem = document.querySelector(`.subcategory-list-item[data-subcategory-id="${subcategoryId}"]`);
+            if (clickedItem) {
+                clickedItem.classList.add('active');
+            }
+            
+            currentSubcategoryId = subcategoryId;
+            const subcategory = subcategories.find(s => s.id === subcategoryId);
+            
+            // 筛选图片（只显示该二级分类下的图片）
+            const filteredImages = images.filter(img => img.subcategory_id === subcategoryId);
+            renderImages(filteredImages);
+            
+            // 更新标题
+            document.getElementById('currentImageTitle').textContent = subcategory ? subcategory.name : '风格图片';
+            document.getElementById('imageCount').textContent = `(${filteredImages.length})`;
+        }
+        
         // 显示分类详情
         function showCategoryDetail(category) {
+            // detailPanel 元素可能不存在（已移除），直接返回
             const panel = document.getElementById('detailPanel');
+            if (!panel) {
+                // 不再显示错误，因为该功能可能已被移除
+                return;
+            }
+            
             const categoryImages = images.filter(img => img.category_id === category.id);
             
             panel.innerHTML = `
@@ -1549,12 +1784,15 @@
             
             if (imagesToShow.length === 0) {
                 container.innerHTML = '<div class="text-center py-4" style="color: #999999;">暂无图片</div>';
-                document.getElementById('detailPanel').innerHTML = `
-                    <div class="text-center py-5" style="color: #999999;">
-                        <i class="fas fa-info-circle fa-3x mb-3" style="color: #cccccc;"></i>
-                        <p>请选择一个分类或图片查看详情</p>
-                    </div>
-                `;
+                const detailPanel = document.getElementById('detailPanel');
+                if (detailPanel) {
+                    detailPanel.innerHTML = `
+                        <div class="text-center py-5" style="color: #999999;">
+                            <i class="fas fa-info-circle fa-3x mb-3" style="color: #cccccc;"></i>
+                            <p>请选择一个分类或图片查看详情</p>
+                        </div>
+                    `;
+                }
                 return;
             }
             
@@ -1576,8 +1814,30 @@
                 
                 // 检查是否有API模板
                 let apiInfo = '';
-                if (image.api_template_id || (image.api_config_id && image.api_provider)) {
-                    apiInfo = `<span class="badge bg-success" style="font-size: 0.7rem; margin-top: 4px; display: inline-block;">API: ${image.api_provider || '已配置'}</span>`;
+                // 检查条件：api_template_id存在 或 api_template_type存在 或 (api_config_id和api_provider都存在)
+                const hasApiTemplate = image.api_template_id || image.api_template_type || (image.api_config_id && image.api_provider);
+                
+                // 调试日志（仅对特定图片）
+                if (image.name === '西装' || image.id === 55) {
+                    console.log(`🔍 检查图片 "${image.name}" (ID: ${image.id}) 的API模板信息:`, {
+                        api_template_id: image.api_template_id,
+                        api_config_id: image.api_config_id,
+                        api_provider: image.api_provider,
+                        api_template_type: image.api_template_type,
+                        hasApiTemplate: hasApiTemplate
+                    });
+                }
+                
+                if (hasApiTemplate) {
+                    // 根据类型显示不同的标签
+                    if (image.api_template_type === 'comfyui') {
+                        apiInfo = `<span class="badge bg-info" style="font-size: 0.7rem; margin-top: 4px; display: inline-block;">API-ComfyUI工作流</span>`;
+                    } else if (image.api_template_type === 'api') {
+                        apiInfo = `<span class="badge bg-success" style="font-size: 0.7rem; margin-top: 4px; display: inline-block;">API编辑: ${image.api_provider || '已配置'}</span>`;
+                    } else {
+                        // 兼容旧数据：没有api_template_type但有api_template_id或api_config_id
+                        apiInfo = `<span class="badge bg-success" style="font-size: 0.7rem; margin-top: 4px; display: inline-block;">API编辑: ${image.api_provider || '已配置'}</span>`;
+                    }
                 }
                 
                 div.innerHTML = `
@@ -1724,11 +1984,39 @@
                 select.appendChild(option);
             });
         }
+        
+        // 更新二级分类选择器（当一级分类改变时）
+        function updateImageSubcategorySelect() {
+            const categoryId = document.getElementById('imageCategory').value;
+            const subcategorySelect = document.getElementById('imageSubcategoryId');
+            
+            if (!subcategorySelect) return;
+            
+            subcategorySelect.innerHTML = '<option value="">请选择二级分类（可选）</option>';
+            
+            if (!categoryId) {
+                subcategorySelect.innerHTML = '<option value="">请先选择一级分类</option>';
+                return;
+            }
+            
+            const category = categories.find(c => c.id == categoryId);
+            if (category && category.subcategories) {
+                category.subcategories.forEach(subcategory => {
+                    const option = document.createElement('option');
+                    option.value = subcategory.id;
+                    option.textContent = subcategory.name;
+                    subcategorySelect.appendChild(option);
+                });
+            }
+        }
 
         // 根据选择的分类自动填充表单字段
         function updateImageFormFields() {
             const categoryId = document.getElementById('imageCategory').value;
             const imageId = document.getElementById('imageId').value;
+            
+            // 更新二级分类选择器
+            updateImageSubcategorySelect();
             
             // 如果是编辑现有图片，不要覆盖原有的代码和描述
             if (imageId) {
@@ -2111,6 +2399,15 @@
                 document.getElementById('imageModalTitle').textContent = '编辑图片';
                 document.getElementById('imageId').value = image.id;
                 document.getElementById('imageCategory').value = image.category_id;
+                // 更新二级分类选择器
+                updateImageSubcategorySelect();
+                // 设置二级分类（如果存在）
+                if (image.subcategory_id) {
+                    const subcategorySelect = document.getElementById('imageSubcategoryId');
+                    if (subcategorySelect) {
+                        subcategorySelect.value = image.subcategory_id;
+                    }
+                }
                 document.getElementById('imageName').value = image.name;
                 document.getElementById('imageCode').value = image.code;
                 document.getElementById('imageDescription').value = image.description || '';
@@ -2329,6 +2626,8 @@
                 const url = data.id ? `/api/admin/styles/images/${data.id}` : '/api/admin/styles/images';
                 const method = data.id ? 'PUT' : 'POST';
                 
+                console.log('📤 保存图片请求:', { url, method, data: { ...data, image_url: data.image_url ? '[已设置]' : '[未设置]' } });
+                
                 const response = await fetch(url, {
                     method: method,
                     headers: {
@@ -2336,6 +2635,26 @@
                     },
                     body: JSON.stringify(data)
                 });
+                
+                // 检查HTTP状态码
+                if (!response.ok) {
+                    let errorMessage = `HTTP错误: ${response.status} ${response.statusText}`;
+                    try {
+                        const errorData = await response.json();
+                        errorMessage = errorData.message || errorMessage;
+                    } catch (e) {
+                        // 如果响应不是JSON，使用默认错误消息
+                    }
+                    console.error('保存图片失败:', {
+                        url: url,
+                        method: method,
+                        status: response.status,
+                        statusText: response.statusText,
+                        error: errorMessage
+                    });
+                    alert('保存失败: ' + errorMessage + '\n\n请检查：\n1. 服务器是否正常运行\n2. 是否已登录\n3. 网络连接是否正常');
+                    return;
+                }
                 
                 const result = await response.json();
                 if (result.status === 'success') {
@@ -2486,7 +2805,12 @@
                     
                     // 保存API模板配置（如果未启用API-ComfyUI工作流）
                     const apiTemplateEnabled = document.getElementById('imageApiTemplateEnabled')?.checked || false;
-                    console.log('🔍 检查API模板配置:', { apiComfyUIEnabled, apiTemplateEnabled, savedImageId });
+                    console.log('🔍 检查API模板配置:', { 
+                        apiComfyUIEnabled, 
+                        apiTemplateEnabled, 
+                        savedImageId,
+                        willSave: !apiComfyUIEnabled && apiTemplateEnabled && savedImageId
+                    });
                     
                     // 注意：如果启用了API-ComfyUI工作流，不需要禁用API模板配置
                     // 因为API-ComfyUI工作流和API模板配置使用的是同一个APITemplate记录
@@ -2626,10 +2950,20 @@
                             
                             const apiTemplateResult = await apiTemplateResponse.json();
                             if (apiTemplateResult.status !== 'success') {
-                                console.warn('保存API模板失败:', apiTemplateResult.message);
+                                console.warn('❌ 保存API模板失败:', apiTemplateResult.message);
                                 alert('保存API模板失败: ' + apiTemplateResult.message);
                             } else {
-                                console.log('API模板保存成功:', apiTemplateResult.data);
+                                console.log('✅ API模板保存成功:', apiTemplateResult.data);
+                                console.log('📊 API模板状态:', {
+                                    enabled: apiTemplateEnabled,
+                                    is_active: apiTemplateResult.data?.is_active,
+                                    api_config_id: apiTemplateResult.data?.api_config_id
+                                });
+                                // 保存成功后延迟刷新图片列表以更新标签（给数据库提交一点时间）
+                                setTimeout(() => {
+                                    console.log('🔄 刷新图片列表以更新标签...');
+                                    loadImages(true);
+                                }, 500);
                             }
                         } catch (error) {
                             console.error('保存API模板失败:', error);
@@ -2708,6 +3042,209 @@
                     alert('删除失败，请重试');
                 }
             }
+        }
+
+        // ============================================================================
+        // 二级分类管理函数
+        // ============================================================================
+        
+        // 打开添加二级分类模态框
+        function openAddSubcategoryModal() {
+            if (!currentCategoryId) {
+                alert('请先选择一级分类');
+                return;
+            }
+            
+            const modalTitle = document.getElementById('subcategoryModalTitle');
+            const modal = document.getElementById('subcategoryModal');
+            
+            if (!modal || !modalTitle) {
+                console.error('二级分类模态框元素不存在');
+                alert('页面元素加载错误，请刷新页面重试');
+                return;
+            }
+            
+            modalTitle.textContent = '添加二级分类';
+            
+            const subcategoryId = document.getElementById('subcategoryId');
+            const subcategoryCategoryId = document.getElementById('subcategoryCategoryId');
+            const subcategoryName = document.getElementById('subcategoryName');
+            const subcategoryCode = document.getElementById('subcategoryCode');
+            const subcategoryIcon = document.getElementById('subcategoryIcon');
+            const subcategoryCoverImageUrl = document.getElementById('subcategoryCoverImageUrl');
+            const subcategorySortOrder = document.getElementById('subcategorySortOrder');
+            const subcategoryIsActive = document.getElementById('subcategoryIsActive');
+            
+            if (subcategoryId) subcategoryId.value = '';
+            if (subcategoryCategoryId) subcategoryCategoryId.value = currentCategoryId;
+            if (subcategoryName) subcategoryName.value = '';
+            if (subcategoryCode) subcategoryCode.value = '';
+            if (subcategoryIcon) subcategoryIcon.value = '';
+            if (subcategoryCoverImageUrl) subcategoryCoverImageUrl.value = '';
+            if (subcategorySortOrder) subcategorySortOrder.value = 0;
+            if (subcategoryIsActive) subcategoryIsActive.checked = true;
+            
+            // 重置图片预览
+            const preview = document.getElementById('subcategoryCoverImagePreview');
+            const upload = document.getElementById('subcategoryCoverImageUpload');
+            if (preview) preview.style.display = 'none';
+            if (upload) upload.style.display = 'block';
+            
+            new bootstrap.Modal(modal).show();
+        }
+        
+        // 编辑二级分类
+        function editSubcategory(id) {
+            const subcategory = subcategories.find(s => s.id === id);
+            if (!subcategory) return;
+            
+            document.getElementById('subcategoryModalTitle').textContent = '编辑二级分类';
+            document.getElementById('subcategoryId').value = subcategory.id;
+            document.getElementById('subcategoryCategoryId').value = subcategory.category_id;
+            document.getElementById('subcategoryName').value = subcategory.name;
+            document.getElementById('subcategoryCode').value = subcategory.code;
+            document.getElementById('subcategoryIcon').value = subcategory.icon || '';
+            document.getElementById('subcategoryCoverImageUrl').value = subcategory.cover_image || '';
+            document.getElementById('subcategorySortOrder').value = subcategory.sort_order || 0;
+            document.getElementById('subcategoryIsActive').checked = subcategory.is_active !== false;
+            
+            // 显示图片预览
+            if (subcategory.cover_image) {
+                document.getElementById('subcategoryCoverImagePreview').src = subcategory.cover_image;
+                document.getElementById('subcategoryCoverImagePreview').style.display = 'block';
+                document.getElementById('subcategoryCoverImageUpload').style.display = 'none';
+            } else {
+                document.getElementById('subcategoryCoverImagePreview').style.display = 'none';
+                document.getElementById('subcategoryCoverImageUpload').style.display = 'block';
+            }
+            
+            new bootstrap.Modal(document.getElementById('subcategoryModal')).show();
+        }
+        
+        // 保存二级分类
+        async function saveSubcategory() {
+            const form = document.getElementById('subcategoryForm');
+            const formData = new FormData(form);
+            const data = Object.fromEntries(formData.entries());
+            
+            // 处理复选框
+            data.is_active = document.getElementById('subcategoryIsActive').checked;
+            
+            // 确保category_id存在
+            if (!data.category_id) {
+                data.category_id = currentCategoryId;
+            }
+            
+            try {
+                const url = data.id ? `/api/admin/styles/subcategories/${data.id}` : '/api/admin/styles/subcategories';
+                const method = data.id ? 'PUT' : 'POST';
+                
+                const response = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                if (result.status === 'success') {
+                    bootstrap.Modal.getInstance(document.getElementById('subcategoryModal')).hide();
+                    // 重新加载分类数据（包含二级分类）
+                    await loadCategories();
+                    // 重新渲染二级分类列表
+                    if (currentCategoryId) {
+                        const category = categories.find(c => c.id === currentCategoryId);
+                        if (category) {
+                            subcategories = category.subcategories || [];
+                            console.log('保存后的二级分类数据:', subcategories);
+                            renderSubcategories();
+                        } else {
+                            console.warn('未找到当前分类:', currentCategoryId);
+                        }
+                    }
+                } else {
+                    alert('保存失败: ' + result.message);
+                }
+            } catch (error) {
+                console.error('保存二级分类失败:', error);
+                alert('保存失败，请重试');
+            }
+        }
+        
+        // 删除二级分类
+        async function deleteSubcategory(id) {
+            if (confirm('确定要删除这个二级分类吗？删除后该分类下的风格图片将不再关联到此二级分类。')) {
+                try {
+                    const response = await fetch(`/api/admin/styles/subcategories/${id}`, {
+                        method: 'DELETE'
+                    });
+                    
+                    const result = await response.json();
+                    if (result.status === 'success') {
+                        // 重新加载分类数据（包含二级分类）
+                        await loadCategories();
+                        // 重新渲染二级分类列表
+                        if (currentCategoryId) {
+                            const category = categories.find(c => c.id === currentCategoryId);
+                            if (category) {
+                                subcategories = category.subcategories || [];
+                                renderSubcategories();
+                            }
+                        }
+                        // 重新加载图片
+                        await loadImages(true);
+                    } else {
+                        alert('删除失败: ' + result.message);
+                    }
+                } catch (error) {
+                    console.error('删除二级分类失败:', error);
+                    alert('删除失败，请重试');
+                }
+            }
+        }
+        
+        // 上传二级分类封面图片
+        async function uploadSubcategoryCoverImage(input) {
+            const file = input.files[0];
+            if (!file) return;
+            
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            try {
+                // 使用与一级分类相同的上传API（二级分类也使用这个API）
+                const response = await fetch('/api/admin/styles/categories/upload-cover-image', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                if (result.status === 'success') {
+                    const imageUrl = result.data.image_url || result.data.url;
+                    document.getElementById('subcategoryCoverImageUrl').value = imageUrl;
+                    const preview = document.getElementById('subcategoryCoverImagePreview');
+                    const upload = document.getElementById('subcategoryCoverImageUpload');
+                    if (preview) {
+                        preview.src = imageUrl;
+                        preview.style.display = 'block';
+                    }
+                    if (upload) {
+                        upload.style.display = 'none';
+                    }
+                } else {
+                    alert('上传失败: ' + (result.message || '未知错误'));
+                }
+            } catch (error) {
+                console.error('上传失败:', error);
+                alert('上传失败，请重试');
+            }
+        }
+        
+        // 打开二级分类排序模态框（可选功能）
+        function openSortSubcategoryModal() {
+            // TODO: 实现二级分类排序功能
+            alert('二级分类排序功能待实现');
         }
 
         // 删除图片
@@ -3071,6 +3608,8 @@
         
         document.getElementById('imageModal').addEventListener('hidden.bs.modal', function() {
             document.getElementById('imageForm').reset();
+            // 重要：清空 imageId，确保下次打开时是添加模式而不是编辑模式
+            document.getElementById('imageId').value = '';
             document.getElementById('imageModalTitle').textContent = '添加图片';
             const imagePreview = document.getElementById('imagePreview');
             const imageUploadArea = document.getElementById('imageUploadArea');
@@ -3108,13 +3647,27 @@
             if (imageDescription) imageDescription.value = '';
         });
         
-        // 添加图片时自动填充当前选中的分类
+        // 添加图片时自动填充当前选中的分类和二级分类
         document.getElementById('imageModal').addEventListener('show.bs.modal', function() {
-            // 如果是添加新图片（不是编辑），自动填充当前分类
+            // 如果是添加新图片（不是编辑），自动填充当前分类和二级分类
             const imageId = document.getElementById('imageId').value;
-            if (!imageId && currentCategoryId) {
-                document.getElementById('imageCategory').value = currentCategoryId;
-                updateImageFormFields(); // 自动填充代码和描述
+            if (!imageId) {
+                // 自动填充一级分类
+                if (currentCategoryId) {
+                    document.getElementById('imageCategory').value = currentCategoryId;
+                    updateImageFormFields(); // 自动填充代码和描述，并更新二级分类下拉框
+                    
+                    // 自动填充二级分类（如果已选中）
+                    if (currentSubcategoryId) {
+                        const subcategorySelect = document.getElementById('imageSubcategoryId');
+                        if (subcategorySelect) {
+                            // 等待二级分类下拉框更新完成
+                            setTimeout(() => {
+                                subcategorySelect.value = currentSubcategoryId;
+                            }, 100);
+                        }
+                    }
+                }
             }
         });
         
@@ -3400,7 +3953,11 @@
             const enabledEl = document.getElementById('imageApiTemplateEnabled');
             const configDiv = document.getElementById('imageApiTemplateConfig');
             if (enabledEl && configDiv) {
-                configDiv.style.display = enabledEl.checked ? 'block' : 'none';
+                const isEnabled = enabledEl.checked;
+                configDiv.style.display = isEnabled ? 'block' : 'none';
+                console.log('🔄 API模板开关切换:', isEnabled ? '启用' : '禁用');
+                // 注意：这里只是切换显示，实际保存需要点击"保存"按钮
+                // 如果需要自动保存，可以在这里调用保存逻辑
             }
         }
         
@@ -3491,8 +4048,18 @@
                     // 先加载配置列表
                     await loadApiComfyUIConfigs();
                     
-                    // 检查是否是 RunningHub ComfyUI 工作流类型
-                    if (template.api_config_id) {
+                    // 关键修复：只有当 request_body_template 存在时，才认为是ComfyUI工作流
+                    // 如果只有 api_config_id 但没有 request_body_template，说明是普通API编辑配置，不应该设置到ComfyUI下拉框
+                    const isComfyUIWorkflow = !!template.request_body_template;
+                    
+                    console.log('🔍 判断API模板类型:', {
+                        has_request_body_template: isComfyUIWorkflow,
+                        api_config_id: template.api_config_id,
+                        isComfyUI: isComfyUIWorkflow
+                    });
+                    
+                    // 只有当确认是ComfyUI工作流时，才设置ComfyUI相关字段
+                    if (isComfyUIWorkflow && template.api_config_id) {
                         // 获取API配置类型
                         const apiConfigSelect = document.getElementById('imageApiComfyUIConfigId');
                         if (apiConfigSelect) {
@@ -3510,17 +4077,18 @@
                                 await new Promise(resolve => setTimeout(resolve, 100));
                             }
                             
-                            apiConfigSelect.value = configIdStr;
-                            console.log('✅ 设置API配置ID:', configIdStr, '原始值:', template.api_config_id, '设置后值:', apiConfigSelect.value);
-                            
-                            // 验证是否设置成功
-                            if (apiConfigSelect.value !== configIdStr) {
-                                console.warn('⚠️ API配置ID设置失败，当前值:', apiConfigSelect.value, '期望值:', configIdStr);
-                                // 再次尝试设置
-                                setTimeout(() => {
-                                    apiConfigSelect.value = configIdStr;
-                                    console.log('🔄 重新设置API配置ID:', apiConfigSelect.value);
-                                }, 300);
+                            // 再次检查选项是否存在
+                            const optionExistsAfterReload = Array.from(apiConfigSelect.options).some(opt => opt.value === configIdStr);
+                            if (optionExistsAfterReload) {
+                                apiConfigSelect.value = configIdStr;
+                                console.log('✅ 设置API配置ID:', configIdStr, '原始值:', template.api_config_id, '设置后值:', apiConfigSelect.value);
+                                
+                                // 验证是否设置成功
+                                if (apiConfigSelect.value !== configIdStr) {
+                                    console.warn('⚠️ API配置ID设置失败，当前值:', apiConfigSelect.value, '期望值:', configIdStr);
+                                }
+                            } else {
+                                console.warn('⚠️ API配置ID', configIdStr, '在ComfyUI配置列表中不存在，可能是普通API配置，跳过设置');
                             }
                             
                             // 检查是否是 runninghub-comfyui-workflow 类型
@@ -3959,20 +4527,21 @@
                                 <label class="form-label small text-white">预设图片（可选）</label>
                                 <div class="input-group input-group-sm">
                                     <input type="text" class="form-control bg-dark text-white border-secondary" 
-                                           id="example_image_${index}"
-                                           value="${config.example_image || ''}" 
+                                           id="preset_image_${index}"
+                                           value="${config.preset_image || config.example_image || ''}" 
                                            placeholder="预设图片URL"
-                                           onchange="updateImageUploadConfig(${index}, 'example_image', this.value)">
+                                           onchange="updateImageUploadConfig(${index}, 'preset_image', this.value)">
                                     <button type="button" class="btn btn-outline-secondary" 
-                                            onclick="document.getElementById('example_image_file_${index}').click()">
+                                            onclick="document.getElementById('preset_image_file_${index}').click()"
+                                            title="上传预设图片">
                                         <i class="fas fa-upload"></i>
                                     </button>
-                                    <input type="file" id="example_image_file_${index}" 
+                                    <input type="file" id="preset_image_file_${index}" 
                                            accept="image/*" 
                                            style="display: none;" 
-                                           onchange="handleExampleImageUpload(${index}, this)">
+                                           onchange="handlePresetImageUpload(${index}, this)">
                                 </div>
-                                ${config.example_image ? `<img src="${config.example_image}" class="mt-2" style="max-width: 100px; max-height: 100px; border-radius: 4px;">` : ''}
+                                ${(config.preset_image || config.example_image) ? `<img src="${config.preset_image || config.example_image}" class="mt-2" style="max-width: 100px; max-height: 100px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.2);">` : ''}
                             </div>
                             <div class="col-md-2">
                                 <label class="form-label small text-white">是否必填</label>
@@ -4009,8 +4578,8 @@
             }
         }
         
-        // 上传示例图
-        async function handleExampleImageUpload(index, input) {
+        // 上传预设图片（兼容旧的example_image字段名）
+        async function handlePresetImageUpload(index, input) {
             const file = input.files[0];
             if (!file) return;
             
@@ -4025,10 +4594,11 @@
                 
                 const result = await response.json();
                 if (result.status === 'success') {
-                    const exampleImageInput = document.getElementById(`example_image_${index}`);
-                    if (exampleImageInput) {
-                        exampleImageInput.value = result.image_url;
-                        updateImageUploadConfig(index, 'example_image', result.image_url);
+                    const presetImageInput = document.getElementById(`preset_image_${index}`);
+                    if (presetImageInput) {
+                        presetImageInput.value = result.image_url;
+                        // 使用preset_image字段名，同时兼容旧的example_image
+                        updateImageUploadConfig(index, 'preset_image', result.image_url);
                         // 重新渲染以显示图片预览
                         renderImageUploadConfigs();
                     }
@@ -4040,6 +4610,9 @@
                 alert('上传失败，请重试');
             }
         }
+        
+        // 兼容旧的函数名
+        const handleExampleImageUpload = handlePresetImageUpload;
         
         // 处理API测试图片上传（支持多个上传入口）
         let apiTestImageFiles = {}; // 改为对象，支持多个上传入口 {key: file}
@@ -4217,27 +4790,165 @@
                     : null;
                 
                 if (uploadConfig && uploadConfig.uploads && uploadConfig.uploads.length > 0) {
-                    // 多个上传入口：按key组织
-                    uploadConfig.uploads.forEach(upload => {
+                    // 多个上传入口：按key组织，支持用户上传的图片+预设图片
+                    console.log('🔍 [testApiTemplate] 处理多个上传入口，共', uploadConfig.uploads.length, '个');
+                    console.log('🔍 [testApiTemplate] 上传配置详情:', JSON.stringify(uploadConfig, null, 2));
+                    console.log('🔍 [testApiTemplate] imageUploadConfigs:', JSON.stringify(imageUploadConfigs, null, 2));
+                    console.log('🔍 [testApiTemplate] 上传配置详情:', JSON.stringify(uploadConfig, null, 2));
+                    
+                    // 先处理预设图片（如果是本地路径，需要上传到云端）
+                    const processedUploads = await Promise.all(
+                        uploadConfig.uploads.map(async (upload) => {
+                            const presetImageUrl = upload.preset_image || upload.example_image;
+                            console.log(`🔍 [testApiTemplate] 检查上传入口 "${upload.name || upload.key}": presetImageUrl =`, presetImageUrl);
+                            
+                            if (!presetImageUrl) {
+                                console.log(`⚠️ [testApiTemplate] 上传入口 "${upload.name || upload.key}" 没有预设图片`);
+                                return upload; // 没有预设图片，直接返回
+                            }
+                            
+                            console.log(`🔍 [testApiTemplate] 处理预设图片: ${upload.name || upload.key} = ${presetImageUrl}`);
+                            
+                            // 检查是否是本地路径
+                            const isLocalPath = presetImageUrl.startsWith('/media/') || 
+                                               presetImageUrl.startsWith('/uploads/') ||
+                                               (!presetImageUrl.startsWith('http://') && !presetImageUrl.startsWith('https://'));
+                            
+                            console.log(`🔍 [testApiTemplate] 预设图片路径类型: ${isLocalPath ? '本地路径' : '云端URL'}`);
+                            
+                            if (isLocalPath) {
+                                // 本地路径：需要上传到云端获取URL
+                                try {
+                                    let fullUrl = presetImageUrl;
+                                    if (presetImageUrl.startsWith('/')) {
+                                        const baseUrl = window.location.origin;
+                                        fullUrl = baseUrl + presetImageUrl;
+                                    }
+                                    
+                                    console.log(`📤 [testApiTemplate] 上传预设图片到云端: ${fullUrl}`);
+                                    
+                                    const uploadResponse = await fetch('/api/admin/styles/images/upload-to-grsai', {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({ image_url: fullUrl })
+                                    });
+                                    
+                                    const uploadResult = await uploadResponse.json();
+                                    console.log(`📥 [testApiTemplate] 预设图片上传响应:`, uploadResult);
+                                    
+                                    if (uploadResult.status === 'success' && uploadResult.data && uploadResult.data.url) {
+                                        console.log(`✅ [testApiTemplate] 预设图片已上传到云端: ${presetImageUrl} -> ${uploadResult.data.url}`);
+                                        return {
+                                            ...upload,
+                                            cloud_preset_image_url: uploadResult.data.url
+                                        };
+                                    } else {
+                                        console.warn(`⚠️ [testApiTemplate] 预设图片上传失败: ${presetImageUrl}`, uploadResult);
+                                        // 即使上传失败，也返回原始URL，让后端尝试处理
+                                        return {
+                                            ...upload,
+                                            cloud_preset_image_url: presetImageUrl
+                                        };
+                                    }
+                                } catch (error) {
+                                    console.error(`❌ [testApiTemplate] 上传预设图片失败: ${presetImageUrl}`, error);
+                                    // 即使上传失败，也返回原始URL，让后端尝试处理
+                                    return {
+                                        ...upload,
+                                        cloud_preset_image_url: presetImageUrl
+                                    };
+                                }
+                            } else {
+                                // 已经是云端URL，直接使用
+                                console.log(`✅ [testApiTemplate] 预设图片已是云端URL: ${presetImageUrl}`);
+                                return {
+                                    ...upload,
+                                    cloud_preset_image_url: presetImageUrl
+                                };
+                            }
+                        })
+                    );
+                    
+                    console.log('🔍 [testApiTemplate] 处理后的上传配置:', processedUploads);
+                    
+                    // 构建上传配置（不包含预设图片URL，只包含配置信息）
+                    const uploadConfigToPass = {
+                        uploads: processedUploads.map(upload => ({
+                            name: upload.name,
+                            key: upload.key || 'default',
+                            required: upload.required || false
+                        }))
+                    };
+                    
+                    // 按key组织图片：用户上传的图片在前，预设图片在后
+                    processedUploads.forEach((upload, index) => {
                         const key = upload.key || 'default';
+                        console.log(`🔍 [testApiTemplate] 处理上传入口 ${index + 1}/${processedUploads.length}: key=${key}, name=${upload.name || 'N/A'}`);
+                        
+                        // 先添加用户上传的图片
                         if (apiTestImageCloudUrls[key]) {
-                            formData.append(`cloud_image_url_${key}`, apiTestImageCloudUrls[key]);
-                            console.log(`📤 使用已上传的云端URL (${key}):`, apiTestImageCloudUrls[key]);
+                            // 支持多个用户上传的图片（如果是数组）
+                            const userUrls = Array.isArray(apiTestImageCloudUrls[key]) 
+                                ? apiTestImageCloudUrls[key] 
+                                : [apiTestImageCloudUrls[key]];
+                            
+                            console.log(`📤 [testApiTemplate] 找到用户上传的图片 (${key}):`, userUrls.length, '张');
+                            userUrls.forEach((url, urlIndex) => {
+                                formData.append(`cloud_image_url_${key}`, url);
+                                console.log(`  ✅ [testApiTemplate] 添加用户上传的图片 (${key}) [${urlIndex + 1}/${userUrls.length}]:`, url);
+                            });
                         } else if (apiTestImageFiles[key]) {
-                            formData.append(`image_${key}`, apiTestImageFiles[key]);
-                            console.log(`📤 使用本地文件上传 (${key})`);
+                            // 支持多个文件（如果是数组）
+                            const files = Array.isArray(apiTestImageFiles[key]) 
+                                ? apiTestImageFiles[key] 
+                                : [apiTestImageFiles[key]];
+                            
+                            console.log(`📤 [testApiTemplate] 找到本地文件 (${key}):`, files.length, '个');
+                            files.forEach((file, fileIndex) => {
+                                formData.append(`image_${key}`, file);
+                                console.log(`  ✅ [testApiTemplate] 添加本地文件 (${key}) [${fileIndex + 1}/${files.length}]`);
+                            });
+                        } else {
+                            console.log(`⚠️ [testApiTemplate] 上传入口 "${key}" 没有用户上传的图片`);
+                        }
+                        
+                        // 然后添加预设图片（如果有）
+                        const presetImageUrl = upload.cloud_preset_image_url || upload.preset_image || upload.example_image;
+                        if (presetImageUrl) {
+                            formData.append(`cloud_image_url_${key}`, presetImageUrl);
+                            console.log(`  ✅ [testApiTemplate] 添加预设图片 (${key}):`, presetImageUrl);
+                        } else {
+                            console.log(`⚠️ [testApiTemplate] 上传入口 "${key}" 没有预设图片`);
                         }
                     });
+                    
+                    // 打印FormData中的所有数据（用于调试）
+                    console.log('🔍 [testApiTemplate] FormData内容:');
+                    for (let pair of formData.entries()) {
+                        console.log(`  - ${pair[0]}: ${pair[1]}`);
+                    }
+                    
                     // 传递upload_config
-                    formData.append('upload_config', JSON.stringify(uploadConfig));
+                    formData.append('upload_config', JSON.stringify(uploadConfigToPass));
+                    console.log('🔍 [testApiTemplate] 最终上传配置:', uploadConfigToPass);
                 } else {
                     // 单个默认上传入口
                     if (apiTestImageCloudUrls['default']) {
-                        formData.append('cloud_image_url', apiTestImageCloudUrls['default']);
-                        console.log('📤 使用已上传的云端URL:', apiTestImageCloudUrls['default']);
+                        const defaultUrls = Array.isArray(apiTestImageCloudUrls['default']) 
+                            ? apiTestImageCloudUrls['default'] 
+                            : [apiTestImageCloudUrls['default']];
+                        defaultUrls.forEach(url => {
+                            formData.append('cloud_image_url', url);
+                        });
+                        console.log('📤 [testApiTemplate] 使用已上传的云端URL:', defaultUrls);
                     } else if (apiTestImageFiles['default']) {
-                        formData.append('image', apiTestImageFiles['default']);
-                        console.log('📤 使用本地文件上传');
+                        const defaultFiles = Array.isArray(apiTestImageFiles['default']) 
+                            ? apiTestImageFiles['default'] 
+                            : [apiTestImageFiles['default']];
+                        defaultFiles.forEach(file => {
+                            formData.append('image', file);
+                        });
+                        console.log('📤 [testApiTemplate] 使用本地文件上传');
                     }
                 }
                 
@@ -4690,18 +5401,22 @@
             }
         }
         
-        // 在selectCategory和filterImagesByCategory函数中调用
-        const originalSelectCategory = selectCategory;
-        selectCategory = function(categoryId) {
-            originalSelectCategory(categoryId);
-            updateSortButtonVisibility();
-        };
+        // 在selectCategory和filterImagesByCategory函数中调用（如果updateSortButtonVisibility函数存在）
+        if (typeof updateSortButtonVisibility === 'function' && typeof selectCategory === 'function') {
+            const originalSelectCategory = selectCategory;
+            selectCategory = function(categoryId) {
+                originalSelectCategory(categoryId);
+                updateSortButtonVisibility();
+            };
+        }
         
-        const originalFilterImagesByCategory = filterImagesByCategory;
-        filterImagesByCategory = function(categoryId) {
-            originalFilterImagesByCategory(categoryId);
-            updateSortButtonVisibility();
-        };
+        if (typeof updateSortButtonVisibility === 'function' && typeof filterImagesByCategory === 'function') {
+            const originalFilterImagesByCategory = filterImagesByCategory;
+            filterImagesByCategory = function(categoryId) {
+                originalFilterImagesByCategory(categoryId);
+                updateSortButtonVisibility();
+            };
+        }
     </script>
 </body>
 </html>

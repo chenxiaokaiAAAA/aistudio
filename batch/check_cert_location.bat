@@ -5,25 +5,25 @@ echo ========================================
 echo.
 
 echo 配置文件指定的证书位置:
-echo   - 证书文件: C:\nginx\ssl\moeart.cc.pem
-echo   - 私钥文件: C:\nginx\ssl\moeart.cc.key
+echo   - 证书文件: C:\nginx\ssl\photogooo.pem
+echo   - 私钥文件: C:\nginx\ssl\photogooo.key
 echo.
 
 echo 检查配置文件位置 (C:\nginx\ssl\):
-if exist "C:\nginx\ssl\moeart.cc.pem" (
-    echo ✅ 找到证书: C:\nginx\ssl\moeart.cc.pem
-    for %%A in ("C:\nginx\ssl\moeart.cc.pem") do echo    文件大小: %%~zA 字节
-    for %%A in ("C:\nginx\ssl\moeart.cc.pem") do echo    修改时间: %%~tA
+if exist "C:\nginx\ssl\photogooo.pem" (
+    echo ✅ 找到证书: C:\nginx\ssl\photogooo.pem
+    for %%A in ("C:\nginx\ssl\photogooo.pem") do echo    文件大小: %%~zA 字节
+    for %%A in ("C:\nginx\ssl\photogooo.pem") do echo    修改时间: %%~tA
 ) else (
-    echo ❌ 未找到: C:\nginx\ssl\moeart.cc.pem
+    echo ❌ 未找到: C:\nginx\ssl\photogooo.pem
 )
 
-if exist "C:\nginx\ssl\moeart.cc.key" (
-    echo ✅ 找到私钥: C:\nginx\ssl\moeart.cc.key
-    for %%A in ("C:\nginx\ssl\moeart.cc.key") do echo    文件大小: %%~zA 字节
-    for %%A in ("C:\nginx\ssl\moeart.cc.key") do echo    修改时间: %%~tA
+if exist "C:\nginx\ssl\photogooo.key" (
+    echo ✅ 找到私钥: C:\nginx\ssl\photogooo.key
+    for %%A in ("C:\nginx\ssl\photogooo.key") do echo    文件大小: %%~zA 字节
+    for %%A in ("C:\nginx\ssl\photogooo.key") do echo    修改时间: %%~tA
 ) else (
-    echo ❌ 未找到: C:\nginx\ssl\moeart.cc.key
+    echo ❌ 未找到: C:\nginx\ssl\photogooo.key
 )
 
 echo.

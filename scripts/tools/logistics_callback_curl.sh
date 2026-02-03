@@ -7,7 +7,7 @@ echo "🚚 物流回调测试脚本 - curl版本"
 echo "=================================================="
 
 # 接口配置
-API_URL="https://moeart.cc/api/logistics/callback"
+API_URL="https://photogooo/api/logistics/callback"
 ORDER_NUMBER="PET17582664981342618"
 
 echo "📦 目标订单: $ORDER_NUMBER"

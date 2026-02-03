@@ -98,6 +98,53 @@ def create_coupon_admin():
             'message': f'创建优惠券失败: {str(e)}'
         }), 500
 
+@admin_coupon_api_bp.route('/<int:coupon_id>', methods=['GET'])
+@login_required
+def get_coupon_admin(coupon_id):
+    """获取优惠券详情"""
+    try:
+        models = get_models()
+        if not models:
+            return jsonify({
+                'success': False,
+                'message': '数据库模型未初始化'
+            }), 500
+        
+        Coupon = models['Coupon']
+        
+        coupon = Coupon.query.get(coupon_id)
+        if not coupon:
+            return jsonify({
+                'success': False,
+                'message': '优惠券不存在'
+            }), 404
+        
+        return jsonify({
+            'success': True,
+            'coupon': {
+                'id': coupon.id,
+                'name': coupon.name,
+                'code': coupon.code,
+                'type': coupon.type,
+                'value': float(coupon.value),
+                'min_amount': float(coupon.min_amount) if coupon.min_amount else 0,
+                'max_discount': float(coupon.max_discount) if coupon.max_discount else None,
+                'total_count': coupon.total_count,
+                'used_count': coupon.used_count,
+                'per_user_limit': coupon.per_user_limit,
+                'start_time': coupon.start_time.isoformat() if coupon.start_time else None,
+                'end_time': coupon.end_time.isoformat() if coupon.end_time else None,
+                'status': coupon.status,
+                'description': coupon.description
+            }
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': f'获取优惠券详情失败: {str(e)}'
+        }), 500
+
 @admin_coupon_api_bp.route('/<int:coupon_id>/update', methods=['PUT'])
 @login_required
 def update_coupon_admin(coupon_id):

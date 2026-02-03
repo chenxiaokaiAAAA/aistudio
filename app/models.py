@@ -24,23 +24,47 @@ def _get_db():
     # 尝试从test_server导入db（在db初始化后）
     try:
         import sys
-        # 获取test_server模块
+        # 方法1：从sys.modules获取test_server模块
         if 'test_server' in sys.modules:
             test_server_module = sys.modules['test_server']
             if hasattr(test_server_module, 'db'):
                 _db_instance = test_server_module.db
                 return _db_instance
-    except (ImportError, AttributeError):
+        # 方法2：尝试从__main__模块获取（如果test_server是主模块）
+        if '__main__' in sys.modules:
+            main_module = sys.modules['__main__']
+            if hasattr(main_module, 'db') and hasattr(main_module, '__file__'):
+                # 检查是否是test_server.py
+                if main_module.__file__ and 'test_server.py' in main_module.__file__:
+                    _db_instance = main_module.db
+                    return _db_instance
+        # 方法3：尝试从调用栈获取（作为最后手段）
+        import inspect
+        try:
+            frame = inspect.currentframe()
+            # 向上查找调用栈
+            while frame:
+                frame = frame.f_back
+                if frame and frame.f_globals.get('__name__') in ('test_server', '__main__'):
+                    if 'db' in frame.f_globals:
+                        _db_instance = frame.f_globals['db']
+                        return _db_instance
+                if frame is None:
+                    break
+        except:
+            pass
+    except (ImportError, AttributeError, Exception):
         pass
     # 如果无法获取，返回None（这种情况不应该发生）
     return None
 
 # 导出所有模型类（包括新增的AI相关模型）
 __all__ = [
+    'ProductCategory', 'ProductSubcategory',  # 产品分类模型
     'Product', 'ProductSize', 'ProductSizePetOption', 'ProductImage', 
     'ProductStyleCategory', 'ProductCustomField', 'ProductBonusWorkflow',
-    'StyleCategory', 'StyleImage',
-    'HomepageBanner', 'WorksGallery', 'HomepageConfig',
+    'StyleCategory', 'StyleSubcategory', 'StyleImage',
+    'HomepageBanner', 'WorksGallery', 'HomepageConfig', 'HomepageCategoryNav', 'HomepageProductSection', 'HomepageActivityBanner',
     'User', 'UserVisit',
     'Order', 'OrderImage',
     'PhotoSignup',
@@ -83,6 +107,38 @@ def set_db(db_instance):
 # 产品相关模型
 # ============================================================================
 
+class ProductCategory(db.Model):
+    """产品一级分类表（如：证件照、水杯、挂件等）"""
+    __tablename__ = 'product_categories'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(50), nullable=False)  # 分类名称，如"证件照"
+    code = db.Column(db.String(50), unique=True, nullable=False)  # 分类代码，如"idphoto"
+    icon = db.Column(db.String(10))  # 图标，如"📷"
+    image_url = db.Column(db.String(500))  # 分类图片URL
+    sort_order = db.Column(db.Integer, default=0)  # 排序
+    is_active = db.Column(db.Boolean, default=True)  # 是否启用
+    style_redirect_page = db.Column(db.String(50), nullable=True)  # 跳转页面：如果填写，点击该分类时跳转到风格库（填写风格分类的code），否则进入产品馆二级目录
+    created_at = db.Column(db.DateTime, default=datetime.now)
+
+class ProductSubcategory(db.Model):
+    """产品二级分类表（如：标准证件照、艺术证件照等）"""
+    __tablename__ = 'product_subcategories'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    category_id = db.Column(db.Integer, db.ForeignKey('product_categories.id'), nullable=False)
+    category = db.relationship('ProductCategory', backref=db.backref('subcategories', lazy=True))
+    name = db.Column(db.String(50), nullable=False)  # 二级分类名称
+    code = db.Column(db.String(50), nullable=False)  # 二级分类代码
+    icon = db.Column(db.String(10))  # 图标
+    image_url = db.Column(db.String(500))  # 分类图片URL
+    sort_order = db.Column(db.Integer, default=0)  # 排序
+    is_active = db.Column(db.Boolean, default=True)  # 是否启用
+    created_at = db.Column(db.DateTime, default=datetime.now)
+    
+    # 确保同一一级分类下不会重复二级分类代码
+    __table_args__ = (db.UniqueConstraint('category_id', 'code', name='_category_subcategory_code_uc'),)
+
 class Product(db.Model):
     __tablename__ = 'products'
     
@@ -91,6 +147,10 @@ class Product(db.Model):
     name = db.Column(db.String(100), nullable=False)  # 产品名称，如 艺术钥匙扣
     description = db.Column(db.Text)  # 产品描述
     image_url = db.Column(db.String(500))  # 产品图片URL
+    category_id = db.Column(db.Integer, db.ForeignKey('product_categories.id'), nullable=True)  # 一级分类ID
+    subcategory_id = db.Column(db.Integer, db.ForeignKey('product_subcategories.id'), nullable=True)  # 二级分类ID
+    category = db.relationship('ProductCategory', backref=db.backref('products', lazy=True))
+    subcategory = db.relationship('ProductSubcategory', backref=db.backref('products', lazy=True))
     is_active = db.Column(db.Boolean, default=True)  # 是否启用
     sort_order = db.Column(db.Integer, default=0)  # 排序
     free_selection_count = db.Column(db.Integer, default=1)  # 标准赠送的选片张数（默认1张）
@@ -225,10 +285,30 @@ class StyleCategory(db.Model):
     workflow_custom_prompt_content = db.Column(db.Text)  # 自定义提示词内容（可选）
     is_ai_enabled = db.Column(db.Boolean, default=False)  # 是否启用AI工作流处理（分类级别）
 
+class StyleSubcategory(db.Model):
+    """风格二级分类表（如：男、女、儿童等）"""
+    __tablename__ = 'style_subcategories'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    category_id = db.Column(db.Integer, db.ForeignKey('style_category.id'), nullable=False)
+    category = db.relationship('StyleCategory', backref=db.backref('subcategories', lazy=True))
+    name = db.Column(db.String(50), nullable=False)  # 二级分类名称，如"男"、"女"、"儿童"
+    code = db.Column(db.String(50), nullable=False)  # 二级分类代码，如"male"、"female"、"child"
+    icon = db.Column(db.String(10))  # 图标
+    cover_image = db.Column(db.String(500))  # 封面图片URL
+    sort_order = db.Column(db.Integer, default=0)  # 排序
+    is_active = db.Column(db.Boolean, default=True)  # 是否启用
+    created_at = db.Column(db.DateTime, default=datetime.now)
+    
+    # 确保同一一级分类下不会重复二级分类代码
+    __table_args__ = (db.UniqueConstraint('category_id', 'code', name='_style_category_subcategory_code_uc'),)
+
 class StyleImage(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     category_id = db.Column(db.Integer, db.ForeignKey('style_category.id'), nullable=False)
     category = db.relationship('StyleCategory', backref=db.backref('images', lazy=True))
+    subcategory_id = db.Column(db.Integer, db.ForeignKey('style_subcategories.id'), nullable=True)  # 二级分类ID（可选）
+    subcategory = db.relationship('StyleSubcategory', backref=db.backref('images', lazy=True))
     name = db.Column(db.String(100), nullable=False)  # 风格名称，如"威廉国王"
     code = db.Column(db.String(50), nullable=False)  # 风格代码，如"william"
     description = db.Column(db.String(200))  # 风格描述
@@ -283,6 +363,47 @@ class HomepageConfig(db.Model):
     enable_works_gallery = db.Column(db.Boolean, default=True)  # 启用作品展示
     updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
 
+class HomepageCategoryNav(db.Model):
+    """首页分类导航配置"""
+    id = db.Column(db.Integer, primary_key=True)
+    category_id = db.Column(db.Integer)  # 关联的产品分类ID（可选）
+    name = db.Column(db.String(50), nullable=False)  # 显示名称
+    icon = db.Column(db.String(10))  # emoji图标
+    image_url = db.Column(db.String(500))  # 图标图片URL（优先使用）
+    link_type = db.Column(db.String(20), default='category')  # 链接类型：category, page, url
+    link_value = db.Column(db.String(200))  # 链接值（分类ID、页面路径或URL）
+    sort_order = db.Column(db.Integer, default=0)  # 排序
+    is_active = db.Column(db.Boolean, default=True)  # 是否启用
+    created_at = db.Column(db.DateTime, default=datetime.now)
+    updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
+
+class HomepageProductSection(db.Model):
+    """首页产品推荐模块配置"""
+    id = db.Column(db.Integer, primary_key=True)
+    section_type = db.Column(db.String(20), nullable=False)  # 模块类型：featured, hot, seasonal, custom, time_journey, ip_collab, works
+    title = db.Column(db.String(100), nullable=False)  # 模块标题（如：当季主推、热门产品）
+    subtitle = db.Column(db.String(200))  # 副标题
+    show_more_button = db.Column(db.Boolean, default=True)  # 是否显示"更多"按钮
+    more_link = db.Column(db.String(200))  # "更多"按钮链接
+    layout_type = db.Column(db.String(20), default='grid')  # 布局类型：grid, list, scroll（左右滑动）
+    product_ids = db.Column(db.Text)  # 产品ID列表（JSON格式，如：[1,2,3]）
+    category_id = db.Column(db.Integer)  # 按分类筛选（可选）
+    limit = db.Column(db.Integer, default=6)  # 显示数量限制
+    config = db.Column(db.Text)  # 额外配置（JSON格式，用于存储特殊模块的配置数据）
+    sort_order = db.Column(db.Integer, default=0)  # 排序
+    is_active = db.Column(db.Boolean, default=True)  # 是否启用
+    created_at = db.Column(db.DateTime, default=datetime.now)
+    updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
+
+class HomepageActivityBanner(db.Model):
+    """首页活动横幅配置"""
+    id = db.Column(db.Integer, primary_key=True)
+    text = db.Column(db.String(200), nullable=False)  # 横幅文字
+    is_active = db.Column(db.Boolean, default=True)  # 是否启用
+    sort_order = db.Column(db.Integer, default=0)  # 排序
+    created_at = db.Column(db.DateTime, default=datetime.now)
+    updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
+
 # ============================================================================
 # 用户相关模型
 # ============================================================================
@@ -303,6 +424,16 @@ class User(UserMixin, db.Model):
     account_name = db.Column(db.String(100))  # 银行账户户名
     account_number = db.Column(db.String(50))  # 银行卡号
     bank_name = db.Column(db.String(100))  # 开户行
+    
+    # 权限配置字段
+    can_preview = db.Column(db.Boolean, default=True)  # 是否有预览权限
+    playground_daily_limit = db.Column(db.Integer, default=0)  # Playground每日使用次数限制（0表示无限制）
+    playground_used_today = db.Column(db.Integer, default=0)  # 今日已使用次数
+    playground_last_reset_date = db.Column(db.Date)  # 上次重置日期（用于每日重置计数）
+    page_permissions = db.Column(db.Text)  # 页面权限配置（JSON格式，存储允许访问的页面列表）
+    permissions = db.Column(db.Text)  # 其他权限配置（JSON格式）
+    created_at = db.Column(db.DateTime, default=datetime.now)  # 创建时间
+    updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)  # 更新时间
 
 class UserVisit(db.Model):
     """用户访问追踪表"""
@@ -335,7 +466,7 @@ class Order(db.Model):
     __tablename__ = 'orders'
     
     id = db.Column(db.Integer, primary_key=True)
-    order_number = db.Column(db.String(50), unique=True, nullable=False)
+    order_number = db.Column(db.String(50), nullable=False)  # 移除 unique=True，支持追加产品功能（多个订单记录可以使用相同的订单号）
     customer_name = db.Column(db.String(100), nullable=False)
     customer_phone = db.Column(db.String(20), nullable=False)
     size = db.Column(db.String(20))  # 尺寸
@@ -398,6 +529,14 @@ class Order(db.Model):
     # 门店和自拍机信息
     store_name = db.Column(db.String(100))  # 门店名称
     selfie_machine_id = db.Column(db.String(100))  # 自拍机序列号
+    
+    # 订单类型标记：shooting（立即拍摄-自拍机拍摄）或 making（立即制作-人工线上订单）
+    order_mode = db.Column(db.String(20))  # 订单模式：shooting/making/null
+    
+    # 退款申请相关字段
+    refund_request_reason = db.Column(db.Text)  # 退款申请原因
+    refund_request_time = db.Column(db.DateTime)  # 退款申请时间
+    refund_request_status = db.Column(db.String(20))  # 退款申请状态：pending待处理, approved已批准, rejected已拒绝
 
 class OrderImage(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -706,6 +845,52 @@ class APITemplate(db.Model):
 
 
 # ============================================================================
+# 轮询配置模型
+# ============================================================================
+
+class PollingConfig(db.Model):
+    """任务轮询配置表"""
+    __tablename__ = 'polling_configs'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    task_type = db.Column(db.String(50), nullable=False, unique=True, comment='任务类型：api_task, workflow_task, comfyui_task')
+    task_type_name = db.Column(db.String(100), comment='任务类型名称：API任务、工作流任务、ComfyUI工作流任务')
+    
+    # 轮询间隔配置（秒）
+    polling_interval = db.Column(db.Integer, default=10, comment='轮询间隔（秒）')
+    polling_interval_with_tasks = db.Column(db.Integer, default=5, comment='有活跃任务时的轮询间隔（秒）')
+    
+    # 等待时间配置（秒）
+    wait_before_polling = db.Column(db.Integer, default=30, comment='任务创建后等待时间（秒），超过此时间才开始轮询')
+    wait_before_polling_test = db.Column(db.Integer, default=0, comment='测试任务创建后等待时间（秒），0表示立即轮询')
+    
+    # 超时配置（秒）
+    timeout_seconds = db.Column(db.Integer, default=3600, comment='任务超时时间（秒），超过此时间标记为失败')
+    
+    # 状态
+    is_active = db.Column(db.Boolean, default=True, comment='是否启用此轮询配置')
+    
+    # 时间字段
+    created_at = db.Column(db.DateTime, default=datetime.now)
+    updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'task_type': self.task_type,
+            'task_type_name': self.task_type_name,
+            'polling_interval': self.polling_interval,
+            'polling_interval_with_tasks': self.polling_interval_with_tasks,
+            'wait_before_polling': self.wait_before_polling,
+            'wait_before_polling_test': self.wait_before_polling_test,
+            'timeout_seconds': self.timeout_seconds,
+            'is_active': self.is_active,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None
+        }
+
+
+# ============================================================================
 # 其他模型
 # ============================================================================
 
@@ -841,6 +1026,18 @@ class Coupon(db.Model):
     qr_code_url = db.Column(db.String(500))  # 领取二维码URL
     share_reward_amount = db.Column(db.Float)  # 分享奖励金额
     share_reward_type = db.Column(db.String(20))  # 分享奖励类型：sharer分享者, shared被分享者
+    
+    # 创建人信息（用于记录团购核销的创建者）
+    franchisee_id = db.Column(db.Integer, db.ForeignKey('franchisee_accounts.id'))  # 加盟商ID
+    staff_user_id = db.Column(db.Integer, db.ForeignKey('staff_users.id'))  # 店员ID（小程序核销时使用）
+    creator_type = db.Column(db.String(20), default='system')  # 创建人类型：system系统, franchisee加盟商, staff店员, admin管理员
+    creator_name = db.Column(db.String(100))  # 创建人名称（加盟商名称或店员姓名）
+    
+    # 团购核销相关信息
+    groupon_platform = db.Column(db.String(50))  # 团购平台（美团、抖音等）
+    groupon_package_id = db.Column(db.Integer, db.ForeignKey('groupon_packages.id'))  # 团购套餐ID
+    customer_phone = db.Column(db.String(20))  # 客户手机号（团购核销时使用）
+    customer_name = db.Column(db.String(100))  # 客户姓名（团购核销时使用）
 
 class UserCoupon(db.Model):
     """用户优惠券表"""
@@ -877,6 +1074,25 @@ class ShareRecord(db.Model):
     # 关联关系
     sharer_coupon = db.relationship('Coupon', foreign_keys=[sharer_coupon_id], backref='sharer_records')
     shared_coupon = db.relationship('Coupon', foreign_keys=[shared_coupon_id], backref='shared_records')
+
+class GrouponPackage(db.Model):
+    """团购套餐配置表"""
+    __tablename__ = 'groupon_packages'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    platform = db.Column(db.String(50), nullable=False)  # 平台：美团、抖音、大众点评等
+    package_name = db.Column(db.String(100), nullable=False)  # 套餐名称：证件照套餐、结婚登记照套餐等
+    package_amount = db.Column(db.Float, nullable=False)  # 套餐金额（核销金额）
+    description = db.Column(db.Text)  # 套餐描述
+    status = db.Column(db.String(20), default='active')  # 状态：active启用, inactive停用
+    sort_order = db.Column(db.Integer, default=0)  # 排序顺序
+    created_at = db.Column(db.DateTime, default=datetime.now)
+    updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
+    
+    # 唯一约束：同一平台下套餐名称不能重复
+    __table_args__ = (
+        db.UniqueConstraint('platform', 'package_name', name='uq_platform_package'),
+    )
 
 # ============================================================================
 # 加盟商相关模型

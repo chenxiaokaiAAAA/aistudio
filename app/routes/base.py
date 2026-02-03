@@ -3,6 +3,7 @@
 基础路由（首页、作品展示等）
 """
 from flask import Blueprint, render_template, redirect, url_for
+from flask_login import login_required, current_user
 import sys
 
 # 创建蓝图
@@ -96,3 +97,49 @@ def test_select_style():
     """测试下拉菜单样式页面"""
     from flask import send_file
     return send_file('test_select_style.html')
+
+
+@base_bp.route('/playground')
+@login_required
+def playground():
+    """Playground页面 - AI工作流测试平台"""
+    try:
+        # 检查权限
+        if current_user.role not in ['admin', 'operator']:
+            from flask import flash
+            flash('权限不足', 'error')
+            return redirect(url_for('auth.login'))
+        
+        # 检查页面权限（操作员需要检查）
+        if current_user.role == 'operator':
+            from app.utils.permission_utils import has_page_permission
+            from flask import flash
+            if not has_page_permission(current_user, '/playground'):
+                flash('您没有权限访问Playground页面', 'error')
+                return redirect(url_for('admin_profile.admin_profile'))
+        
+        # 获取品牌名称
+        from app.utils.config_loader import get_brand_name
+        brand_name = get_brand_name()
+        return render_template('playground.html', brand_name=brand_name, current_user=current_user)
+    except Exception as e:
+        print(f"加载Playground页面失败: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        # 如果出错，返回基本页面
+        return render_template('playground.html', brand_name='AI Studio', current_user=current_user)
+
+@base_bp.route('/playground/tasks')
+def playground_tasks():
+    """Playground任务日志页面"""
+    try:
+        from app.utils.config_loader import get_brand_name
+        from flask_login import current_user
+        brand_name = get_brand_name()
+        return render_template('playground_tasks.html', brand_name=brand_name, current_user=current_user)
+    except Exception as e:
+        print(f"加载Playground任务日志页面失败: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        from flask_login import current_user
+        return render_template('playground_tasks.html', brand_name='AI Studio', current_user=current_user)

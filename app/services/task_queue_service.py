@@ -50,6 +50,13 @@ def submit_task(task_type: str, task_data: Dict[str, Any], priority: int = 0) ->
     Returns:
         bool: 是否提交成功
     """
+    global QUEUE_RUNNING
+    
+    # 检查队列是否运行，如果未运行则返回False，让调用方回退到直接调用模式
+    if not QUEUE_RUNNING:
+        print(f"⚠️ 任务队列未启动（QUEUE_RUNNING=False），无法提交任务到队列，将回退到直接调用模式")
+        return False
+    
     try:
         queue_instance = _init_queue()
         if queue_instance.full():
@@ -153,19 +160,45 @@ def process_comfyui_task(task_data: Dict[str, Any]) -> bool:
     try:
         from app.services.workflow_service import create_ai_task
         
-        # 调用create_ai_task（内部已有防重复提交和限流机制）
-        success, task, error_message = create_ai_task(
-            order_id=task_data.get('order_id'),
-            style_category_id=task_data.get('style_category_id'),
-            style_image_id=task_data.get('style_image_id'),
-            order_image_id=task_data.get('order_image_id'),  # 支持指定处理哪张图片
-            **task_data.get('kwargs', {})
-        )
+        order_id = task_data.get('order_id')
+        print(f"📦 开始处理ComfyUI任务，订单ID: {order_id}")
         
-        return success
+        # 获取应用实例（从test_server模块）
+        app_instance = None
+        import sys
+        if 'test_server' in sys.modules:
+            test_server_module = sys.modules['test_server']
+            if hasattr(test_server_module, 'app'):
+                app_instance = test_server_module.app
+        
+        if not app_instance:
+            print(f"❌ 无法获取应用实例，无法处理ComfyUI任务，订单ID: {order_id}")
+            return False
+        
+        # 在应用上下文中调用create_ai_task
+        with app_instance.app_context():
+            # 调用create_ai_task（内部已有防重复提交和限流机制）
+            success, task, error_message = create_ai_task(
+                order_id=order_id,
+                style_category_id=task_data.get('style_category_id'),
+                style_image_id=task_data.get('style_image_id'),
+                order_image_id=task_data.get('order_image_id'),  # 支持指定处理哪张图片
+                **task_data.get('kwargs', {})
+            )
+            
+            if success and task:
+                print(f"✅ ComfyUI任务处理成功，任务ID: {task.id}, 订单ID: {order_id}")
+            elif success and not task:
+                print(f"⚠️ ComfyUI任务处理返回成功但任务对象为空，订单ID: {order_id}")
+            else:
+                print(f"❌ ComfyUI任务处理失败: {error_message}, 订单ID: {order_id}")
+            
+            return success and task is not None
         
     except Exception as e:
-        print(f"❌ 处理ComfyUI任务失败: {str(e)}")
+        print(f"❌ 处理ComfyUI任务异常: {str(e)}, 订单ID: {task_data.get('order_id')}")
+        import traceback
+        traceback.print_exc()
         return False
 
 
@@ -182,21 +215,37 @@ def process_api_task(task_data: Dict[str, Any]) -> bool:
     try:
         from app.services.ai_provider_service import create_api_task
         
-        # 调用create_api_task（内部已有限流机制）
-        success, task, error_message = create_api_task(
-            style_image_id=task_data.get('style_image_id'),
-            prompt=task_data.get('prompt'),
-            image_size=task_data.get('image_size', '1K'),
-            aspect_ratio=task_data.get('aspect_ratio', 'auto'),
-            uploaded_images=task_data.get('uploaded_images'),
-            api_config_id=task_data.get('api_config_id'),
-            **task_data.get('kwargs', {})
-        )
+        # 获取应用实例（从test_server模块）
+        app_instance = None
+        import sys
+        if 'test_server' in sys.modules:
+            test_server_module = sys.modules['test_server']
+            if hasattr(test_server_module, 'app'):
+                app_instance = test_server_module.app
         
-        return success
+        if not app_instance:
+            print(f"❌ 无法获取应用实例，无法处理API任务")
+            return False
+        
+        # 在应用上下文中调用create_api_task
+        with app_instance.app_context():
+            # 调用create_api_task（内部已有限流机制）
+            success, task, error_message = create_api_task(
+                style_image_id=task_data.get('style_image_id'),
+                prompt=task_data.get('prompt'),
+                image_size=task_data.get('image_size', '1K'),
+                aspect_ratio=task_data.get('aspect_ratio', 'auto'),
+                uploaded_images=task_data.get('uploaded_images'),
+                api_config_id=task_data.get('api_config_id'),
+                **task_data.get('kwargs', {})
+            )
+            
+            return success
         
     except Exception as e:
-        print(f"❌ 处理API任务失败: {str(e)}")
+        print(f"❌ 处理API任务异常: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return False
 
 

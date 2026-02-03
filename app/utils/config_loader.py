@@ -80,3 +80,48 @@ def get_brand_name(db=None, AIConfig=None):
         str: 品牌名称，默认为 'AI拍照机'
     """
     return get_config_value('brand_name', 'AI拍照机', db, AIConfig)
+
+
+def get_image_upload_config(db=None, AIConfig=None):
+    """
+    获取图片上传配置
+    
+    Returns:
+        dict: 包含图片上传策略和环境的字典
+    """
+    return {
+        'strategy': get_config_value('image_upload_strategy', 'grsai', db, AIConfig),
+        'environment': get_config_value('image_upload_environment', 'local', db, AIConfig)
+    }
+
+
+def should_upload_to_grsai(image_url=None, db=None, AIConfig=None):
+    """
+    判断是否应该上传图片到GRSAI服务器
+    
+    Args:
+        image_url: 图片URL（可选，用于判断是否已经是云端URL）
+        db: 数据库实例（可选）
+        AIConfig: AIConfig模型类（可选）
+    
+    Returns:
+        bool: True表示应该上传到GRSAI，False表示直接使用现有URL
+    """
+    config = get_image_upload_config(db, AIConfig)
+    
+    # 如果配置为直接使用云端URL，且图片URL已经是云端URL（http://或https://开头），则不上传
+    if config['strategy'] == 'direct':
+        if image_url and (image_url.startswith('http://') or image_url.startswith('https://')):
+            # 检查是否是本地路径（如 /uploads/xxx）
+            if not image_url.startswith('/uploads/') and not image_url.startswith('/media/'):
+                return False
+    
+    # 如果配置为上传到GRSAI，或者图片是本地路径，则需要上传
+    if config['strategy'] == 'grsai':
+        return True
+    
+    # 默认情况下，如果是本地路径，需要上传
+    if image_url and (image_url.startswith('/uploads/') or image_url.startswith('/media/')):
+        return True
+    
+    return False
