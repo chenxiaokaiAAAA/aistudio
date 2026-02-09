@@ -697,10 +697,8 @@ def run_winscp(local_dir, remote_dir):
     winscp_script = f"""open sftp://{REMOTE_USER}@{REMOTE_HOST}/ -privatekey="{key_path_escaped}" -hostkey="*"
 option batch abort
 option confirm off
-# 设置传输模式为"覆盖所有文件"（强制覆盖，即使远程文件较新）
-option transfer overwrite
-# 同步并删除远程多余的文件（完全同步）
-synchronize remote -delete "{local_path}" "{remote_path}"
+# 同步本地到远程，-delete 删除远程多余文件，-mirror 强制覆盖（含较新的远程文件）
+synchronize remote -delete -mirror "{local_path}" "{remote_path}"
 close
 exit
 """
