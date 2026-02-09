@@ -44,10 +44,10 @@ USE_SCP = False
 
 # 同步选项对应的目录映射
 SYNC_OPTIONS = {
-    "1": {
+        "1": {
         "name": "仅同步数据库",
         "dirs": ["instance"],
-        "description": "同步数据库文件 (instance/pet_painting.db)"
+        "description": "同步数据库 (PostgreSQL/SQLite)"
     },
     "2": {
         "name": "仅同步图片",
@@ -65,6 +65,76 @@ SYNC_OPTIONS = {
         "description": "同步数据库+图片（代码通过Git）"
     }
 }
+
+def load_database_url():
+    """从 .env 或环境变量加载 DATABASE_URL"""
+    db_url = os.environ.get("DATABASE_URL", "")
+    if not db_url:
+        env_path = os.path.join(LOCAL_PROJECT_PATH, ".env")
+        if os.path.exists(env_path):
+            with open(env_path, "r", encoding="utf-8") as f:
+                for line in f:
+                    if line.strip().startswith("DATABASE_URL="):
+                        db_url = line.split("=", 1)[1].strip().strip("'\"")
+                        break
+    return db_url
+
+
+def sync_postgresql_to_remote():
+    """使用 pg_dump + scp + psql 同步 PostgreSQL 到远程服务器"""
+    db_url = load_database_url()
+    if not db_url or "postgresql" not in db_url:
+        return False
+    try:
+        from urllib.parse import urlparse
+        parsed = urlparse(db_url)
+        pg_user = parsed.username or "postgres"
+        pg_pass = parsed.password or ""
+        pg_host = parsed.hostname or "localhost"
+        pg_port = parsed.port or 5432
+        pg_db = parsed.path.lstrip("/").split("?")[0] or "pet_painting"
+    except Exception as e:
+        print(f"   [错误] 解析 DATABASE_URL 失败: {e}")
+        return False
+    dump_path = os.path.join(LOCAL_PROJECT_PATH, "instance", "pet_painting_dump_temp.sql")
+    remote_dump = f"{REMOTE_PROJECT_PATH}/instance/pet_painting_dump_temp.sql"
+    os.makedirs(os.path.dirname(dump_path), exist_ok=True)
+    print(f"   数据库类型: PostgreSQL")
+    print(f"   导出本地数据库...")
+    env = os.environ.copy()
+    env["PGPASSWORD"] = pg_pass
+    r = subprocess.run(
+        ["pg_dump", "-h", pg_host, "-p", str(pg_port), "-U", pg_user, "-d", pg_db, "-F", "p", "-f", dump_path],
+        env=env, capture_output=True, text=True, timeout=3600, encoding="utf-8", errors="replace"
+    )
+    if r.returncode != 0:
+        print(f"   [错误] pg_dump 失败: {r.stderr or r.stdout}")
+        return False
+    size_mb = os.path.getsize(dump_path) / (1024 * 1024)
+    print(f"   导出完成: {size_mb:.2f} MB")
+    print(f"   上传到服务器...")
+    key_file = PEM_PATH if os.path.exists(PEM_PATH) else KEY_PATH
+    ssh_key = f'-i "{key_file}"' if os.path.exists(key_file) and key_file.endswith(".pem") else ""
+    scp_cmd = f'scp {ssh_key} "{dump_path}" {REMOTE_USER}@{REMOTE_HOST}:{remote_dump}'
+    r2 = subprocess.run(scp_cmd, shell=True, capture_output=True, text=True, timeout=300, cwd=LOCAL_PROJECT_PATH)
+    try:
+        os.remove(dump_path)
+    except Exception:
+        pass
+    if r2.returncode != 0:
+        print(f"   [错误] 上传失败: {r2.stderr or r2.stdout}")
+        return False
+    print(f"   在服务器上恢复...")
+    pass_esc = pg_pass.replace("'", "'\"'\"'")
+    restore_cmd = f"cd {REMOTE_PROJECT_PATH} && PGPASSWORD='{pass_esc}' psql -h localhost -p {pg_port} -U {pg_user} -d {pg_db} -f instance/pet_painting_dump_temp.sql -q 2>/dev/null; rm -f instance/pet_painting_dump_temp.sql"
+    ssh_cmd = f'ssh {ssh_key} -o StrictHostKeyChecking=no {REMOTE_USER}@{REMOTE_HOST} "{restore_cmd}"'
+    r3 = subprocess.run(ssh_cmd, shell=True, capture_output=True, text=True, timeout=600, cwd=LOCAL_PROJECT_PATH)
+    if r3.returncode == 0:
+        print(f"   [OK] PostgreSQL 同步完成")
+        return True
+    print(f"   [警告] 恢复可能未完全成功，请检查服务器")
+    return True
+
 
 def check_remote_rsync():
     """检查远程服务器是否安装了 rsync"""
@@ -1096,6 +1166,20 @@ def main():
         local_dir = os.path.join(LOCAL_PROJECT_PATH, dir_name)
         # 远程路径使用正斜杠（避免 Windows 的 os.path.join 产生反斜杠）
         remote_dir = f"{REMOTE_PROJECT_PATH}/{dir_name}"
+        
+        # 数据库目录：根据 DATABASE_URL 判断 PostgreSQL 或 SQLite
+        if dir_name == "instance":
+            db_url = load_database_url()
+            if db_url and "postgresql" in db_url:
+                print(f"\n🔄 正在同步: {dir_name} (PostgreSQL)")
+                if sync_postgresql_to_remote():
+                    sync_log.append(f"✅  {dir_name}: PostgreSQL 同步成功")
+                else:
+                    sync_log.append(f"⚠️  {dir_name}: PostgreSQL 同步失败")
+                continue
+            # SQLite: 继续下面的目录同步逻辑
+            if not os.path.exists(local_dir):
+                os.makedirs(local_dir, exist_ok=True)
         
         if not os.path.exists(local_dir):
             print(f"\n⚠️  本地目录 {dir_name} 不存在，跳过同步")
