@@ -1,56 +1,52 @@
 """
 优惠券相关API路由模块
 """
-from flask import Blueprint, request, jsonify
-from flask_login import login_required
-from datetime import datetime
+
+import logging
+
+logger = logging.getLogger(__name__)
 import sys
+from datetime import datetime
+
+from flask import Blueprint, jsonify, request
+from flask_login import login_required
+
+# 统一导入公共函数
+from app.utils.admin_helpers import get_models
 
 # 创建蓝图
-coupon_api_bp = Blueprint('coupon_api', __name__, url_prefix='/api/coupons')
+coupon_api_bp = Blueprint("coupon_api", __name__, url_prefix="/api/coupons")
 
-def get_models():
-    """延迟导入数据库模型，避免循环导入"""
-    try:
-        test_server = sys.modules.get('test_server')
-        if test_server:
-            return {
-                'Coupon': test_server.Coupon,
-                'UserCoupon': test_server.UserCoupon,
-                'db': test_server.db
-            }
-        return None
-    except Exception as e:
-        print(f"⚠️ 获取数据库模型失败: {e}")
-        return None
 
 def get_utils():
     """延迟导入工具函数"""
     try:
         from app.utils.helpers import (
-            user_get_coupon,
-            use_coupon,
-            can_use_coupon,
             calculate_discount_amount,
-            create_coupon
+            can_use_coupon,
+            create_coupon,
+            use_coupon,
+            user_get_coupon,
         )
+
         return {
-            'user_get_coupon': user_get_coupon,
-            'use_coupon': use_coupon,
-            'can_use_coupon': can_use_coupon,
-            'calculate_discount_amount': calculate_discount_amount,
-            'create_coupon': create_coupon
+            "user_get_coupon": user_get_coupon,
+            "use_coupon": use_coupon,
+            "can_use_coupon": can_use_coupon,
+            "calculate_discount_amount": calculate_discount_amount,
+            "create_coupon": create_coupon,
         }
     except ImportError as e:
-        print(f"⚠️ 导入工具函数失败: {e}")
+        logger.warning("导入工具函数失败: {e}")
         return None
 
-@coupon_api_bp.route('/test', methods=['GET'])
+
+@coupon_api_bp.route("/test", methods=["GET"])
 def test_coupons():
     """测试优惠券接口 - 返回固定数据"""
     try:
-        print("🔍 收到优惠券测试请求")
-        
+        logger.info("🔍 收到优惠券测试请求")
+
         # 返回测试数据
         test_coupons = [
             {
@@ -65,7 +61,7 @@ def test_coupons():
                 "can_claim": True,
                 "remaining_count": 100,
                 "per_user_limit": 1,
-                "user_claimed_count": 0
+                "user_claimed_count": 0,
             },
             {
                 "id": 2,
@@ -79,390 +75,369 @@ def test_coupons():
                 "can_claim": True,
                 "remaining_count": 50,
                 "per_user_limit": 2,
-                "user_claimed_count": 0
-            }
+                "user_claimed_count": 0,
+            },
         ]
-        
-        return jsonify({
-            'success': True,
-            'data': test_coupons,
-            'total': len(test_coupons),
-            'message': '测试数据'
-        })
-        
-    except Exception as e:
-        print(f"❌ 测试接口错误: {str(e)}")
-        return jsonify({
-            'success': False,
-            'message': f'测试接口错误: {str(e)}'
-        }), 500
 
-@coupon_api_bp.route('/debug', methods=['GET'])
+        return jsonify(
+            {
+                "success": True,
+                "data": test_coupons,
+                "total": len(test_coupons),
+                "message": "测试数据",
+            }
+        )
+
+    except Exception as e:
+        logger.error("测试接口错误: {str(e)}")
+        return jsonify({"success": False, "message": f"测试接口错误: {str(e)}"}), 500
+
+
+@coupon_api_bp.route("/debug", methods=["GET"])
 def debug_coupons():
     """调试优惠券接口 - 记录所有请求信息"""
     try:
-        user_id = request.args.get('userId')
-        print(f"🔍 收到优惠券调试请求:")
-        print(f"  用户ID: {user_id}")
-        print(f"  请求头: {dict(request.headers)}")
-        print(f"  请求参数: {request.args}")
-        print(f"  请求方法: {request.method}")
-        print(f"  请求路径: {request.path}")
-        
-        # 返回调试信息
-        return jsonify({
-            'success': True,
-            'message': '调试信息已记录',
-            'debug_info': {
-                'user_id': user_id,
-                'request_args': dict(request.args),
-                'request_headers': dict(request.headers),
-                'request_method': request.method,
-                'request_path': request.path,
-                'timestamp': datetime.now().isoformat()
-            }
-        })
-        
-    except Exception as e:
-        print(f"❌ 调试接口错误: {str(e)}")
-        return jsonify({
-            'success': False,
-            'message': f'调试接口错误: {str(e)}'
-        }), 500
+        user_id = request.args.get("userId")
+        logger.info("🔍 收到优惠券调试请求:")
+        logger.info(f"  用户ID: {user_id}")
+        logger.info(f"  请求头: {dict(request.headers)}")
+        logger.info(f"  请求参数: {request.args}")
+        logger.info(f"  请求方法: {request.method}")
+        logger.info(f"  请求路径: {request.path}")
 
-@coupon_api_bp.route('/list', methods=['GET'])
+        # 返回调试信息
+        return jsonify(
+            {
+                "success": True,
+                "message": "调试信息已记录",
+                "debug_info": {
+                    "user_id": user_id,
+                    "request_args": dict(request.args),
+                    "request_headers": dict(request.headers),
+                    "request_method": request.method,
+                    "request_path": request.path,
+                    "timestamp": datetime.now().isoformat(),
+                },
+            }
+        )
+
+    except Exception as e:
+        logger.error("调试接口错误: {str(e)}")
+        return jsonify({"success": False, "message": f"调试接口错误: {str(e)}"}), 500
+
+
+@coupon_api_bp.route("/list", methods=["GET"])
 def get_coupons_list():
     """获取优惠券列表"""
     try:
         models = get_models()
         if not models:
-            return jsonify({
-                'success': False,
-                'message': '数据库模型未初始化'
-            }), 500
-        
-        Coupon = models['Coupon']
-        UserCoupon = models['UserCoupon']
-        
-        status = request.args.get('status', 'active')
-        page = int(request.args.get('page', 1))
-        per_page = int(request.args.get('per_page', 10))
-        
+            return jsonify({"success": False, "message": "数据库模型未初始化"}), 500
+
+        Coupon = models["Coupon"]
+        UserCoupon = models["UserCoupon"]
+        db = models["db"]
+
+        status = request.args.get("status", "active")
+        page = int(request.args.get("page", 1))
+        per_page = int(request.args.get("per_page", 10))
+
         query = Coupon.query
         # 如果请求所有状态，不过滤；否则只过滤status字段
         # 注意：过期状态需要根据end_time判断，这里只过滤status字段
-        if status != 'all':
+        if status != "all":
             query = query.filter_by(status=status)
-        
-        coupons = query.paginate(
-            page=page, 
-            per_page=per_page, 
-            error_out=False
-        )
-        
+
+        coupons = query.paginate(page=page, per_page=per_page, error_out=False)
+
+        # 优化N+1查询：批量查询所有优惠券的已领取数量
+        coupon_ids = [coupon.id for coupon in coupons.items]
+        claimed_counts_map = {}
+        if coupon_ids:
+            from sqlalchemy import func
+
+            claimed_counts = (
+                db.session.query(UserCoupon.coupon_id, func.count(UserCoupon.id).label("count"))
+                .filter(UserCoupon.coupon_id.in_(coupon_ids))
+                .group_by(UserCoupon.coupon_id)
+                .all()
+            )
+            for coupon_id, count in claimed_counts:
+                claimed_counts_map[coupon_id] = count
+
         result = []
         for coupon in coupons.items:
-            # 已领取数量（claimed_count）：user_coupons 记录数
+            # 已领取数量（claimed_count）：从批量查询的映射中获取（避免N+1查询）
             # 获取source_type等新字段（如果存在）
-            source_type = getattr(coupon, 'source_type', 'system')
-            groupon_order_id = getattr(coupon, 'groupon_order_id', None)
-            is_random_code = getattr(coupon, 'is_random_code', False)
-            claimed_count = UserCoupon.query.filter_by(coupon_id=coupon.id).count()
+            source_type = getattr(coupon, "source_type", "system")
+            groupon_order_id = getattr(coupon, "groupon_order_id", None)
+            is_random_code = getattr(coupon, "is_random_code", False)
+            claimed_count = claimed_counts_map.get(coupon.id, 0)
             # 已使用数量（used_count）：保持现有字段含义
             used_count = coupon.used_count or 0
             # 剩余可领取数量：总数 - 已领取
             remaining_count = max(0, (coupon.total_count or 0) - claimed_count)
 
-            result.append({
-                'id': coupon.id,
-                'name': coupon.name,
-                'code': coupon.code,
-                'type': coupon.type,
-                'value': coupon.value,
-                'min_amount': coupon.min_amount,
-                'max_discount': coupon.max_discount,
-                'total_count': coupon.total_count,
-                'claimed_count': claimed_count,
-                'used_count': used_count,
-                'per_user_limit': coupon.per_user_limit,
-                'start_time': coupon.start_time.isoformat(),
-                'end_time': coupon.end_time.isoformat(),
-                'status': coupon.status,
-                'description': coupon.description,
-                'remaining_count': remaining_count,
-                # 新增字段
-                'source_type': source_type,
-                'groupon_order_id': groupon_order_id,
-                'is_random_code': is_random_code
-            })
-        
-        return jsonify({
-            'success': True,
-            'data': result,
-            'total': coupons.total,
-            'page': page,
-            'per_page': per_page,
-            'pages': coupons.pages
-        })
-        
-    except Exception as e:
-        return jsonify({
-            'success': False,
-            'message': f'获取优惠券列表失败: {str(e)}'
-        }), 500
+            result.append(
+                {
+                    "id": coupon.id,
+                    "name": coupon.name,
+                    "code": coupon.code,
+                    "type": coupon.type,
+                    "value": coupon.value,
+                    "min_amount": coupon.min_amount,
+                    "max_discount": coupon.max_discount,
+                    "total_count": coupon.total_count,
+                    "claimed_count": claimed_count,
+                    "used_count": used_count,
+                    "per_user_limit": coupon.per_user_limit,
+                    "start_time": coupon.start_time.isoformat(),
+                    "end_time": coupon.end_time.isoformat(),
+                    "status": coupon.status,
+                    "description": coupon.description,
+                    "remaining_count": remaining_count,
+                    # 新增字段
+                    "source_type": source_type,
+                    "groupon_order_id": groupon_order_id,
+                    "is_random_code": is_random_code,
+                }
+            )
 
-@coupon_api_bp.route('/user/<user_id>', methods=['GET'])
+        return jsonify(
+            {
+                "success": True,
+                "data": result,
+                "total": coupons.total,
+                "page": page,
+                "per_page": per_page,
+                "pages": coupons.pages,
+            }
+        )
+
+    except Exception as e:
+        return jsonify({"success": False, "message": f"获取优惠券列表失败: {str(e)}"}), 500
+
+
+@coupon_api_bp.route("/user/<user_id>", methods=["GET"])
 def get_user_coupons_api(user_id):
     """获取用户优惠券列表"""
     try:
         models = get_models()
         if not models:
-            return jsonify({
-                'success': False,
-                'message': '数据库模型未初始化'
-            }), 500
-        
-        Coupon = models['Coupon']
-        UserCoupon = models['UserCoupon']
-        
-        status = request.args.get('status', 'unused')
-        
+            return jsonify({"success": False, "message": "数据库模型未初始化"}), 500
+
+        Coupon = models["Coupon"]
+        UserCoupon = models["UserCoupon"]
+
+        status = request.args.get("status", "unused")
+
         query = UserCoupon.query.filter_by(user_id=user_id)
-        if status != 'all':
+        if status != "all":
             query = query.filter_by(status=status)
-        
-        user_coupons = query.join(Coupon).all()
-        
+
+        # 优化：虽然用户优惠券数量通常不多，但为了保持一致性，仍然支持分页
+        page = request.args.get("page", 1, type=int)
+        per_page = request.args.get("per_page", 50, type=int)
+
+        pagination = query.join(Coupon).paginate(page=page, per_page=per_page, error_out=False)
+        user_coupons = pagination.items
+
         result = []
         for uc in user_coupons:
             coupon = uc.coupon
-            result.append({
-                'id': uc.id,
-                'coupon_id': coupon.id,
-                'coupon_name': coupon.name,
-                'coupon_code': coupon.code,
-                'coupon_type': coupon.type,
-                'coupon_value': coupon.value,
-                'min_amount': coupon.min_amount,
-                'max_discount': coupon.max_discount,
-                'status': uc.status,
-                'get_time': uc.get_time.isoformat(),
-                'use_time': uc.use_time.isoformat() if uc.use_time else None,
-                'expire_time': uc.expire_time.isoformat(),
-                'order_id': uc.order_id,
-                'description': coupon.description
-            })
-        
-        return jsonify({
-            'success': True,
-            'data': result
-        })
-        
-    except Exception as e:
-        return jsonify({
-            'success': False,
-            'message': f'获取用户优惠券列表失败: {str(e)}'
-        }), 500
+            result.append(
+                {
+                    "id": uc.id,
+                    "coupon_id": coupon.id,
+                    "coupon_name": coupon.name,
+                    "coupon_code": coupon.code,
+                    "coupon_type": coupon.type,
+                    "coupon_value": coupon.value,
+                    "min_amount": coupon.min_amount,
+                    "max_discount": coupon.max_discount,
+                    "status": uc.status,
+                    "get_time": uc.get_time.isoformat(),
+                    "use_time": uc.use_time.isoformat() if uc.use_time else None,
+                    "expire_time": uc.expire_time.isoformat(),
+                    "order_id": uc.order_id,
+                    "description": coupon.description,
+                }
+            )
 
-@coupon_api_bp.route('/available', methods=['GET'])
+        return jsonify({"success": True, "data": result})
+
+    except Exception as e:
+        return jsonify({"success": False, "message": f"获取用户优惠券列表失败: {str(e)}"}), 500
+
+
+@coupon_api_bp.route("/available", methods=["GET"])
 def get_available_coupons():
     """获取可领取的优惠券列表"""
     try:
         models = get_models()
         if not models:
-            return jsonify({
-                'success': False,
-                'message': '数据库模型未初始化'
-            }), 500
-        
-        Coupon = models['Coupon']
-        UserCoupon = models['UserCoupon']
-        
-        user_id = request.args.get('userId')
-        
+            return jsonify({"success": False, "message": "数据库模型未初始化"}), 500
+
+        Coupon = models["Coupon"]
+        UserCoupon = models["UserCoupon"]
+
+        user_id = request.args.get("userId")
+
         if not user_id:
-            return jsonify({
-                'success': False,
-                'message': '用户ID不能为空'
-            }), 400
-        
+            return jsonify({"success": False, "message": "用户ID不能为空"}), 400
+
         # 查询可领取的优惠券
         now = datetime.now()
         available_coupons = Coupon.query.filter(
-            Coupon.status == 'active',
+            Coupon.status == "active",
             Coupon.start_time <= now,
             Coupon.end_time > now,
-            Coupon.total_count > Coupon.used_count  # 还有剩余数量
+            Coupon.total_count > Coupon.used_count,  # 还有剩余数量
         ).all()
-        
+
+        # 优化N+1查询：批量查询用户已领取的优惠券
+        from sqlalchemy import func
+
+        db = models["db"]
+        coupon_ids = [c.id for c in available_coupons]
+        user_coupon_counts_map = {}
+        if coupon_ids:
+            user_coupon_counts = (
+                db.session.query(UserCoupon.coupon_id, func.count(UserCoupon.id).label("count"))
+                .filter(UserCoupon.user_id == user_id, UserCoupon.coupon_id.in_(coupon_ids))
+                .group_by(UserCoupon.coupon_id)
+                .all()
+            )
+            for coupon_id, count in user_coupon_counts:
+                user_coupon_counts_map[coupon_id] = count
+
         result_coupons = []
         for coupon in available_coupons:
-            # 检查用户是否已经领取过
-            user_coupon_count = UserCoupon.query.filter_by(
-                user_id=user_id,
-                coupon_id=coupon.id
-            ).count()
-            
+            # 从批量查询的映射中获取已领取数量（避免N+1查询）
+            user_coupon_count = user_coupon_counts_map.get(coupon.id, 0)
+
             # 检查是否达到每用户限领数量
             can_claim = user_coupon_count < coupon.per_user_limit
-            
+
             # 计算剩余数量
             remaining_count = max(0, coupon.total_count - coupon.used_count)
-            
+
             # 计算已领取数量（claimed_count）
             claimed_count = UserCoupon.query.filter_by(coupon_id=coupon.id).count()
-            
-            coupon_info = {
-                'id': coupon.id,
-                'name': coupon.name,
-                'code': coupon.code,
-                'type': coupon.type,
-                'value': coupon.value,
-                'min_amount': coupon.min_amount,
-                'max_discount': coupon.max_discount,
-                'description': coupon.description,
-                'start_time': coupon.start_time.isoformat(),
-                'end_time': coupon.end_time.isoformat(),
-                'total_count': coupon.total_count,
-                'used_count': coupon.used_count,
-                'claimed_count': claimed_count,
-                'remaining_count': remaining_count,
-                'per_user_limit': coupon.per_user_limit,
-                'user_claimed_count': user_coupon_count,
-                'can_claim': can_claim,
-                'status': coupon.status
-            }
-            
-            result_coupons.append(coupon_info)
-        
-        return jsonify({
-            'success': True,
-            'data': result_coupons,
-            'total': len(result_coupons)
-        })
-        
-    except Exception as e:
-        return jsonify({
-            'success': False,
-            'message': f'获取可领取优惠券失败: {str(e)}'
-        }), 500
 
-@coupon_api_bp.route('/get', methods=['POST'])
+            coupon_info = {
+                "id": coupon.id,
+                "name": coupon.name,
+                "code": coupon.code,
+                "type": coupon.type,
+                "value": coupon.value,
+                "min_amount": coupon.min_amount,
+                "max_discount": coupon.max_discount,
+                "description": coupon.description,
+                "start_time": coupon.start_time.isoformat(),
+                "end_time": coupon.end_time.isoformat(),
+                "total_count": coupon.total_count,
+                "used_count": coupon.used_count,
+                "claimed_count": claimed_count,
+                "remaining_count": remaining_count,
+                "per_user_limit": coupon.per_user_limit,
+                "user_claimed_count": user_coupon_count,
+                "can_claim": can_claim,
+                "status": coupon.status,
+            }
+
+            result_coupons.append(coupon_info)
+
+        return jsonify({"success": True, "data": result_coupons, "total": len(result_coupons)})
+
+    except Exception as e:
+        return jsonify({"success": False, "message": f"获取可领取优惠券失败: {str(e)}"}), 500
+
+
+@coupon_api_bp.route("/get", methods=["POST"])
 def get_coupon():
     """用户领取优惠券"""
     try:
         utils = get_utils()
         if not utils:
-            return jsonify({
-                'success': False,
-                'message': '工具函数未初始化'
-            }), 500
-        
-        user_get_coupon = utils['user_get_coupon']
-        
-        data = request.get_json()
-        user_id = data.get('userId')
-        coupon_id = data.get('couponId')
-        
-        if not user_id or not coupon_id:
-            return jsonify({
-                'success': False,
-                'message': '用户ID和优惠券ID不能为空'
-            }), 400
-        
-        success, message = user_get_coupon(user_id, coupon_id)
-        
-        return jsonify({
-            'success': success,
-            'message': message
-        })
-        
-    except Exception as e:
-        return jsonify({
-            'success': False,
-            'message': f'领取优惠券失败: {str(e)}'
-        }), 500
+            return jsonify({"success": False, "message": "工具函数未初始化"}), 500
 
-@coupon_api_bp.route('/validate', methods=['POST'])
+        user_get_coupon = utils["user_get_coupon"]
+
+        data = request.get_json()
+        user_id = data.get("userId")
+        coupon_id = data.get("couponId")
+
+        if not user_id or not coupon_id:
+            return jsonify({"success": False, "message": "用户ID和优惠券ID不能为空"}), 400
+
+        success, message = user_get_coupon(user_id, coupon_id)
+
+        return jsonify({"success": success, "message": message})
+
+    except Exception as e:
+        return jsonify({"success": False, "message": f"领取优惠券失败: {str(e)}"}), 500
+
+
+@coupon_api_bp.route("/validate", methods=["POST"])
 def validate_coupon():
     """验证优惠券"""
     try:
         utils = get_utils()
         if not utils:
-            return jsonify({
-                'success': False,
-                'message': '工具函数未初始化'
-            }), 500
-        
-        can_use_coupon = utils['can_use_coupon']
-        calculate_discount_amount = utils['calculate_discount_amount']
-        
+            return jsonify({"success": False, "message": "工具函数未初始化"}), 500
+
+        can_use_coupon = utils["can_use_coupon"]
+        calculate_discount_amount = utils["calculate_discount_amount"]
+
         data = request.get_json()
-        user_id = data.get('userId')
-        coupon_code = data.get('couponCode')
-        order_amount = float(data.get('orderAmount', 0))
-        
+        user_id = data.get("userId")
+        coupon_code = data.get("couponCode")
+        order_amount = float(data.get("orderAmount", 0))
+
         if not user_id or not coupon_code:
-            return jsonify({
-                'success': False,
-                'message': '用户ID和优惠券代码不能为空'
-            }), 400
-        
+            return jsonify({"success": False, "message": "用户ID和优惠券代码不能为空"}), 400
+
         can_use, message = can_use_coupon(user_id, coupon_code, order_amount)
-        
+
         if can_use:
             discount_amount = calculate_discount_amount(coupon_code, order_amount)
-            return jsonify({
-                'success': True,
-                'message': message,
-                'discount_amount': discount_amount,
-                'final_amount': order_amount - discount_amount
-            })
+            return jsonify(
+                {
+                    "success": True,
+                    "message": message,
+                    "discount_amount": discount_amount,
+                    "final_amount": order_amount - discount_amount,
+                }
+            )
         else:
-            return jsonify({
-                'success': False,
-                'message': message
-            })
-        
-    except Exception as e:
-        return jsonify({
-            'success': False,
-            'message': f'验证优惠券失败: {str(e)}'
-        }), 500
+            return jsonify({"success": False, "message": message})
 
-@coupon_api_bp.route('/use', methods=['POST'])
+    except Exception as e:
+        return jsonify({"success": False, "message": f"验证优惠券失败: {str(e)}"}), 500
+
+
+@coupon_api_bp.route("/use", methods=["POST"])
 def use_coupon_api():
     """使用优惠券"""
     try:
         utils = get_utils()
         if not utils:
-            return jsonify({
-                'success': False,
-                'message': '工具函数未初始化'
-            }), 500
-        
-        use_coupon = utils['use_coupon']
-        
+            return jsonify({"success": False, "message": "工具函数未初始化"}), 500
+
+        use_coupon = utils["use_coupon"]
+
         data = request.get_json()
-        user_id = data.get('userId')
-        coupon_code = data.get('couponCode')
-        order_id = data.get('orderId')
-        
+        user_id = data.get("userId")
+        coupon_code = data.get("couponCode")
+        order_id = data.get("orderId")
+
         if not user_id or not coupon_code or not order_id:
-            return jsonify({
-                'success': False,
-                'message': '用户ID、优惠券代码和订单ID不能为空'
-            }), 400
-        
+            return jsonify({"success": False, "message": "用户ID、优惠券代码和订单ID不能为空"}), 400
+
         success, message = use_coupon(user_id, coupon_code, order_id)
-        
-        return jsonify({
-            'success': success,
-            'message': message
-        })
-        
+
+        return jsonify({"success": success, "message": message})
+
     except Exception as e:
-        return jsonify({
-            'success': False,
-            'message': f'使用优惠券失败: {str(e)}'
-        }), 500
+        return jsonify({"success": False, "message": f"使用优惠券失败: {str(e)}"}), 500

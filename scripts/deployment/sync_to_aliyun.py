@@ -585,12 +585,25 @@ def run_winscp(local_dir, remote_dir):
         print(f"    [警告] 使用 PEM 密钥文件（WinSCP 可能不支持，建议转换为 PPK）: {KEY_PATH}")
     
     # WinSCP 脚本格式：每行一个命令
-    # 注意：WinSCP 的 synchronize remote 命令会同步目录内容
-    # 如果本地路径是 E:/path/uploads/，远程路径是 /root/project_code/uploads/
-    # 它会把本地 uploads 目录的内容同步到远程 uploads 目录
-    # 使用 -delete 选项可以删除远程多余的文件，但这里不使用（避免误删）
+    # 注意：WinSCP 的 synchronize remote 命令默认只同步新文件或更新的文件
+    # 不会覆盖未修改的文件（即使内容不同）
+    # 
+    # 为了强制覆盖所有文件，我们需要：
+    # 1. 设置 option transfer 为 "overwrite" 模式（覆盖所有文件）
+    # 2. 使用 synchronize remote -delete 来确保完全同步
+    # 
+    # WinSCP 的 transfer 选项：
+    # - overwrite: 覆盖所有文件（即使远程较新）
+    # - resume: 断点续传（默认）
+    # - ascii: ASCII模式
+    # - binary: 二进制模式（默认）
     winscp_script = f"""open sftp://{REMOTE_USER}@{REMOTE_HOST}/ -privatekey="{key_path_escaped}" -hostkey="*"
-synchronize remote "{local_path}" "{remote_path}"
+option batch abort
+option confirm off
+# 设置传输模式为"覆盖所有文件"（强制覆盖，即使远程文件较新）
+option transfer overwrite
+# 同步并删除远程多余的文件（完全同步）
+synchronize remote -delete "{local_path}" "{remote_path}"
 close
 exit
 """

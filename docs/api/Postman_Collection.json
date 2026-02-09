@@ -1,0 +1,112 @@
+{
+  "info": {
+    "name": "AI-Studio API",
+    "description": "AI-Studio 项目 API 接口集合\n\n包含：小程序、选片、支付等主要接口",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {"key": "base_url", "value": "http://localhost:8000"},
+    {"key": "openid", "value": "test_openid"},
+    {"key": "order_id", "value": "1"}
+  ],
+  "item": [
+    {
+      "name": "小程序",
+      "item": [
+        {
+          "name": "获取产品分类",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/miniprogram/product-categories"
+          }
+        },
+        {
+          "name": "获取产品列表",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/miniprogram/products"
+          }
+        },
+        {
+          "name": "获取风格列表",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/miniprogram/styles"
+          }
+        },
+        {
+          "name": "获取轮播图",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/miniprogram/banners"
+          }
+        },
+        {
+          "name": "获取订单列表",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/miniprogram/orders?openid={{openid}}"
+          }
+        },
+        {
+          "name": "创建订单",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"openid\": \"{{openid}}\",\n  \"items\": [{\"product_id\": 1, \"size_id\": 1, \"style_id\": 1, \"quantity\": 1, \"price\": 99}],\n  \"customer_name\": \"测试\",\n  \"customer_phone\": \"13800138000\",\n  \"order_mode\": \"making\",\n  \"franchisee_id\": 1\n}"
+            },
+            "url": "{{base_url}}/api/miniprogram/orders"
+          }
+        },
+        {
+          "name": "更新订单状态",
+          "request": {
+            "method": "PUT",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"status\": \"manufacturing\", \"statusText\": \"制作中\"}"
+            },
+            "url": "{{base_url}}/api/miniprogram/orders/{{order_id}}/status"
+          }
+        }
+      ]
+    },
+    {
+      "name": "选片",
+      "item": [
+        {
+          "name": "查询订单",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"13800138000\",\n  \"order_number\": \"\",\n  \"franchisee_id\": 1\n}"
+            },
+            "url": "{{base_url}}/api/photo-selection/search-orders"
+          }
+        }
+      ]
+    },
+    {
+      "name": "支付",
+      "item": [
+        {
+          "name": "创建支付订单",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"order_number\": \"MP20260206001\",\n  \"openid\": \"{{openid}}\",\n  \"total_amount\": 99.00\n}"
+            },
+            "url": "{{base_url}}/api/payment/create"
+          }
+        }
+      ]
+    }
+  ]
+}

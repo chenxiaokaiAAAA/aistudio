@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API 接口文档 - AI-Studio</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+        .docs-header {
+            position: relative;
+            z-index: 100;
+            flex-shrink: 0;
+            background: #2c3e50;
+            color: #fff;
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        .docs-header h1 { margin: 0; font-size: 1.25rem; }
+        .docs-tabs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin: 0;
+            padding: 0;
+            list-style: none;
+        }
+        .docs-tabs a {
+            display: block;
+            padding: 8px 16px;
+            background: rgba(255,255,255,0.15);
+            color: #fff;
+            text-decoration: none;
+            border-radius: 4px;
+            font-size: 14px;
+            transition: background 0.2s;
+            cursor: pointer;
+        }
+        .docs-tabs a:hover { background: rgba(255,255,255,0.25); }
+        .docs-tabs a.active { background: #3498db; }
+        .docs-frame {
+            width: 100%;
+            flex: 1;
+            min-height: 400px;
+            border: none;
+            display: block;
+        }
+        .docs-hint {
+            flex-shrink: 0;
+            padding: 8px 20px;
+            background: #ecf0f1;
+            font-size: 13px;
+            color: #555;
+        }
+        .docs-wrapper {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+    </style>
+</head>
+<body>
+    <div class="docs-wrapper">
+    <div class="docs-header">
+        <h1>API 接口文档</h1>
+        <nav class="docs-tabs">
+            <a href="#" data-tag="" class="active">全部</a>
+            <a href="#" data-tag="安卓APP">安卓APP</a>
+            <a href="#" data-tag="小程序">小程序</a>
+            <a href="#" data-tag="选片">选片</a>
+            <a href="#" data-tag="支付">支付</a>
+            <a href="#" data-tag="用户">用户</a>
+            <a href="#" data-tag="管理后台">管理后台</a>
+            <a href="#" data-tag="加盟商">加盟商</a>
+            <a href="#" data-tag="其他">其他</a>
+        </nav>
+    </div>
+    <div class="docs-hint">点击上方标签快速筛选模块，下方为完整 API 文档（默认仅展开分类列表，可点击展开查看接口详情）</div>
+    <iframe id="apidocs-frame" name="apidocs" class="docs-frame" src="/apidocs/?url=/apispec.json&docExpansion=list"></iframe>
+    </div>
+    <script>
+        (function() {
+            var specAll = '/apispec.json';
+            var specFiltered = '/apispec-filtered.json';
+            var iframe = document.getElementById('apidocs-frame');
+            var tabs = document.querySelectorAll('.docs-tabs a');
+
+            function getIframeUrl(tag) {
+                var specUrl = tag ? specFiltered + '?tag=' + encodeURIComponent(tag) : specAll;
+                return '/apidocs/?url=' + encodeURIComponent(specUrl) + '&docExpansion=list';
+            }
+
+            tabs.forEach(function(tab) {
+                tab.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    var tag = this.getAttribute('data-tag');
+                    tabs.forEach(function(t) { t.classList.remove('active'); });
+                    this.classList.add('active');
+                    iframe.src = getIframeUrl(tag);
+                });
+            });
+        })();
+    </script>
+</body>
+</html>

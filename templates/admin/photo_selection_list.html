@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>选片页面 - {{ brand_name }}后台</title>
     <link href="/static/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/static/css/ux-components.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         body {
@@ -120,7 +121,7 @@
                                         {% if order.status == 'selection_completed' %}
                                             <span class="badge bg-secondary">已选片</span>
                                         {% elif order.all_tasks_completed and order.effect_images_count > 0 %}
-                                            <a href="{{ url_for('photo_selection.photo_selection_detail', order_id=order.id) }}" 
+                                            <a href="{{ url_for('photo_selection.photo_selection_detail.photo_selection_detail', order_id=order.id) }}" 
                                                class="btn btn-sm btn-selection">
                                                 <i class="fas fa-images"></i> 开始选片
                                             </a>
@@ -170,6 +171,7 @@
     </div>
 
     <script src="/static/js/bootstrap.bundle.min.js"></script>
+    <script src="/static/js/ux-components.js"></script>
     <script>
         let currentFranchiseeId = null;
         let currentToken = null;

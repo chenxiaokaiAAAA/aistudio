@@ -1,0 +1,38 @@
+# Cursor AI 代码规范规则
+
+## 代码风格
+- 使用 Python 3.9+ 语法
+- 遵循 PEP 8 规范
+- 使用类型提示（逐步添加）
+- 行长度限制：100字符
+
+## 命名规范
+- 函数和变量：snake_case
+- 类名：PascalCase
+- 常量：UPPER_SNAKE_CASE
+- 私有方法/属性：_leading_underscore
+
+## 文档规范
+- 所有公共函数必须有docstring
+- 使用Google风格的docstring
+- 包含参数说明和返回值说明
+
+## 类型提示
+- 优先使用 `app.utils.type_hints` 中定义的类型别名
+- 逐步为所有函数添加类型提示
+- 使用 `Optional` 表示可能为None的值
+
+## 错误处理
+- 使用具体的异常类型
+- 记录详细的错误日志
+- 避免使用裸露的 `except:`
+
+## 性能优化
+- 使用 `app.utils.performance_optimizer` 中的优化工具
+- API响应添加缓存头
+- 图片处理使用优化版本
+
+## 导入顺序
+1. 标准库
+2. 第三方库
+3. 本地应用模块

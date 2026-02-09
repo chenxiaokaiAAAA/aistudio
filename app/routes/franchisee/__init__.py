@@ -3,13 +3,17 @@
 加盟商路由模块
 统一注册所有子模块的蓝图
 """
+
+import logging
+
+logger = logging.getLogger(__name__)
 from flask import Blueprint
 
 # 创建主蓝图
-franchisee_bp = Blueprint('franchisee', __name__, url_prefix='/franchisee')
+franchisee_bp = Blueprint("franchisee", __name__, url_prefix="/franchisee")
 
 # 导入并注册所有子模块
-from . import admin, frontend, api, permissions, groupon, coupons
+from . import admin, api, coupons, frontend, groupon, permissions
 
 # 注册子蓝图到主蓝图
 franchisee_bp.register_blueprint(admin.bp)

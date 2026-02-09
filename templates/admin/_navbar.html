@@ -163,7 +163,7 @@
                 <!-- 产品管理下拉菜单 -->
                 {% if has_permission.products or has_permission.shop_products %}
                 <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle {% if request.endpoint and 'sizes' in request.endpoint or request.path == '/admin/sizes' or request.path == '/admin/products' or request.path == '/admin/shop/products' %}active{% endif %}" href="#" id="productsDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    <a class="nav-link dropdown-toggle {% if request.endpoint and 'sizes' in request.endpoint or request.path == '/admin/sizes' or request.path == '/admin/products' or request.path == '/admin/shop/products' or request.path == '/admin/mockup-templates' %}active{% endif %}" href="#" id="productsDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                         产品管理
                     </a>
                     <ul class="dropdown-menu dropdown-menu-dark" aria-labelledby="productsDropdown">
@@ -175,6 +175,11 @@
                         {% if has_permission.shop_products %}
                         <li><a class="dropdown-item {% if request.path == '/admin/shop/products' %}active{% endif %}" href="/admin/shop/products">
                             <i class="fas fa-store me-2"></i>商城产品
+                        </a></li>
+                        {% endif %}
+                        {% if has_permission.products %}
+                        <li><a class="dropdown-item {% if request.path == '/admin/mockup-templates' %}active{% endif %}" href="/admin/mockup-templates">
+                            <i class="fas fa-image me-2"></i>样机套图
                         </a></li>
                         {% endif %}
                     </ul>
@@ -254,6 +259,12 @@
                         {% if has_permission.printer %}
                         <li><a class="dropdown-item {% if request.path == '/admin/printer' %}active{% endif %}" href="/admin/printer">
                             <i class="fas fa-server me-2"></i>打印机管理
+                        </a></li>
+                        {% endif %}
+                        {% if has_permission.system_config %}
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item {% if request.path == '/docs' %}active{% endif %}" href="/docs" target="_blank">
+                            <i class="fas fa-book me-2"></i>API文档
                         </a></li>
                         {% endif %}
                     </ul>

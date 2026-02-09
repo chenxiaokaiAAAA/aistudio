@@ -1,0 +1,510 @@
+{
+  "large_queries": [
+    {
+      "file": "app\\routes\\admin_dashboard_api.py",
+      "line": 112,
+      "code": ").all()"
+    },
+    {
+      "file": "app\\routes\\admin_dashboard_api.py",
+      "line": 229,
+      "code": ").all()"
+    },
+    {
+      "file": "app\\routes\\admin_groupon_api.py",
+      "line": 263,
+      "code": ").order_by(Coupon.create_time.desc()).all()"
+    },
+    {
+      "file": "app\\routes\\admin_groupon_package_api.py",
+      "line": 43,
+      "code": ").all()"
+    },
+    {
+      "file": "app\\routes\\admin_groupon_package_api.py",
+      "line": 286,
+      "code": "platforms = db.session.query(GrouponPackage.platform).distinct().all()"
+    },
+    {
+      "file": "app\\routes\\admin_groupon_verify.py",
+      "line": 138,
+      "code": "franchisees = FranchiseeAccount.query.filter_by(status='active').order_by(FranchiseeAccount.company_name).all()"
+    },
+    {
+      "file": "app\\routes\\admin_groupon_verify.py",
+      "line": 144,
+      "code": "platforms = db.session.query(GrouponPackage.platform).distinct().all()"
+    },
+    {
+      "file": "app\\routes\\admin_homepage_api.py",
+      "line": 35,
+      "code": "banners = HomepageBanner.query.order_by(HomepageBanner.sort_order).all()"
+    },
+    {
+      "file": "app\\routes\\admin_homepage_api.py",
+      "line": 433,
+      "code": "navs = HomepageCategoryNav.query.order_by(HomepageCategoryNav.sort_order).all()"
+    },
+    {
+      "file": "app\\routes\\admin_homepage_api.py",
+      "line": 639,
+      "code": "sections = HomepageProductSection.query.order_by(HomepageProductSection.sort_order).all()"
+    },
+    {
+      "file": "app\\routes\\admin_homepage_api.py",
+      "line": 890,
+      "code": "products = Product.query.filter_by(is_active=True).order_by(Product.sort_order.asc(), Product.id.asc()).all()"
+    },
+    {
+      "file": "app\\routes\\admin_image_cleanup.py",
+      "line": 118,
+      "code": ").all()"
+    },
+    {
+      "file": "app\\routes\\admin_image_cleanup.py",
+      "line": 236,
+      "code": "order_images = OrderImage.query.filter_by(order_id=order.id).all()"
+    },
+    {
+      "file": "app\\routes\\admin_miniprogram_config_api.py",
+      "line": 60,
+      "code": ").all()"
+    },
+    {
+      "file": "app\\routes\\admin_orders_detail_api.py",
+      "line": 59,
+      "code": "all_orders = Order.query.filter_by(order_number=order_number).order_by(Order.created_at.asc()).all()"
+    },
+    {
+      "file": "app\\routes\\admin_orders_detail_api.py",
+      "line": 86,
+      "code": "images = OrderImage.query.filter_by(order_id=order.id).all()"
+    },
+    {
+      "file": "app\\routes\\admin_orders_detail_api.py",
+      "line": 99,
+      "code": "products = Product.query.filter_by(is_active=True).order_by(Product.sort_order).all()"
+    },
+    {
+      "file": "app\\routes\\admin_orders_detail_api.py",
+      "line": 124,
+      "code": "sizes = ProductSize.query.filter_by(is_active=True).order_by(ProductSize.sort_order).all()"
+    },
+    {
+      "file": "app\\routes\\admin_orders_detail_api.py",
+      "line": 143,
+      "code": ").filter(AITask.output_image_path.isnot(None)).order_by(AITask.completed_at.desc()).all()"
+    },
+    {
+      "file": "app\\routes\\admin_orders_detail_api.py",
+      "line": 269,
+      "code": "shop_orders_by_id = ShopOrder.query.filter_by(original_order_id=order.id).all()"
+    },
+    {
+      "file": "app\\routes\\admin_orders_detail_api.py",
+      "line": 277,
+      "code": "shop_orders_by_number = ShopOrder.query.filter_by(original_order_number=order.order_number).all()"
+    },
+    {
+      "file": "app\\routes\\admin_orders_detail_api.py",
+      "line": 635,
+      "code": ").all()"
+    },
+    {
+      "file": "app\\routes\\admin_orders_detail_api.py",
+      "line": 642,
+      "code": "all_tasks = AITask.query.filter(AITask.order_id.in_(order_ids)).all()"
+    },
+    {
+      "file": "app\\routes\\admin_orders_list_api.py",
+      "line": 215,
+      "code": "franchisees = FranchiseeAccount.query.filter_by(status='active').order_by(FranchiseeAccount.company_name).all()"
+    },
+    {
+      "file": "app\\routes\\admin_orders_list_api.py",
+      "line": 235,
+      "code": ").distinct().all()"
+    },
+    {
+      "file": "app\\routes\\admin_polling_config_api.py",
+      "line": 37,
+      "code": "configs = PollingConfig.query.order_by(PollingConfig.id).all()"
+    },
+    {
+      "file": "app\\routes\\admin_print_config_api.py",
+      "line": 31,
+      "code": "ai_configs = AIConfig.query.all()"
+    },
+    {
+      "file": "app\\routes\\admin_print_config_api.py",
+      "line": 114,
+      "code": "ai_configs = AIConfig.query.filter(AIConfig.config_key.like('printer_%')).all()"
+    },
+    {
+      "file": "app\\routes\\admin_print_config_api.py",
+      "line": 525,
+      "code": "configs = PrintSizeConfig.query.order_by(PrintSizeConfig.sort_order, PrintSizeConfig.product_id).all()"
+    },
+    {
+      "file": "app\\routes\\admin_products_api.py",
+      "line": 39,
+      "code": "products = Product.query.filter_by(is_active=True).order_by(Product.sort_order.asc(), Product.id.asc()).all()"
+    },
+    {
+      "file": "app\\routes\\admin_products_api.py",
+      "line": 48,
+      "code": "product_categories = ProductCategory.query.filter_by(is_active=True).order_by(ProductCategory.sort_order.asc()).all()"
+    },
+    {
+      "file": "app\\routes\\admin_products_api.py",
+      "line": 50,
+      "code": "product_subcategories = ProductSubcategory.query.filter_by(is_active=True).order_by(ProductSubcategory.sort_order.asc()).all()"
+    },
+    {
+      "file": "app\\routes\\admin_products_api.py",
+      "line": 69,
+      "code": "style_categories = StyleCategory.query.filter_by(is_active=True).order_by(StyleCategory.sort_order.asc()).all()"
+    },
+    {
+      "file": "app\\routes\\admin_products_api.py",
+      "line": 76,
+      "code": "bindings = ProductStyleCategory.query.filter_by(product_id=product.id).all()"
+    },
+    {
+      "file": "app\\routes\\admin_products_api.py",
+      "line": 107,
+      "code": "sizes = ProductSize.query.filter_by(product_id=product_id, is_active=True).order_by(ProductSize.sort_order.asc()).all()"
+    },
+    {
+      "file": "app\\routes\\admin_products_api.py",
+      "line": 110,
+      "code": "images = ProductImage.query.filter_by(product_id=product_id).order_by(ProductImage.sort_order.asc()).all()"
+    },
+    {
+      "file": "app\\routes\\admin_products_api.py",
+      "line": 113,
+      "code": "style_bindings = ProductStyleCategory.query.filter_by(product_id=product_id).all()"
+    },
+    {
+      "file": "app\\routes\\admin_products_api.py",
+      "line": 116,
+      "code": "custom_fields = ProductCustomField.query.filter_by(product_id=product_id).order_by(ProductCustomField.sort_order.asc()).all()"
+    },
+    {
+      "file": "app\\routes\\admin_products_api.py",
+      "line": 572,
+      "code": "existing_bindings = ProductStyleCategory.query.filter_by(product_id=product_id).all()"
+    },
+    {
+      "file": "app\\routes\\admin_products_api.py",
+      "line": 956,
+      "code": "saved_bindings = ProductStyleCategory.query.filter_by(product_id=product_id).all()"
+    },
+    {
+      "file": "app\\routes\\admin_products_api.py",
+      "line": 1064,
+      "code": "products = Product.query.order_by(Product.sort_order.asc(), Product.id.asc()).all()"
+    },
+    {
+      "file": "app\\routes\\admin_products_api.py",
+      "line": 1077,
+      "code": ").order_by(ProductBonusWorkflow.product_id.asc(), ProductBonusWorkflow.sort_order.asc()).all()"
+    },
+    {
+      "file": "app\\routes\\admin_products_api.py",
+      "line": 1122,
+      "code": "product_sizes = ProductSize.query.join(Product).order_by(ProductSize.product_id.asc(), ProductSize.sort_order.asc()).all()"
+    },
+    {
+      "file": "app\\routes\\admin_products_api.py",
+      "line": 1123,
+      "code": "product_images = ProductImage.query.join(Product).order_by(ProductImage.product_id.asc(), ProductImage.sort_order.asc()).all()"
+    },
+    {
+      "file": "app\\routes\\admin_products_api.py",
+      "line": 1128,
+      "code": "#     pet_options = ProductSizePetOption.query.filter_by(size_id=size.id).order_by(ProductSizePetOption.sort_order.asc()).all()"
+    },
+    {
+      "file": "app\\routes\\admin_products_api.py",
+      "line": 1135,
+      "code": "style_categories = StyleCategory.query.filter_by(is_active=True).order_by(StyleCategory.sort_order.asc()).all()"
+    },
+    {
+      "file": "app\\routes\\admin_products_api.py",
+      "line": 1140,
+      "code": "bindings = ProductStyleCategory.query.filter_by(product_id=product.id).all()"
+    },
+    {
+      "file": "app\\routes\\admin_products_api.py",
+      "line": 1151,
+      "code": "product_categories = ProductCategory.query.filter_by(is_active=True).order_by(ProductCategory.sort_order.asc()).all()"
+    },
+    {
+      "file": "app\\routes\\admin_products_api.py",
+      "line": 1153,
+      "code": "product_subcategories = ProductSubcategory.query.filter_by(is_active=True).order_by(ProductSubcategory.sort_order.asc()).all()"
+    },
+    {
+      "file": "app\\routes\\admin_products_api.py",
+      "line": 1181,
+      "code": "api_templates = APITemplate.query.filter_by(is_active=True).all()"
+    }
+  ],
+  "n_plus_one_queries": [
+    {
+      "file": "app\\routes\\admin_dashboard_api.py",
+      "line": 122,
+      "code": "ai_task = ai_tasks_map.get(order.id)"
+    },
+    {
+      "file": "app\\routes\\admin_dashboard_api.py",
+      "line": 242,
+      "code": "ai_task = ai_tasks_map.get(order.id)"
+    },
+    {
+      "file": "app\\routes\\admin_groupon_api.py",
+      "line": 166,
+      "code": "while Coupon.query.filter_by(code=random_code).first():"
+    },
+    {
+      "file": "app\\routes\\admin_groupon_verify.py",
+      "line": 81,
+      "code": "franchisee = FranchiseeAccount.query.get(coupon.franchisee_id)"
+    },
+    {
+      "file": "app\\routes\\admin_groupon_verify.py",
+      "line": 90,
+      "code": "staff = StaffUser.query.get(coupon.staff_user_id)"
+    },
+    {
+      "file": "app\\routes\\admin_groupon_verify.py",
+      "line": 95,
+      "code": "franchisee = FranchiseeAccount.query.get(staff.franchisee_id)"
+    },
+    {
+      "file": "app\\routes\\admin_groupon_verify.py",
+      "line": 119,
+      "code": "package = GrouponPackage.query.get(package_id_int)"
+    },
+    {
+      "file": "app\\routes\\admin_homepage_api.py",
+      "line": 897,
+      "code": "product_image = ProductImage.query.filter_by(product_id=product.id).order_by(ProductImage.sort_order.asc()).first()"
+    },
+    {
+      "file": "app\\routes\\admin_homepage_api.py",
+      "line": 918,
+      "code": "category = ProductCategory.query.get(product.category_id)"
+    },
+    {
+      "file": "app\\routes\\admin_miniprogram_config_api.py",
+      "line": 121,
+      "code": "config = AIConfig.query.filter_by(config_key=config_key).first()"
+    },
+    {
+      "file": "app\\routes\\admin_orders_detail_api.py",
+      "line": 173,
+      "code": "hd_folder = app_instance.config.get('HD_FOLDER', 'hd_images')"
+    },
+    {
+      "file": "app\\routes\\admin_orders_detail_api.py",
+      "line": 174,
+      "code": "final_folder = app_instance.config.get('FINAL_FOLDER', 'final_works')"
+    },
+    {
+      "file": "app\\routes\\admin_orders_detail_api.py",
+      "line": 655,
+      "code": "all_tasks = tasks_by_order.get(order.id, [])"
+    },
+    {
+      "file": "app\\routes\\admin_orders_list_api.py",
+      "line": 241,
+      "code": "order_total = db.session.query(func.sum(Order.price)).filter("
+    },
+    {
+      "file": "app\\routes\\admin_orders_list_api.py",
+      "line": 511,
+      "code": "logistics_company = logistics_info.get('company', '')"
+    },
+    {
+      "file": "app\\routes\\admin_orders_list_api.py",
+      "line": 512,
+      "code": "tracking_number = logistics_info.get('tracking_number', '')"
+    },
+    {
+      "file": "app\\routes\\admin_orders_list_api.py",
+      "line": 513,
+      "code": "logistics_status = logistics_info.get('status', '')"
+    },
+    {
+      "file": "app\\routes\\admin_orders_list_api.py",
+      "line": 521,
+      "code": "status_display = status_map.get(order_data['status'], order_data['status'] or '未知')"
+    },
+    {
+      "file": "app\\routes\\admin_orders_list_api.py",
+      "line": 529,
+      "code": "source_type_display = source_type_map.get(order_data['source_type'], order_data['source_type'] or '未知')"
+    },
+    {
+      "file": "app\\routes\\admin_orders_list_api.py",
+      "line": 679,
+      "code": "franchisee_account = FranchiseeAccount.query.get(order.franchisee_id)"
+    },
+    {
+      "file": "app\\routes\\admin_print_config_api.py",
+      "line": 80,
+      "code": "config = AIConfig.query.filter_by(config_key=config_key).first()"
+    },
+    {
+      "file": "app\\routes\\admin_print_config_api.py",
+      "line": 208,
+      "code": "config = AIConfig.query.filter_by(config_key=config_key).first()"
+    },
+    {
+      "file": "app\\routes\\admin_products_api.py",
+      "line": 76,
+      "code": "bindings = ProductStyleCategory.query.filter_by(product_id=product.id).all()"
+    },
+    {
+      "file": "app\\routes\\admin_products_api.py",
+      "line": 599,
+      "code": "existing = ProductStyleCategory.query.filter_by("
+    },
+    {
+      "file": "app\\routes\\admin_products_api.py",
+      "line": 658,
+      "code": "if option.get('_hasNewImage'):"
+    },
+    {
+      "file": "app\\routes\\admin_products_api.py",
+      "line": 676,
+      "code": "logger.info(f\"    📷 选项图片已上传: {option.get('name', '未知')} -> {option['image_url']}\")"
+    },
+    {
+      "file": "app\\routes\\admin_products_api.py",
+      "line": 899,
+      "code": "size = ProductSize.query.get(size_id)"
+    },
+    {
+      "file": "app\\routes\\admin_products_api.py",
+      "line": 1088,
+      "code": "product.bonus_workflows = bonus_workflows_by_product.get(product.id, [])"
+    },
+    {
+      "file": "app\\routes\\admin_products_api.py",
+      "line": 1140,
+      "code": "bindings = ProductStyleCategory.query.filter_by(product_id=product.id).all()"
+    },
+    {
+      "file": "app\\routes\\admin_promotion_api.py",
+      "line": 93,
+      "code": "order = Order.query.filter_by(order_number=commission.order_id).first()"
+    },
+    {
+      "file": "app\\routes\\admin_promotion_api.py",
+      "line": 125,
+      "code": "order = Order.query.filter_by(order_number=commission.order_id).first()"
+    },
+    {
+      "file": "app\\routes\\admin_refund_api.py",
+      "line": 58,
+      "code": "franchisee = FranchiseeAccount.query.get(order.franchisee_id)"
+    },
+    {
+      "file": "app\\routes\\admin_shop_api.py",
+      "line": 261,
+      "code": "size = ShopProductSize.query.get(int(size_id))"
+    },
+    {
+      "file": "app\\routes\\admin_shop_api.py",
+      "line": 331,
+      "code": "product.images_list = ShopProductImage.query.filter_by("
+    },
+    {
+      "file": "app\\routes\\admin_shop_api.py",
+      "line": 334,
+      "code": "product.sizes_list = ShopProductSize.query.filter_by("
+    },
+    {
+      "file": "app\\routes\\admin_styles_categories_api.py",
+      "line": 43,
+      "code": "subcategories = StyleSubcategory.query.filter_by("
+    },
+    {
+      "file": "app\\routes\\admin_styles_categories_api.py",
+      "line": 114,
+      "code": "if not data.get(field):"
+    },
+    {
+      "file": "app\\routes\\admin_styles_categories_api.py",
+      "line": 450,
+      "code": "if not data.get(field):"
+    },
+    {
+      "file": "app\\routes\\admin_styles_images_api.py",
+      "line": 165,
+      "code": "api_template = APITemplate.query.filter_by(style_image_id=image.id).first()"
+    },
+    {
+      "file": "app\\routes\\admin_styles_images_api.py",
+      "line": 186,
+      "code": "api_config = APIProviderConfig.query.get(api_template.api_config_id)"
+    },
+    {
+      "file": "app\\routes\\admin_styles_images_api.py",
+      "line": 195,
+      "code": "api_config = APIProviderConfig.query.get(api_template.api_config_id)"
+    },
+    {
+      "file": "app\\routes\\admin_styles_images_api.py",
+      "line": 210,
+      "code": "api_config = APIProviderConfig.query.get(api_template.api_config_id)"
+    },
+    {
+      "file": "app\\routes\\admin_styles_images_api.py",
+      "line": 306,
+      "code": "if not data.get(field):"
+    },
+    {
+      "file": "app\\routes\\admin_system_api.py",
+      "line": 172,
+      "code": "config = AIConfig.query.filter_by(config_key=config_key).first()"
+    },
+    {
+      "file": "app\\routes\\admin_system_api.py",
+      "line": 224,
+      "code": "config = AIConfig.query.filter_by(config_key=config_key).first()"
+    },
+    {
+      "file": "app\\routes\\admin_system_api.py",
+      "line": 323,
+      "code": "config = AIConfig.query.filter_by(config_key=config_key).first()"
+    },
+    {
+      "file": "app\\routes\\admin_system_api.py",
+      "line": 373,
+      "code": "config = AIConfig.query.filter_by(config_key=config_key).first()"
+    },
+    {
+      "file": "app\\routes\\admin_system_api.py",
+      "line": 439,
+      "code": "config = AIConfig.query.filter_by(config_key=config_key).first()"
+    },
+    {
+      "file": "app\\routes\\admin_tools_api.py",
+      "line": 202,
+      "code": "orders = Order.query.filter_by(order_number=order_number).order_by(Order.created_at).all()"
+    },
+    {
+      "file": "app\\routes\\admin_tools_api.py",
+      "line": 247,
+      "code": "first_image = StyleImage.query.filter_by("
+    }
+  ],
+  "summary": {
+    "total_large_queries": 214,
+    "total_n_plus_one": 192
+  }
+}

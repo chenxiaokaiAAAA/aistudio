@@ -283,6 +283,53 @@
             border-radius: 5px;
             border: 1px solid rgba(78, 205, 196, 0.3);
         }
+        
+        /* 三栏布局样式（参考风格分类） */
+        .main-category-item {
+            padding: 12px 15px;
+            margin-bottom: 8px;
+            background: rgba(255,255,255,0.03);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid rgba(255,255,255,0.08);
+        }
+        .main-category-item:hover {
+            background: rgba(255,255,255,0.06);
+            border-color: rgba(78, 205, 196, 0.3);
+        }
+        .main-category-item.active {
+            background: rgba(78, 205, 196, 0.15);
+            border-color: rgba(78, 205, 196, 0.5);
+        }
+        .sub-category-item {
+            padding: 10px 12px;
+            margin-bottom: 6px;
+            background: rgba(255,255,255,0.03);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid rgba(255,255,255,0.06);
+        }
+        .sub-category-item:hover {
+            background: rgba(255,255,255,0.06);
+            border-color: rgba(78, 205, 196, 0.3);
+        }
+        .sub-category-item.active {
+            background: rgba(78, 205, 196, 0.12);
+            border-color: rgba(78, 205, 196, 0.4);
+        }
+        .detail-panel-card {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 10px;
+            padding: 20px;
+        }
+        .detail-panel-placeholder {
+            text-align: center;
+            padding: 60px 20px;
+            color: rgba(255,255,255,0.5);
+        }
     </style>
 </head>
 <body>
@@ -290,201 +337,76 @@
     {% include 'admin/_navbar.html' %}
 
     <div class="main-content">
-        <div class="container">
-            <div class="row">
-                <div class="col-12">
-                    <div class="card">
-                        <div class="card-header">
+        <div class="container-fluid">
+            <!-- 顶部工具栏 -->
+            <div class="card mb-3">
+                <div class="card-body py-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
                             <h4 class="mb-0">🏠 首页配置管理</h4>
-                            <p class="mb-0 text-muted">管理首页轮播图和相关配置，小程序和网页版将同步更新</p>
+                            <small class="text-muted">管理首页轮播图、分类导航和模块配置，小程序和网页版将同步更新</small>
                         </div>
-                        <div class="card-body">
-                            <!-- 轮播图管理 -->
-                            <div class="row mb-4">
-                                <div class="col-12">
-                                    <h5>轮播图管理</h5>
-                                    <button class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#bannerModal">
-                                        + 添加轮播图
-                                    </button>
-                                    <div id="bannerList">
-                                        <!-- 轮播图列表将通过JavaScript动态加载 -->
-                                    </div>
-                                </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 主内容区域：三栏布局（大分类 / 二级分类 / 配置展示） -->
+            <div class="row g-3" style="min-height: calc(100vh - 300px);">
+                <!-- 左侧：大分类 -->
+                <div class="col-lg-3">
+                    <div class="card h-100">
+                        <div class="card-header">
+                            <h6 class="mb-0">功能分类</h6>
+                        </div>
+                        <div class="card-body" style="max-height: calc(100vh - 350px); overflow-y: auto;">
+                            <div class="main-category-item active" data-category="banners" onclick="selectMainCategory('banners')">
+                                <i class="fas fa-images me-2"></i>轮播图管理
                             </div>
-                            
-                            <!-- 分类导航管理 -->
-                            <div class="row mb-4">
-                                <div class="col-12">
-                                    <h5>分类导航管理</h5>
-                                    <p class="text-muted">配置首页显示的分类导航图标</p>
-                                    <button class="btn btn-primary mb-3" onclick="addCategoryNav()">
-                                        + 添加分类导航
-                                    </button>
-                                    <div id="categoryNavList">
-                                        <!-- 分类导航列表将通过JavaScript动态加载 -->
-                                    </div>
-                                </div>
+                            <div class="main-category-item" data-category="category-navs" onclick="selectMainCategory('category-navs')">
+                                <i class="fas fa-th-large me-2"></i>分类导航管理
                             </div>
-                            
-                            <!-- 小程序首页模块配置 -->
-                            <div class="row mb-4">
-                                <div class="col-12">
-                                    <h5>小程序首页模块配置</h5>
-                                    <p class="text-muted">配置小程序首页的固定模块内容（图片和跳转链接），模块标题和布局由前端固定</p>
-                                    
-                                    <!-- 固定模块配置卡片 -->
-                                    <div class="row">
-                                        <!-- 当季主推模块 -->
-                                        <div class="col-md-6 mb-3">
-                                            <div class="card">
-                                                <div class="card-header">
-                                                    <h6 class="mb-0">
-                                                        <i class="fas fa-star"></i> 当季主推
-                                                        <span class="badge bg-success ms-2" id="featuredSectionStatus">已配置</span>
-                                                    </h6>
-                                                </div>
-                                                <div class="card-body">
-                                                    <p class="text-muted small">配置当季主推模块的产品卡片</p>
-                                                    <button class="btn btn-sm btn-primary" onclick="editFixedModule('featured_section')">
-                                                        <i class="fas fa-edit"></i> 配置内容
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        
-                                        <!-- 时光旅程模块 -->
-                                        <div class="col-md-6 mb-3">
-                                            <div class="card">
-                                                <div class="card-header">
-                                                    <h6 class="mb-0">
-                                                        <i class="fas fa-clock"></i> 时光旅程
-                                                        <span class="badge bg-success ms-2" id="timeJourneySectionStatus">已配置</span>
-                                                    </h6>
-                                                </div>
-                                                <div class="card-body">
-                                                    <p class="text-muted small">配置时光旅程模块的分类图片</p>
-                                                    <button class="btn btn-sm btn-primary" onclick="editFixedModule('time_journey')">
-                                                        <i class="fas fa-edit"></i> 配置内容
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        
-                                        <!-- IP联名模块 -->
-                                        <div class="col-md-6 mb-3">
-                                            <div class="card">
-                                                <div class="card-header">
-                                                    <h6 class="mb-0">
-                                                        <i class="fas fa-handshake"></i> IP联名
-                                                        <span class="badge bg-success ms-2" id="ipCollabSectionStatus">已配置</span>
-                                                    </h6>
-                                                </div>
-                                                <div class="card-body">
-                                                    <p class="text-muted small">配置IP联名模块的标签和图片</p>
-                                                    <button class="btn btn-sm btn-primary" onclick="editFixedModule('ip_collab')">
-                                                        <i class="fas fa-edit"></i> 配置内容
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        
-                                        <!-- 作品展示模块 -->
-                                        <div class="col-md-6 mb-3">
-                                            <div class="card">
-                                                <div class="card-header">
-                                                    <h6 class="mb-0">
-                                                        <i class="fas fa-images"></i> 作品展示
-                                                        <span class="badge bg-success ms-2" id="worksSectionStatus">已配置</span>
-                                                    </h6>
-                                                </div>
-                                                <div class="card-body">
-                                                    <p class="text-muted small">配置作品展示模块的标签和图片</p>
-                                                    <button class="btn btn-sm btn-primary" onclick="editFixedModule('works')">
-                                                        <i class="fas fa-edit"></i> 配置内容
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
+                            <div class="main-category-item" data-category="modules" onclick="selectMainCategory('modules')">
+                                <i class="fas fa-puzzle-piece me-2"></i>首页模块配置
                             </div>
-                            
-                            <!-- 旧的产品推荐模块管理（保留用于其他类型） -->
-                            <div class="row mb-4" style="display: none;">
-                                <div class="col-12">
-                                    <h5>产品推荐模块管理</h5>
-                                    <p class="text-muted">配置首页显示的产品推荐模块（如：当季主推、热门产品等）</p>
-                                    <button class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#productSectionModal">
-                                        + 添加产品推荐模块
-                                    </button>
-                                    <div id="productSectionList">
-                                        <!-- 产品推荐模块列表将通过JavaScript动态加载 -->
-                                    </div>
-                                </div>
+                            <div class="main-category-item" data-category="homepage-config" onclick="selectMainCategory('homepage-config')">
+                                <i class="fas fa-cog me-2"></i>首页配置
                             </div>
-                            
-                            <!-- 其他配置 -->
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <h5>首页配置</h5>
-                                    <div class="card">
-                                        <div class="card-body">
-                                            <div class="mb-3">
-                                                <label for="homepageTitle" class="form-label">首页标题</label>
-                                                <input type="text" class="form-control" id="homepageTitle" placeholder="如：{{ brand_name }} - 专属定制">
-                                            </div>
-                                            <div class="mb-3">
-                                                <label for="homepageSubtitle" class="form-label">首页副标题</label>
-                                                <input type="text" class="form-control" id="homepageSubtitle" placeholder="如：为您的宠物打造专属艺术品">
-                                            </div>
-                                            <div class="mb-3">
-                                                <label for="homepageDescription" class="form-label">首页描述</label>
-                                                <textarea class="form-control" id="homepageDescription" rows="3" placeholder="首页描述文字"></textarea>
-                                            </div>
-                                            <button class="btn btn-primary" onclick="saveHomepageConfig()">保存配置</button>
-                                        </div>
-                                    </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 中间：二级分类 -->
+                <div class="col-lg-3">
+                    <div class="card h-100">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h6 class="mb-0" id="subCategoryTitle">轮播图列表</h6>
+                            <div id="subCategoryActions">
+                                <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#bannerModal" id="addBannerBtn">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body" style="max-height: calc(100vh - 350px); overflow-y: auto;">
+                            <div id="subCategoryList">
+                                <!-- 二级分类/列表将通过JavaScript动态加载 -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 右侧：配置展示卡片 -->
+                <div class="col-lg-6">
+                    <div class="card h-100">
+                        <div class="card-header">
+                            <h6 class="mb-0" id="detailPanelTitle">配置详情</h6>
+                        </div>
+                        <div class="card-body" style="max-height: calc(100vh - 350px); overflow-y: auto;">
+                            <div id="detailPanel">
+                                <div class="detail-panel-placeholder" id="detailPanelPlaceholder">
+                                    <i class="fas fa-hand-pointer fa-3x mb-3"></i>
+                                    <p>请从左侧选择功能分类，中间选择具体项查看或编辑</p>
                                 </div>
-                                <div class="col-md-6">
-                                    <h5>功能配置</h5>
-                                    <div class="card">
-                                        <div class="card-body">
-                                            <div class="mb-3">
-                                                <div class="form-check">
-                                                    <input class="form-check-input" type="checkbox" id="enableCustomOrder">
-                                                    <label class="form-check-label" for="enableCustomOrder">
-                                                        启用定制功能
-                                                    </label>
-                                                </div>
-                                            </div>
-                                            <div class="mb-3">
-                                                <div class="form-check">
-                                                    <input class="form-check-input" type="checkbox" id="enableStyleLibrary">
-                                                    <label class="form-check-label" for="enableStyleLibrary">
-                                                        启用风格库
-                                                    </label>
-                                                </div>
-                                            </div>
-                                            <div class="mb-3">
-                                                <div class="form-check">
-                                                    <input class="form-check-input" type="checkbox" id="enableProductGallery">
-                                                    <label class="form-check-label" for="enableProductGallery">
-                                                        启用产品馆
-                                                    </label>
-                                                </div>
-                                            </div>
-                                            <div class="mb-3">
-                                                <div class="form-check">
-                                                    <input class="form-check-input" type="checkbox" id="enableWorksGallery">
-                                                    <label class="form-check-label" for="enableWorksGallery">
-                                                        启用作品展示
-                                                    </label>
-                                                </div>
-                                            </div>
-                                            <button class="btn btn-primary" onclick="saveFeatureConfig()">保存配置</button>
-                                        </div>
-                                    </div>
-                                </div>
+                                <div id="detailPanelContent" style="display: none;"></div>
                             </div>
                         </div>
                     </div>
@@ -560,82 +482,326 @@
     </div>
 
     <script src="/static/js/bootstrap.bundle.min.js"></script>
+    {% include 'admin/_ux_scripts.html' %}
     <script>
-        // 全局变量
+        // 全局变量（必须在最前声明，供后续函数使用）
         let banners = [];
         let homepageConfig = {};
+        let currentMainCategory = 'banners';
+        let currentSubSelection = null;
+        let moduleItemsDirty = false;
+        let categoryNavs = [];
+        let productSections = [];
 
-        // 页面加载时初始化（已在底部统一处理）
+        // 三栏布局：选择左侧大分类
+        function selectMainCategory(category) {
+            currentMainCategory = category;
+            currentSubSelection = null;
+            document.querySelectorAll('.main-category-item').forEach(el => {
+                el.classList.toggle('active', el.dataset.category === category);
+            });
+            updateSubCategoryList();
+            updateDetailPanel();
+        }
+
+        // 三栏布局：选择中间二级项
+        function selectSubCategoryItem(type, id) {
+            currentSubSelection = { type, id };
+            if (type === 'module') moduleItemsDirty = false;
+            document.querySelectorAll('#subCategoryList .sub-category-item').forEach(el => {
+                el.classList.toggle('active', el.dataset.id == id && el.dataset.type === type);
+            });
+            updateDetailPanel();
+        }
+
+        // 更新中间栏二级分类/列表
+        function updateSubCategoryList() {
+            const container = document.getElementById('subCategoryList');
+            const titleEl = document.getElementById('subCategoryTitle');
+            const actionsEl = document.getElementById('subCategoryActions');
+            if (!container || !titleEl || !actionsEl) return;
+            container.innerHTML = '';
+
+            if (currentMainCategory === 'banners') {
+                titleEl.textContent = '轮播图列表';
+                actionsEl.innerHTML = '<button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#bannerModal"><i class="fas fa-plus"></i> 添加</button>';
+                banners.forEach(b => {
+                    const div = document.createElement('div');
+                    div.className = 'sub-category-item';
+                    div.dataset.type = 'banner';
+                    div.dataset.id = b.id;
+                    div.onclick = () => selectSubCategoryItem('banner', b.id);
+                    div.innerHTML = `
+                        <div class="d-flex align-items-center">
+                            <img src="${b.image_url}" style="width:40px;height:40px;object-fit:cover;border-radius:6px;margin-right:10px;" onerror="this.style.display='none'">
+                            <div>
+                                <div class="fw-bold small">${b.title || '未命名'}</div>
+                                <small class="text-muted">${b.is_active ? '启用' : '禁用'}</small>
+                            </div>
+                        </div>
+                    `;
+                    container.appendChild(div);
+                });
+                if (banners.length === 0) {
+                    container.innerHTML = '<div class="text-center text-muted py-4"><small>暂无轮播图，点击上方添加</small></div>';
+                }
+            } else if (currentMainCategory === 'category-navs') {
+                titleEl.textContent = '分类导航列表';
+                actionsEl.innerHTML = '<button class="btn btn-sm btn-primary" onclick="addCategoryNav()"><i class="fas fa-plus"></i> 添加</button>';
+                categoryNavs.forEach(nav => {
+                    const imgUrl = nav.image_url_preview || nav.image_url || '';
+                    const div = document.createElement('div');
+                    div.className = 'sub-category-item';
+                    div.dataset.type = 'nav';
+                    div.dataset.id = nav.id;
+                    div.onclick = () => selectSubCategoryItem('nav', nav.id);
+                    div.innerHTML = `
+                        <div class="d-flex align-items-center">
+                            ${imgUrl ? `<img src="${imgUrl}" style="width:36px;height:36px;object-fit:cover;border-radius:50%;margin-right:10px;" onerror="this.outerHTML='<span class=\\'me-2\\' style=\\'font-size:24px\\'>${(nav.icon || '📦').replace(/'/g, "\\'")}</span>'">` : `<span class="me-2" style="font-size:24px;">${nav.icon || '📦'}</span>`}
+                            <div>
+                                <div class="fw-bold small">${nav.name}</div>
+                                <small class="text-muted">${nav.link_type === 'category' ? '分类' : nav.link_type === 'page' ? '页面' : '链接'}</small>
+                            </div>
+                        </div>
+                    `;
+                    container.appendChild(div);
+                });
+                if (categoryNavs.length === 0) {
+                    container.innerHTML = '<div class="text-center text-muted py-4"><small>暂无分类导航，点击上方添加</small></div>';
+                }
+            } else if (currentMainCategory === 'modules') {
+                titleEl.textContent = '首页模块';
+                actionsEl.innerHTML = '';
+                const modules = [
+                    { id: 'featured_section', title: '当季主推', icon: 'fa-star' },
+                    { id: 'time_journey', title: '时光旅程', icon: 'fa-clock' },
+                    { id: 'ip_collab', title: 'IP联名', icon: 'fa-handshake' },
+                    { id: 'works', title: '作品展示', icon: 'fa-images' }
+                ];
+                modules.forEach(m => {
+                    const div = document.createElement('div');
+                    div.className = 'sub-category-item';
+                    div.dataset.type = 'module';
+                    div.dataset.id = m.id;
+                    div.onclick = () => selectSubCategoryItem('module', m.id);
+                    div.innerHTML = `<i class="fas ${m.icon} me-2"></i>${m.title}`;
+                    container.appendChild(div);
+                });
+                selectSubCategoryItem('module', 'featured_section');
+            } else if (currentMainCategory === 'homepage-config') {
+                titleEl.textContent = '配置项';
+                actionsEl.innerHTML = '';
+                const items = [
+                    { id: 'info', title: '首页信息', icon: 'fa-info-circle' },
+                    { id: 'features', title: '功能开关', icon: 'fa-toggle-on' }
+                ];
+                items.forEach(m => {
+                    const div = document.createElement('div');
+                    div.className = 'sub-category-item';
+                    div.dataset.type = 'config';
+                    div.dataset.id = m.id;
+                    div.onclick = () => selectSubCategoryItem('config', m.id);
+                    div.innerHTML = `<i class="fas ${m.icon} me-2"></i>${m.title}`;
+                    container.appendChild(div);
+                });
+                selectSubCategoryItem('config', 'info');
+            }
+        }
+
+        // 更新右侧详情面板
+        function updateDetailPanel() {
+            const panel = document.getElementById('detailPanel');
+            const placeholder = document.getElementById('detailPanelPlaceholder');
+            const content = document.getElementById('detailPanelContent');
+            const titleEl = document.getElementById('detailPanelTitle');
+            if (!panel || !placeholder || !content || !titleEl) return;
+
+            if (currentMainCategory === 'banners') {
+                titleEl.textContent = '轮播图详情';
+                if (currentSubSelection && currentSubSelection.type === 'banner') {
+                    const banner = banners.find(b => b.id == currentSubSelection.id);
+                    if (banner) {
+                        placeholder.style.display = 'none';
+                        content.style.display = 'block';
+                        content.innerHTML = `
+                            <div class="detail-panel-card">
+                                <div class="mb-3">
+                                    <img src="${banner.image_url}" class="img-fluid rounded" style="max-height:200px;object-fit:cover;width:100%;" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjEyMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMzAwIiBoZWlnaHQ9IjEyMCIgZmlsbD0iI2NjYyIvPjx0ZXh0IHg9IjE1MCIgeT0iNjAiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzY2NiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPuWbvuWJjzwvdGV4dD48L3N2Zz4='">
+                                </div>
+                                <p><strong>标题：</strong>${banner.title || '无'}</p>
+                                <p><strong>副标题：</strong>${banner.subtitle || '无'}</p>
+                                <p><strong>链接：</strong>${banner.link || '无'}</p>
+                                <p><strong>状态：</strong>${banner.is_active ? '启用' : '禁用'}</p>
+                                <div class="mt-3">
+                                    <button class="btn btn-primary me-2" onclick="editBanner(${banner.id})"><i class="fas fa-edit"></i> 编辑</button>
+                                    <button class="btn btn-outline-danger" onclick="deleteBanner(${banner.id})"><i class="fas fa-trash"></i> 删除</button>
+                                </div>
+                            </div>
+                        `;
+                    }
+                } else {
+                    placeholder.style.display = 'block';
+                    content.style.display = 'none';
+                    content.innerHTML = '';
+                    placeholder.innerHTML = banners.length === 0
+                        ? '<i class="fas fa-images fa-3x mb-3"></i><p>暂无轮播图</p><p class="small">请点击中间栏上方的「添加」按钮</p>'
+                        : '<i class="fas fa-images fa-3x mb-3"></i><p>请从中间列表选择轮播图查看详情</p>';
+                }
+            } else if (currentMainCategory === 'category-navs') {
+                titleEl.textContent = '分类导航详情';
+                if (currentSubSelection && currentSubSelection.type === 'nav') {
+                    const nav = categoryNavs.find(n => n.id == currentSubSelection.id);
+                    if (nav) {
+                        const navImgUrl = nav.image_url_preview || nav.image_url || '';
+                        placeholder.style.display = 'none';
+                        content.style.display = 'block';
+                        content.innerHTML = `
+                            <div class="detail-panel-card">
+                                <div class="mb-3">
+                                    ${navImgUrl ? `<img src="${navImgUrl}" class="rounded" style="width:80px;height:80px;object-fit:cover;">` : `<span style="font-size:48px;">${nav.icon || '📦'}</span>`}
+                                </div>
+                                <p><strong>名称：</strong>${nav.name}</p>
+                                <p><strong>链接类型：</strong>${nav.link_type === 'category' ? '产品分类' : nav.link_type === 'page' ? '页面' : '外部链接'}</p>
+                                <p><strong>状态：</strong>${nav.is_active ? '启用' : '禁用'}</p>
+                                <div class="mt-3">
+                                    <button class="btn btn-primary me-2" onclick="editCategoryNav(${nav.id})"><i class="fas fa-edit"></i> 编辑</button>
+                                    <button class="btn btn-outline-danger" onclick="deleteCategoryNav(${nav.id})"><i class="fas fa-trash"></i> 删除</button>
+                                </div>
+                            </div>
+                        `;
+                    }
+                } else {
+                    placeholder.style.display = 'block';
+                    content.style.display = 'none';
+                    content.innerHTML = '';
+                    placeholder.innerHTML = categoryNavs.length === 0
+                        ? '<i class="fas fa-th-large fa-3x mb-3"></i><p>暂无分类导航</p><p class="small">请点击中间栏上方的「添加」按钮</p>'
+                        : '<i class="fas fa-th-large fa-3x mb-3"></i><p>请从中间列表选择分类导航查看详情</p>';
+                }
+            } else if (currentMainCategory === 'modules') {
+                const moduleType = currentSubSelection && currentSubSelection.type === 'module' ? currentSubSelection.id : 'featured_section';
+                const moduleTitle = getModuleTitle(moduleType);
+                titleEl.textContent = moduleTitle + ' - 模块项';
+                placeholder.style.display = 'none';
+                content.style.display = 'block';
+                content.innerHTML = renderModuleItemsPanel(moduleType);
+            } else if (currentMainCategory === 'homepage-config') {
+                titleEl.textContent = '首页配置';
+                placeholder.style.display = 'none';
+                content.style.display = 'block';
+                content.innerHTML = `
+                    <div class="detail-panel-card mb-3">
+                        <h6 class="mb-3"><i class="fas fa-info-circle me-2"></i>首页信息</h6>
+                        <div class="mb-3">
+                            <label for="homepageTitle" class="form-label">首页标题</label>
+                            <input type="text" class="form-control" id="homepageTitle" placeholder="如：{{ brand_name }} - 专属定制">
+                        </div>
+                        <div class="mb-3">
+                            <label for="homepageSubtitle" class="form-label">首页副标题</label>
+                            <input type="text" class="form-control" id="homepageSubtitle" placeholder="如：为您的宠物打造专属艺术品">
+                        </div>
+                        <div class="mb-3">
+                            <label for="homepageDescription" class="form-label">首页描述</label>
+                            <textarea class="form-control" id="homepageDescription" rows="3" placeholder="首页描述文字"></textarea>
+                        </div>
+                        <button class="btn btn-primary" onclick="saveHomepageConfig()">保存配置</button>
+                    </div>
+                    <div class="detail-panel-card">
+                        <h6 class="mb-3"><i class="fas fa-toggle-on me-2"></i>功能开关</h6>
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="enableCustomOrder">
+                                <label class="form-check-label" for="enableCustomOrder">启用定制功能</label>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="enableStyleLibrary">
+                                <label class="form-check-label" for="enableStyleLibrary">启用风格库</label>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="enableProductGallery">
+                                <label class="form-check-label" for="enableProductGallery">启用产品馆</label>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="enableWorksGallery">
+                                <label class="form-check-label" for="enableWorksGallery">启用作品展示</label>
+                            </div>
+                        </div>
+                        <button class="btn btn-primary" onclick="saveFeatureConfig()">保存配置</button>
+                    </div>
+                `;
+                updateHomepageConfigForm();
+            }
+        }
+
+        // 通用 fetch 封装：带 credentials，统一错误处理
+        async function fetchHomepageApi(url, options = {}) {
+            const res = await fetch(url, { credentials: 'same-origin', ...options });
+            const text = await res.text();
+            if (!res.ok) {
+                console.error(`API 请求失败: ${url}`, res.status, text?.slice(0, 200));
+                throw new Error(`请求失败: ${res.status}`);
+            }
+            try {
+                return JSON.parse(text);
+            } catch (e) {
+                console.error(`API 返回非 JSON: ${url}`, text?.slice(0, 200));
+                throw new Error('服务器返回格式错误，请确认服务已用 python test_server.py 或 start.py 启动');
+            }
+        }
 
         // 加载轮播图数据
         async function loadBanners() {
             try {
-                const response = await fetch('/api/admin/homepage/banners');
-                const data = await response.json();
+                const data = await fetchHomepageApi('/api/admin/homepage/banners');
                 if (data.status === 'success') {
                     banners = data.data;
-                    renderBanners();
+                    if (currentMainCategory === 'banners') updateSubCategoryList();
                 }
             } catch (error) {
                 console.error('加载轮播图失败:', error);
+                throw error;
             }
         }
 
         // 加载首页配置
         async function loadHomepageConfig() {
             try {
-                const response = await fetch('/api/admin/homepage/config');
-                const data = await response.json();
+                const data = await fetchHomepageApi('/api/admin/homepage/config');
                 if (data.status === 'success') {
                     homepageConfig = data.data;
                     updateHomepageConfigForm();
                 }
             } catch (error) {
                 console.error('加载首页配置失败:', error);
+                throw error;
             }
         }
 
-        // 渲染轮播图列表
-        function renderBanners() {
-            const container = document.getElementById('bannerList');
-            container.innerHTML = '';
-            
-            banners.forEach(banner => {
-                const div = document.createElement('div');
-                div.className = 'banner-item';
-                div.innerHTML = `
-                    <div class="row align-items-center">
-                        <div class="col-md-1">
-                            <i class="fas fa-grip-vertical sortable-handle"></i>
-                        </div>
-                        <div class="col-md-3">
-                            <img src="${banner.image_url}" class="banner-preview" alt="${banner.title}" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjEyMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMzAwIiBoZWlnaHQ9IjEyMCIgZmlsbD0iI2NjYyIvPjx0ZXh0IHg9IjE1MCIgeT0iNjAiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzY2NiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPuWbvuWJjzwvdGV4dD48L3N2Zz4='">
-                        </div>
-                        <div class="col-md-5">
-                            <h6 class="mb-1">${banner.title || '无标题'}</h6>
-                            <small class="text-muted">${banner.subtitle || ''}</small>
-                            <br>
-                            <small class="text-info">链接: ${banner.link || '无'}</small>
-                        </div>
-                        <div class="col-md-3 text-end">
-                            <button class="btn btn-sm btn-outline-primary me-2" onclick="editBanner(${banner.id})">编辑</button>
-                            <button class="btn btn-sm btn-outline-danger" onclick="deleteBanner(${banner.id})">删除</button>
-                        </div>
-                    </div>
-                `;
-                container.appendChild(div);
-            });
-        }
+        // 轮播图列表已移至三栏中间列，由 updateSubCategoryList 渲染
 
-        // 更新首页配置表单
+        // 更新首页配置表单（仅当表单元素存在时，如已切换到首页配置视图）
         function updateHomepageConfigForm() {
-            document.getElementById('homepageTitle').value = homepageConfig.title || '';
-            document.getElementById('homepageSubtitle').value = homepageConfig.subtitle || '';
-            document.getElementById('homepageDescription').value = homepageConfig.description || '';
-            document.getElementById('enableCustomOrder').checked = homepageConfig.enable_custom_order || false;
-            document.getElementById('enableStyleLibrary').checked = homepageConfig.enable_style_library || false;
-            document.getElementById('enableProductGallery').checked = homepageConfig.enable_product_gallery || false;
-            document.getElementById('enableWorksGallery').checked = homepageConfig.enable_works_gallery || false;
+            const titleEl = document.getElementById('homepageTitle');
+            if (!titleEl) return;
+            titleEl.value = homepageConfig.title || '';
+            const subtitleEl = document.getElementById('homepageSubtitle');
+            if (subtitleEl) subtitleEl.value = homepageConfig.subtitle || '';
+            const descEl = document.getElementById('homepageDescription');
+            if (descEl) descEl.value = homepageConfig.description || '';
+            const customOrderEl = document.getElementById('enableCustomOrder');
+            if (customOrderEl) customOrderEl.checked = homepageConfig.enable_custom_order || false;
+            const styleLibEl = document.getElementById('enableStyleLibrary');
+            if (styleLibEl) styleLibEl.checked = homepageConfig.enable_style_library || false;
+            const productGalEl = document.getElementById('enableProductGallery');
+            if (productGalEl) productGalEl.checked = homepageConfig.enable_product_gallery || false;
+            const worksGalEl = document.getElementById('enableWorksGallery');
+            if (worksGalEl) worksGalEl.checked = homepageConfig.enable_works_gallery || false;
         }
 
         // 上传轮播图片
@@ -736,7 +902,8 @@
                 const result = await response.json();
                 if (result.status === 'success') {
                     bootstrap.Modal.getInstance(document.getElementById('bannerModal')).hide();
-                    loadBanners();
+                    await loadBanners();
+                    updateDetailPanel();
                 } else {
                     alert('保存失败: ' + result.message);
                 }
@@ -756,7 +923,8 @@
                     
                     const result = await response.json();
                     if (result.status === 'success') {
-                        loadBanners();
+                        await loadBanners();
+                        updateDetailPanel();
                     } else {
                         alert('删除失败: ' + result.message);
                     }
@@ -769,10 +937,14 @@
 
         // 保存首页配置
         async function saveHomepageConfig() {
+            const titleEl = document.getElementById('homepageTitle');
+            if (!titleEl) { alert('请先切换到首页配置视图'); return; }
+            const subtitleEl = document.getElementById('homepageSubtitle');
+            const descEl = document.getElementById('homepageDescription');
             const data = {
-                title: document.getElementById('homepageTitle').value,
-                subtitle: document.getElementById('homepageSubtitle').value,
-                description: document.getElementById('homepageDescription').value
+                title: titleEl.value,
+                subtitle: subtitleEl ? subtitleEl.value : '',
+                description: descEl ? descEl.value : ''
             };
             
             try {
@@ -798,11 +970,16 @@
 
         // 保存功能配置
         async function saveFeatureConfig() {
+            const customOrderEl = document.getElementById('enableCustomOrder');
+            if (!customOrderEl) { alert('请先切换到首页配置视图'); return; }
+            const styleLibEl = document.getElementById('enableStyleLibrary');
+            const productGalEl = document.getElementById('enableProductGallery');
+            const worksGalEl = document.getElementById('enableWorksGallery');
             const data = {
-                enable_custom_order: document.getElementById('enableCustomOrder').checked,
-                enable_style_library: document.getElementById('enableStyleLibrary').checked,
-                enable_product_gallery: document.getElementById('enableProductGallery').checked,
-                enable_works_gallery: document.getElementById('enableWorksGallery').checked
+                enable_custom_order: customOrderEl.checked,
+                enable_style_library: styleLibEl ? styleLibEl.checked : false,
+                enable_product_gallery: productGalEl ? productGalEl.checked : false,
+                enable_works_gallery: worksGalEl ? worksGalEl.checked : false
             };
             
             try {
@@ -826,68 +1003,44 @@
             }
         }
 
-        // 重置表单
-        document.getElementById('bannerModal').addEventListener('hidden.bs.modal', function() {
-            document.getElementById('bannerForm').reset();
-            document.getElementById('bannerModalTitle').textContent = '添加轮播图';
-            document.getElementById('bannerPreview').style.display = 'none';
-            document.getElementById('bannerUploadArea').style.display = 'block';
-        });
+        // 重置表单（需在 DOM 加载后绑定，因 moduleItemModal 在脚本下方）
+        function bindModalEvents() {
+            const bannerModal = document.getElementById('bannerModal');
+            if (bannerModal) {
+                bannerModal.addEventListener('hidden.bs.modal', function() {
+                    const form = document.getElementById('bannerForm');
+                    if (form) form.reset();
+                    const title = document.getElementById('bannerModalTitle');
+                    if (title) title.textContent = '添加轮播图';
+                    const preview = document.getElementById('bannerPreview');
+                    if (preview) preview.style.display = 'none';
+                    const area = document.getElementById('bannerUploadArea');
+                    if (area) area.style.display = 'block';
+                });
+            }
+            const moduleItemModal = document.getElementById('moduleItemModal');
+            if (moduleItemModal) {
+                moduleItemModal.addEventListener('hidden.bs.modal', function() {
+                    if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+                });
+            }
+        }
         // ========== 分类导航管理 ==========
-        let categoryNavs = [];
         let products = [];
         let categories = [];
 
         // 加载分类导航
         async function loadCategoryNavs() {
             try {
-                const response = await fetch('/api/admin/homepage/category-navs');
-                const data = await response.json();
+                const data = await fetchHomepageApi('/api/admin/homepage/category-navs');
                 if (data.status === 'success') {
-                    categoryNavs = data.data;
-                    renderCategoryNavs();
+                    categoryNavs = data.data || [];
+                    if (currentMainCategory === 'category-navs') updateSubCategoryList();
                 }
             } catch (error) {
                 console.error('加载分类导航失败:', error);
+                categoryNavs = [];
             }
-        }
-
-        // 渲染分类导航列表
-        function renderCategoryNavs() {
-            const container = document.getElementById('categoryNavList');
-            container.innerHTML = '';
-            
-            if (categoryNavs.length === 0) {
-                container.innerHTML = '<p class="text-muted">暂无分类导航，请添加</p>';
-                return;
-            }
-            
-            categoryNavs.forEach(nav => {
-                const div = document.createElement('div');
-                div.className = 'banner-item mb-2';
-                div.innerHTML = `
-                    <div class="row align-items-center">
-                        <div class="col-md-1">
-                            <span class="badge bg-secondary">${nav.sort_order}</span>
-                        </div>
-                        <div class="col-md-2">
-                            ${nav.image_url ? `<img src="${nav.image_url}" class="banner-preview" style="width: 60px; height: 60px; object-fit: cover; border-radius: 50%;">` : `<span style="font-size: 40px;">${nav.icon || '📦'}</span>`}
-                        </div>
-                        <div class="col-md-4">
-                            <h6 class="mb-1">${nav.name}</h6>
-                            <small class="text-muted">${nav.link_type === 'category' ? '分类' : nav.link_type === 'page' ? '页面' : '链接'}</small>
-                        </div>
-                        <div class="col-md-3">
-                            <span class="badge ${nav.is_active ? 'bg-success' : 'bg-secondary'}">${nav.is_active ? '启用' : '禁用'}</span>
-                        </div>
-                        <div class="col-md-2 text-end">
-                            <button class="btn btn-sm btn-outline-primary me-2" onclick="editCategoryNav(${nav.id})">编辑</button>
-                            <button class="btn btn-sm btn-outline-danger" onclick="deleteCategoryNav(${nav.id})">删除</button>
-                        </div>
-                    </div>
-                `;
-                container.appendChild(div);
-            });
         }
 
         // 添加分类导航
@@ -1048,7 +1201,8 @@
                 });
                 const data = await response.json();
                 if (data.status === 'success') {
-                    loadCategoryNavs();
+                    await loadCategoryNavs();
+                    updateDetailPanel();
                     alert('删除成功');
                 } else {
                     alert('删除失败: ' + data.message);
@@ -1134,7 +1288,8 @@
                 const result = await response.json();
                 if (result.status === 'success') {
                     bootstrap.Modal.getInstance(document.getElementById('categoryNavModal')).hide();
-                    loadCategoryNavs();
+                    await loadCategoryNavs();
+                    updateDetailPanel();
                     alert('保存成功');
                 } else {
                     alert('保存失败: ' + result.message);
@@ -1152,6 +1307,7 @@
             
             const formData = new FormData();
             formData.append('image', file);
+            formData.append('subfolder', 'category_nav');
             
             try {
                 const response = await fetch('/api/admin/upload-image', {
@@ -1189,20 +1345,22 @@
         }
 
         // ========== 产品推荐模块管理 ==========
-        let productSections = [];
 
         // 加载产品推荐模块
         async function loadProductSections() {
             try {
-                const response = await fetch('/api/admin/homepage/product-sections');
-                const data = await response.json();
+                const data = await fetchHomepageApi('/api/admin/homepage/product-sections');
                 if (data.status === 'success') {
-                    productSections = data.data;
-                    renderProductSections();
-                    updateFixedModuleStatus(); // 更新固定模块状态
+                    productSections = data.data || [];
+                    if (currentMainCategory === 'modules') {
+                        updateDetailPanel();
+                    } else {
+                        updateFixedModuleStatus();
+                    }
                 }
             } catch (error) {
                 console.error('加载产品推荐模块失败:', error);
+                productSections = [];
             }
         }
         
@@ -1224,6 +1382,142 @@
             });
         }
         
+        // 获取指定模块的配置项列表
+        function getModuleItemsForType(moduleType) {
+            const section = productSections.find(s => s.section_type === moduleType);
+            if (!section || !section.config) return [];
+            try {
+                const config = typeof section.config === 'string' ? JSON.parse(section.config) : section.config;
+                if (moduleType === 'featured_section') return config.items || [];
+                if (moduleType === 'time_journey') return config.categories || [];
+                if (moduleType === 'ip_collab' || moduleType === 'works') return config.tabs || [];
+            } catch (e) { return []; }
+            return [];
+        }
+
+        // 渲染模块项到右侧面板（已添加的模块项卡片）
+        function renderModuleItemsPanel(moduleType) {
+            if (!moduleItemsDirty) {
+                prepareModuleContextForEditing(moduleType);
+            }
+            const items = [...moduleItems];
+            const baseUrl = window.location.origin;
+            const imageUrl = (url) => {
+                if (!url) return '';
+                if (url.startsWith('http')) return url;
+                return baseUrl + (url.startsWith('/') ? url : '/' + url);
+            };
+            let cardsHtml = items.map((item, index) => {
+                let img = item.image_url || item.main_image;
+                if (!img && item.images && item.images[0]) {
+                    img = typeof item.images[0] === 'object' ? item.images[0].url : item.images[0];
+                }
+                const imgUrl = imageUrl(img);
+                const title = item.title || item.category_name || item.name || '未命名';
+                const desc = item.desc || item.overlay_text || '';
+                return `
+                    <div class="detail-panel-card mb-3">
+                        <div class="row align-items-center">
+                            <div class="col-auto">
+                                ${imgUrl ? `<img src="${imgUrl}" class="rounded" style="width:80px;height:80px;object-fit:cover;" onerror="this.parentElement.innerHTML='<div class=\\'bg-secondary rounded d-flex align-items-center justify-content-center\\' style=\\'width:80px;height:80px\\'><small>无图</small></div>'">` : '<div class="bg-secondary rounded d-flex align-items-center justify-content-center" style="width:80px;height:80px"><small>无图</small></div>'}
+                            </div>
+                            <div class="col">
+                                <h6 class="mb-1">${title}</h6>
+                                ${desc ? `<small class="text-muted">${desc}</small>` : ''}
+                                ${item.tag ? `<span class="badge bg-danger ms-2">${item.tag}</span>` : ''}
+                            </div>
+                            <div class="col-auto">
+                                <button class="btn btn-sm btn-outline-primary me-1" onclick="editModuleItemFromPanel(${index}, '${moduleType}')"><i class="fas fa-edit"></i> 编辑</button>
+                                <button class="btn btn-sm btn-outline-danger" onclick="deleteModuleItemFromPanel(${index}, '${moduleType}')"><i class="fas fa-trash"></i> 删除</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            if (items.length === 0) {
+                cardsHtml = '<div class="text-center text-muted py-4"><p>暂无模块项</p><p class="small">点击下方「添加项」按钮添加产品或分类</p></div>';
+            }
+            return `
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <span class="text-muted">共 ${items.length} 项</span>
+                    <div>
+                        <button class="btn btn-sm btn-primary me-2" onclick="addModuleItemFromPanel('${moduleType}')"><i class="fas fa-plus"></i> 添加项</button>
+                        <button class="btn btn-sm btn-outline-success" onclick="saveModuleFromPanel('${moduleType}')"><i class="fas fa-save"></i> 保存</button>
+                    </div>
+                </div>
+                <div id="moduleItemsCardsContainer">${cardsHtml}</div>
+            `;
+        }
+
+        let currentModuleTypeForItem = '';  // 当前正在编辑的模块类型（用于提示）
+        // 准备模块编辑上下文（设置 productSectionModal 表单和 moduleItems）
+        function prepareModuleContextForEditing(moduleType) {
+            currentModuleTypeForItem = moduleType || '';
+            const idEl = document.getElementById('productSectionId');
+            const typeEl = document.getElementById('productSectionType');
+            if (!idEl || !typeEl) return;
+            const section = productSections.find(s => s.section_type === moduleType);
+            if (section) {
+                idEl.value = section.id;
+                typeEl.value = section.section_type;
+                const titleEl = document.getElementById('productSectionTitle');
+                if (titleEl) titleEl.value = getModuleTitle(section.section_type);
+                const subtitleEl = document.getElementById('productSectionSubtitle');
+                if (subtitleEl) subtitleEl.value = section.subtitle || '';
+                const sortEl = document.getElementById('productSectionSortOrder');
+                if (sortEl) sortEl.value = section.sort_order || getModuleSortOrder(section.section_type);
+                const activeEl = document.getElementById('productSectionIsActive');
+                if (activeEl) activeEl.checked = section.is_active;
+                if (!moduleItemsDirty) {
+                    const config = section.config ? (typeof section.config === 'string' ? JSON.parse(section.config) : section.config) : {};
+                    if (moduleType === 'featured_section') moduleItems = config.items || [];
+                    else if (moduleType === 'time_journey') moduleItems = config.categories || [];
+                    else if (moduleType === 'ip_collab' || moduleType === 'works') moduleItems = config.tabs || [];
+                    else moduleItems = [];
+                }
+            } else {
+                idEl.value = '';
+                typeEl.value = moduleType;
+                const titleEl = document.getElementById('productSectionTitle');
+                if (titleEl) titleEl.value = getModuleTitle(moduleType);
+                const subtitleEl = document.getElementById('productSectionSubtitle');
+                if (subtitleEl) subtitleEl.value = '';
+                const sortEl = document.getElementById('productSectionSortOrder');
+                if (sortEl) sortEl.value = getModuleSortOrder(moduleType);
+                const activeEl = document.getElementById('productSectionIsActive');
+                if (activeEl) activeEl.checked = true;
+                if (!moduleItemsDirty) moduleItems = [];
+            }
+        }
+
+        // 从右侧面板添加模块项
+        function addModuleItemFromPanel(moduleType) {
+            prepareModuleContextForEditing(moduleType);
+            addModuleItem();
+        }
+
+        // 从右侧面板编辑模块项
+        function editModuleItemFromPanel(index, moduleType) {
+            prepareModuleContextForEditing(moduleType);
+            editModuleItem(index);
+        }
+
+        // 从右侧面板删除模块项
+        function deleteModuleItemFromPanel(index, moduleType) {
+            prepareModuleContextForEditing(moduleType);
+            moduleItems.splice(index, 1);
+            moduleItemsDirty = true;
+            updateDetailPanel();
+        }
+
+        // 从右侧面板保存模块
+        async function saveModuleFromPanel(moduleType) {
+            prepareModuleContextForEditing(moduleType);
+            await saveProductSection();
+            moduleItemsDirty = false;
+            updateDetailPanel();
+        }
+
         // 编辑固定模块
         function editFixedModule(moduleType) {
             // 查找或创建对应的模块配置
@@ -1273,43 +1567,6 @@
                 'works': 4
             };
             return orders[moduleType] || 0;
-        }
-
-        // 渲染产品推荐模块列表
-        function renderProductSections() {
-            const container = document.getElementById('productSectionList');
-            container.innerHTML = '';
-            
-            if (productSections.length === 0) {
-                container.innerHTML = '<p class="text-muted">暂无产品推荐模块，请添加</p>';
-                return;
-            }
-            
-            productSections.forEach(section => {
-                const div = document.createElement('div');
-                div.className = 'banner-item mb-2';
-                div.innerHTML = `
-                    <div class="row align-items-center">
-                        <div class="col-md-1">
-                            <span class="badge bg-secondary">${section.sort_order}</span>
-                        </div>
-                        <div class="col-md-5">
-                            <h6 class="mb-1">${section.title}</h6>
-                            <small class="text-muted">${section.subtitle || ''}</small>
-                            <br>
-                            <small class="text-info">类型: ${section.section_type} | 布局: ${section.layout_type} | 产品数: ${section.product_ids ? section.product_ids.length : 0}</small>
-                        </div>
-                        <div class="col-md-2">
-                            <span class="badge ${section.is_active ? 'bg-success' : 'bg-secondary'}">${section.is_active ? '启用' : '禁用'}</span>
-                        </div>
-                        <div class="col-md-4 text-end">
-                            <button class="btn btn-sm btn-outline-primary me-2" onclick="editProductSection(${section.id})">编辑</button>
-                            <button class="btn btn-sm btn-outline-danger" onclick="deleteProductSection(${section.id})">删除</button>
-                        </div>
-                    </div>
-                `;
-                container.appendChild(div);
-            });
         }
 
         // 编辑产品推荐模块
@@ -1473,19 +1730,35 @@
                     body: JSON.stringify(data)
                 });
                 
-                const result = await response.json();
+                const text = await response.text();
+                let result;
+                try {
+                    result = JSON.parse(text);
+                } catch (e) {
+                    console.error('保存失败: 服务器返回非JSON', text.substring(0, 200));
+                    const msg = response.status >= 500 ? '服务器内部错误，请稍后重试' : '保存失败，请检查网络';
+                    if (typeof UX !== 'undefined' && UX.Toast) UX.Toast.error(msg);
+                    else alert(msg);
+                    return;
+                }
                 if (result.status === 'success') {
-                    bootstrap.Modal.getInstance(document.getElementById('productSectionModal')).hide();
-                    loadProductSections();
-                    alert('保存成功');
-                    // 更新固定模块状态
+                    const productSectionModalEl = document.getElementById('productSectionModal');
+                    const productSectionModalInstance = productSectionModalEl ? bootstrap.Modal.getInstance(productSectionModalEl) : null;
+                    if (productSectionModalInstance) productSectionModalInstance.hide();
+                    await loadProductSections();
+                    if (typeof UX !== 'undefined' && UX.Toast) UX.Toast.success('保存成功');
+                    else alert('保存成功');
                     setTimeout(() => updateFixedModuleStatus(), 500);
                 } else {
-                    alert('保存失败: ' + result.message);
+                    const errMsg = result.message || '保存失败';
+                    if (typeof UX !== 'undefined' && UX.Toast) UX.Toast.error(errMsg);
+                    else alert('保存失败: ' + errMsg);
                 }
             } catch (error) {
                 console.error('保存失败:', error);
-                alert('保存失败: ' + error.message);
+                const msg = '保存失败: ' + (error.message || '请重试');
+                if (typeof UX !== 'undefined' && UX.Toast) UX.Toast.error(msg);
+                else alert(msg);
             }
         }
 
@@ -1536,39 +1809,58 @@
                 
                 // 从分类获取图片
                 if (item.category_id) {
-                    // 确保 productCategories 已加载
-                    if (productCategories.length === 0) {
+                    if (productCategoriesTree.length === 0) {
                         await loadCategoriesForItem();
                     }
-                    const category = productCategories.find(c => c.id === item.category_id);
-                    if (category) {
-                        processedItem.category_id = category.id;
-                        processedItem.category_name = category.name;
-                        // 确保图片URL是相对路径
-                        let imageUrl = category.image_url || '';
-                        if (imageUrl && imageUrl.startsWith('http')) {
-                            // 提取相对路径
-                            const mediaMatch = imageUrl.match(/\/(media|static)\/(.+)$/);
-                            if (mediaMatch) {
-                                imageUrl = `/${mediaMatch[1]}/${mediaMatch[2]}`;
+                    const cat1 = productCategoriesTree.find(c => c.id == item.category_id);
+                    if (cat1) {
+                        let categoryName = cat1.name;
+                        let imageUrl = cat1.image_url || '';
+                        if (item.subcategory_id && cat1.subcategories) {
+                            const sub = cat1.subcategories.find(s => s.id == item.subcategory_id);
+                            if (sub) {
+                                categoryName = sub.name;
+                                imageUrl = sub.image_url || imageUrl;
                             }
                         }
+                        processedItem.category_id = cat1.id;
+                        processedItem.subcategory_id = item.subcategory_id || undefined;
+                        processedItem.category_name = categoryName;
+                        if (imageUrl && imageUrl.startsWith('http')) {
+                            const mediaMatch = imageUrl.match(/\/(media|static)\/(.+)$/);
+                            if (mediaMatch) imageUrl = `/${mediaMatch[1]}/${mediaMatch[2]}`;
+                        }
                         processedItem.image_url = imageUrl;
-                        
-                        // 时光旅程模块使用 main_image 字段
                         if (sectionType === 'time_journey') {
                             processedItem.main_image = imageUrl;
-                            processedItem.category_name = category.name;
+                            processedItem.category_name = categoryName;
                         }
-                        
-                        // 如果配置了跳转到分类，自动设置
                         if (!processedItem.link_type || processedItem.link_type === 'none') {
                             processedItem.link_type = 'category';
-                            processedItem.link_value = category.id.toString();
+                            processedItem.link_value = (item.subcategory_id || cat1.id).toString();
                         }
                     } else {
                         console.warn(`分类ID ${item.category_id} 未找到`);
                     }
+                }
+                // 风格图片（单张）
+                if (item.style_image_id) {
+                    processedItem.style_image_id = item.style_image_id;
+                    processedItem.style_category_id = item.style_category_id;
+                    processedItem.style_subcategory_id = item.style_subcategory_id || undefined;
+                    processedItem.category_name = item.category_name || item.title;
+                    let styleImgUrl = item.image_url || '';
+                    if (styleImgUrl && styleImgUrl.startsWith('http')) {
+                        const m = styleImgUrl.match(/\/(media|static)\/(.+)$/);
+                        if (m) styleImgUrl = `/${m[1]}/${m[2]}`;
+                    }
+                    processedItem.image_url = styleImgUrl;
+                }
+                // 风格分类目录（仅 IP联名：按分类拉取全部风格图片）
+                else if (item.style_category_id && !item.style_image_id) {
+                    processedItem.style_category_id = item.style_category_id;
+                    processedItem.style_subcategory_id = item.style_subcategory_id || undefined;
+                    processedItem.category_name = item.category_name || item.title;
                 }
                 
                 // 根据模块类型设置特定字段
@@ -1576,8 +1868,13 @@
                     processedItem.category_name = processedItem.category_name || processedItem.title;
                     processedItem.overlay_text = processedItem.desc;
                 } else if (sectionType === 'ip_collab') {
-                    processedItem.name = processedItem.title;
-                    processedItem.images = processedItem.image_url ? [processedItem.image_url] : [];
+                    processedItem.name = processedItem.title || processedItem.category_name || processedItem.product_name || '未命名';
+                    // IP联名：分类目录（category_id 或 style_category_id）时由后端按分类展开全部图片；否则用单张
+                    if ((processedItem.category_id || processedItem.style_category_id) && !processedItem.product_id && !processedItem.style_image_id) {
+                        processedItem.images = [];
+                    } else {
+                        processedItem.images = processedItem.image_url ? [processedItem.image_url] : [];
+                    }
                 } else if (sectionType === 'works') {
                     processedItem.name = processedItem.title;
                     processedItem.main_image = processedItem.image_url;
@@ -1593,12 +1890,88 @@
         // ========== 产品选择器 ==========
         let allProducts = [];
         let selectedProductIds = new Set();
+        let productCategoriesTree = [];  // 一级+二级分类树
 
-        // 加载产品列表
-        async function loadProductsForSelector() {
+        // 加载产品分类树
+        async function loadProductCategoriesTree() {
             try {
-                const response = await fetch('/api/admin/homepage/products');
-                const data = await response.json();
+                const data = await fetchHomepageApi('/api/admin/homepage/product-categories-tree');
+                if (data.status === 'success') {
+                    productCategoriesTree = data.data || [];
+                    populateProductSelectorCategoryFilters();
+                }
+            } catch (error) {
+                console.error('加载产品分类树失败:', error);
+            }
+        }
+
+        // 填充产品选择器的分类筛选下拉
+        function populateProductSelectorCategoryFilters() {
+            const sel1 = document.getElementById('productSelectorCategory1');
+            const sel2 = document.getElementById('productSelectorCategory2');
+            const itemSel1 = document.getElementById('itemProductSelectorCategory1');
+            const itemSel2 = document.getElementById('itemProductSelectorCategory2');
+            [sel1, itemSel1].forEach(select => {
+                if (!select) return;
+                select.innerHTML = '<option value="">全部</option>';
+                productCategoriesTree.forEach(cat => {
+                    const opt = document.createElement('option');
+                    opt.value = cat.id;
+                    opt.textContent = cat.name;
+                    select.appendChild(opt);
+                });
+            });
+        }
+
+        // 产品选择器分类筛选变化
+        async function onProductSelectorCategoryChange() {
+            const cat1 = document.getElementById('productSelectorCategory1')?.value || '';
+            const cat2 = document.getElementById('productSelectorCategory2')?.value || '';
+            const sel2 = document.getElementById('productSelectorCategory2');
+            sel2.innerHTML = '<option value="">全部</option>';
+            if (cat1) {
+                const cat = productCategoriesTree.find(c => c.id == cat1);
+                if (cat && cat.subcategories) {
+                    cat.subcategories.forEach(sub => {
+                        const opt = document.createElement('option');
+                        opt.value = sub.id;
+                        opt.textContent = sub.name;
+                        sel2.appendChild(opt);
+                    });
+                }
+            }
+            await loadProductsForSelector(cat1 ? parseInt(cat1) : null, cat2 ? parseInt(cat2) : null);
+        }
+
+        // 模块项产品选择器分类筛选变化
+        async function onItemProductSelectorCategoryChange() {
+            const cat1 = document.getElementById('itemProductSelectorCategory1')?.value || '';
+            const cat2 = document.getElementById('itemProductSelectorCategory2')?.value || '';
+            const sel2 = document.getElementById('itemProductSelectorCategory2');
+            sel2.innerHTML = '<option value="">全部</option>';
+            if (cat1) {
+                const cat = productCategoriesTree.find(c => c.id == cat1);
+                if (cat && cat.subcategories) {
+                    cat.subcategories.forEach(sub => {
+                        const opt = document.createElement('option');
+                        opt.value = sub.id;
+                        opt.textContent = sub.name;
+                        sel2.appendChild(opt);
+                    });
+                }
+            }
+            await loadProductsForItemSelector(cat1 ? parseInt(cat1) : null, cat2 ? parseInt(cat2) : null);
+        }
+
+        // 加载产品列表（支持分类筛选）
+        async function loadProductsForSelector(categoryId, subcategoryId) {
+            try {
+                let url = '/api/admin/homepage/products';
+                const params = [];
+                if (categoryId) params.push('category_id=' + categoryId);
+                if (subcategoryId) params.push('subcategory_id=' + subcategoryId);
+                if (params.length) url += '?' + params.join('&');
+                const data = await fetchHomepageApi(url);
                 if (data.status === 'success') {
                     allProducts = data.data || [];
                     renderProductSelector();
@@ -1620,16 +1993,12 @@
                 selectedProductIds = new Set();
             }
             
-            // 加载产品列表
-            if (allProducts.length === 0) {
-                loadProductsForSelector().then(() => {
-                    renderProductSelector();
-                    new bootstrap.Modal(document.getElementById('productSelectorModal')).show();
-                });
-            } else {
+            document.getElementById('productSelectorCategory1').value = '';
+            document.getElementById('productSelectorCategory2').innerHTML = '<option value="">全部</option>';
+            loadProductsForSelector(null, null).then(() => {
                 renderProductSelector();
                 new bootstrap.Modal(document.getElementById('productSelectorModal')).show();
-            }
+            });
         }
 
         // 渲染产品选择器
@@ -1660,7 +2029,7 @@
                         </div>
                         <div class="product-selector-info">
                             <div class="product-selector-name">${product.name}</div>
-                            <div class="product-selector-category">${product.category_name || '未分类'}</div>
+                            <div class="product-selector-category">${[product.category_name, product.subcategory_name].filter(Boolean).join(' / ') || '未分类'}</div>
                         </div>
                     </div>
                 `;
@@ -1820,11 +2189,15 @@
             currentEditingItemIndex = -1;
             resetModuleItemForm();
             document.getElementById('moduleItemModalTitle').textContent = '添加模块项';
+            const hintEl = document.getElementById('moduleItemTitleHint');
+            if (hintEl) {
+                hintEl.style.display = (currentModuleTypeForItem === 'ip_collab' || currentModuleTypeForItem === 'works') ? 'block' : 'none';
+            }
             new bootstrap.Modal(document.getElementById('moduleItemModal')).show();
         }
 
         // 编辑模块项
-        function editModuleItem(index) {
+        async function editModuleItem(index) {
             currentEditingItemIndex = index;
             const item = moduleItems[index];
             if (!item) return;
@@ -1853,14 +2226,85 @@
                 }
             } else if (item.category_id) {
                 document.getElementById('moduleItemSourceType').value = 'category';
-                document.getElementById('moduleItemCategoryId').value = item.category_id;
                 handleItemSourceTypeChange();
-                
-                // 显示分类图片预览
-                const category = productCategories.find(c => c.id === item.category_id);
-                const categoryImageUrl = category ? (category.image_url || '') : (item.image_url || item.main_image || '');
-                if (categoryImageUrl) {
-                    document.getElementById('moduleItemImagePreview').innerHTML = `<img src="${categoryImageUrl}" style="max-width: 100%; border-radius: 8px;" onerror="this.parentElement.innerHTML='<p class=\\'text-muted\\'>图片加载失败</p>'">`;
+                if (productCategoriesTree.length === 0) {
+                    await loadCategoriesForItem();
+                }
+                const cat1 = productCategoriesTree.find(c => c.id == item.category_id);
+                if (cat1) {
+                    document.getElementById('moduleItemCategory1').value = cat1.id;
+                    const sel2 = document.getElementById('moduleItemCategory2');
+                    sel2.innerHTML = '<option value="">请选择二级分类（可选）</option>';
+                    if (cat1.subcategories) {
+                        cat1.subcategories.forEach(sub => {
+                            const opt = document.createElement('option');
+                            opt.value = sub.id;
+                            opt.textContent = sub.name;
+                            sel2.appendChild(opt);
+                        });
+                    }
+                    if (item.subcategory_id) {
+                        document.getElementById('moduleItemCategory2').value = item.subcategory_id;
+                    }
+                    document.getElementById('moduleItemCategoryId').value = item.subcategory_id || item.category_id;
+                    updateModuleItemCategoryPreview(cat1.id, item.subcategory_id || '');
+                } else {
+                    document.getElementById('moduleItemCategory1').value = item.category_id;
+                    document.getElementById('moduleItemCategoryId').value = item.category_id;
+                    const imgUrl = item.image_url || item.main_image || '';
+                    if (imgUrl) {
+                        document.getElementById('moduleItemImagePreview').innerHTML = `<img src="${imgUrl}" style="max-width: 100%; border-radius: 8px;" onerror="this.parentElement.innerHTML='<p class=\\'text-muted\\'>图片加载失败</p>'">`;
+                    }
+                }
+            } else if (item.style_category_id && !item.style_image_id) {
+                document.getElementById('moduleItemSourceType').value = 'style_category';
+                handleItemSourceTypeChange();
+                await loadStyleCategoriesForDir();
+                const cat1 = styleCategoriesTree.find(c => c.id == item.style_category_id);
+                if (cat1) {
+                    document.getElementById('moduleItemStyleCategoryDir1').value = item.style_category_id;
+                    const sel2 = document.getElementById('moduleItemStyleCategoryDir2');
+                    sel2.innerHTML = '<option value="">请选择二级风格分类（可选）</option>';
+                    if (cat1.subcategories) {
+                        cat1.subcategories.forEach(sub => {
+                            const opt = document.createElement('option');
+                            opt.value = sub.id;
+                            opt.textContent = sub.name;
+                            sel2.appendChild(opt);
+                        });
+                    }
+                    if (item.style_subcategory_id) {
+                        document.getElementById('moduleItemStyleCategoryDir2').value = item.style_subcategory_id;
+                    }
+                    document.getElementById('moduleItemTitle').value = item.title || item.category_name || cat1.name;
+                }
+            } else if (item.style_image_id) {
+                document.getElementById('moduleItemSourceType').value = 'style';
+                handleItemSourceTypeChange();
+                if (styleCategoriesTree.length === 0) {
+                    await loadStyleCategoriesForItem();
+                }
+                const cat1 = styleCategoriesTree.find(c => c.id == item.style_category_id);
+                if (cat1) {
+                    document.getElementById('moduleItemStyleCategory1').value = item.style_category_id;
+                    const cat2 = item.style_subcategory_id || '';
+                    const sel2 = document.getElementById('moduleItemStyleCategory2');
+                    sel2.innerHTML = '<option value="">请选择二级风格分类（可选）</option>';
+                    if (cat1.subcategories) {
+                        cat1.subcategories.forEach(sub => {
+                            const opt = document.createElement('option');
+                            opt.value = sub.id;
+                            opt.textContent = sub.name;
+                            sel2.appendChild(opt);
+                        });
+                    }
+                    if (cat2) sel2.value = cat2;
+                    await loadStyleImagesForItem(item.style_category_id, cat2, String(item.style_image_id));
+                    document.getElementById('moduleItemStyleImageId').value = item.style_image_id;
+                    const imgUrl = item.image_url || item.main_image || '';
+                    if (imgUrl) {
+                        document.getElementById('moduleItemImagePreview').innerHTML = `<img src="${imgUrl}" style="max-width: 100%; border-radius: 8px;" onerror="this.parentElement.innerHTML='<p class=\\'text-muted\\'>图片加载失败</p>'">`;
+                    }
                 }
             } else {
                 // 如果没有产品ID和分类ID，显示已有图片
@@ -1872,6 +2316,10 @@
             
             handleItemLinkTypeChange();
             document.getElementById('moduleItemModalTitle').textContent = '编辑模块项';
+            const hintEl = document.getElementById('moduleItemTitleHint');
+            if (hintEl) {
+                hintEl.style.display = (currentModuleTypeForItem === 'ip_collab' || currentModuleTypeForItem === 'works') ? 'block' : 'none';
+            }
             new bootstrap.Modal(document.getElementById('moduleItemModal')).show();
         }
 
@@ -1907,7 +2355,7 @@
                 }
                 // 确保产品列表已加载
                 if (allProducts.length === 0) {
-                    await loadProductsForSelector();
+                    await loadProductsForSelector(null, null);
                 }
                 const product = allProducts.find(p => p.id === parseInt(productId));
                 if (!product) {
@@ -1926,24 +2374,32 @@
                 }
                 item.image_url = imageUrl;
             } else if (sourceType === 'category') {
-                const categoryId = document.getElementById('moduleItemCategoryId').value;
-                if (!categoryId) {
-                    alert('请选择分类');
+                const cat1Id = document.getElementById('moduleItemCategory1')?.value;
+                const cat2Id = document.getElementById('moduleItemCategory2')?.value;
+                if (!cat1Id) {
+                    alert('请选择一级分类');
                     return;
                 }
-                // 确保分类列表已加载
-                if (productCategories.length === 0) {
+                if (productCategoriesTree.length === 0) {
                     await loadCategoriesForItem();
                 }
-                const category = productCategories.find(c => c.id === parseInt(categoryId));
-                if (!category) {
+                const cat1 = productCategoriesTree.find(c => c.id == cat1Id);
+                if (!cat1) {
                     alert('分类不存在，请重新选择');
                     return;
                 }
-                item.category_id = parseInt(categoryId);
-                item.category_name = category.name;
-                // 保存图片URL（相对路径）
-                let imageUrl = category.image_url || '';
+                let categoryName = cat1.name;
+                let imageUrl = cat1.image_url || '';
+                if (cat2Id && cat1.subcategories) {
+                    const sub = cat1.subcategories.find(s => s.id == cat2Id);
+                    if (sub) {
+                        categoryName = sub.name;
+                        imageUrl = sub.image_url || imageUrl;
+                        item.subcategory_id = parseInt(cat2Id);
+                    }
+                }
+                item.category_id = parseInt(cat1Id);
+                item.category_name = categoryName;
                 if (imageUrl && imageUrl.startsWith('http')) {
                     const mediaMatch = imageUrl.match(/\/(media|static)\/(.+)$/);
                     if (mediaMatch) {
@@ -1951,6 +2407,73 @@
                     }
                 }
                 item.image_url = imageUrl;
+            } else if (sourceType === 'style') {
+                const styleImageId = document.getElementById('moduleItemStyleImageId')?.value;
+                if (!styleImageId) {
+                    alert('请选择风格图片');
+                    return;
+                }
+                const cat1 = document.getElementById('moduleItemStyleCategory1')?.value;
+                if (!cat1) {
+                    alert('请先选择一级风格分类');
+                    return;
+                }
+                try {
+                    let imgUrl = '/api/admin/styles/images?per_page=100&category_id=' + cat1;
+                    const cat2Val = document.getElementById('moduleItemStyleCategory2')?.value;
+                    if (cat2Val) imgUrl += '&subcategory_id=' + cat2Val;
+                    const imgRes = await fetch(imgUrl);
+                    const imgData = await imgRes.json();
+                    if (imgData.status !== 'success' || !imgData.data) {
+                        alert('获取风格图片失败');
+                        return;
+                    }
+                    const styleImg = imgData.data.find(i => i.id == styleImageId);
+                    if (!styleImg) {
+                        alert('风格图片不存在，请重新选择');
+                        return;
+                    }
+                    item.style_image_id = parseInt(styleImageId);
+                    item.style_category_id = parseInt(cat1);
+                    if (cat2Val) item.style_subcategory_id = parseInt(cat2Val);
+                    item.category_name = styleImg.name;
+                    let imageUrl = styleImg.image_url || '';
+                    if (imageUrl && imageUrl.startsWith('http')) {
+                        const mediaMatch = imageUrl.match(/\/(media|static)\/(.+)$/);
+                        if (mediaMatch) {
+                            imageUrl = `/${mediaMatch[1]}/${mediaMatch[2]}`;
+                        }
+                    }
+                    item.image_url = imageUrl;
+                } catch (e) {
+                    console.error(e);
+                    alert('保存风格图片失败');
+                    return;
+                }
+            } else if (sourceType === 'style_category') {
+                const cat1Id = document.getElementById('moduleItemStyleCategoryDir1')?.value;
+                const cat2Id = document.getElementById('moduleItemStyleCategoryDir2')?.value;
+                if (!cat1Id) {
+                    alert('请选择一级风格分类');
+                    return;
+                }
+                if (styleCategoriesTree.length === 0) {
+                    await loadStyleCategoriesForDir();
+                }
+                const cat1 = styleCategoriesTree.find(c => c.id == cat1Id);
+                if (!cat1) {
+                    alert('风格分类不存在，请重新选择');
+                    return;
+                }
+                let categoryName = cat1.name;
+                if (cat2Id && cat1.subcategories) {
+                    const sub = cat1.subcategories.find(s => s.id == cat2Id);
+                    if (sub) categoryName = sub.name;
+                }
+                item.style_category_id = parseInt(cat1Id);
+                item.style_subcategory_id = cat2Id ? parseInt(cat2Id) : undefined;
+                item.category_name = categoryName;
+                if (!item.title) item.title = categoryName;
             }
             
             if (currentEditingItemIndex >= 0) {
@@ -1962,7 +2485,11 @@
             }
             
             renderModuleItems();
+            moduleItemsDirty = true;
             bootstrap.Modal.getInstance(document.getElementById('moduleItemModal')).hide();
+            if (currentMainCategory === 'modules' && currentSubSelection?.type === 'module') {
+                updateDetailPanel();
+            }
         }
 
         // 处理模块项图片来源类型切换
@@ -1970,14 +2497,21 @@
             const sourceType = document.getElementById('moduleItemSourceType').value;
             const productContainer = document.getElementById('moduleItemProductContainer');
             const categoryContainer = document.getElementById('moduleItemCategoryContainer');
+            const styleContainer = document.getElementById('moduleItemStyleContainer');
+            const styleCategoryDirContainer = document.getElementById('moduleItemStyleCategoryDirContainer');
             
+            [productContainer, categoryContainer, styleContainer, styleCategoryDirContainer].forEach(c => { if (c) c.style.display = 'none'; });
             if (sourceType === 'product') {
                 if (productContainer) productContainer.style.display = 'block';
-                if (categoryContainer) categoryContainer.style.display = 'none';
             } else if (sourceType === 'category') {
-                if (productContainer) productContainer.style.display = 'none';
                 if (categoryContainer) categoryContainer.style.display = 'block';
                 loadCategoriesForItem();
+            } else if (sourceType === 'style') {
+                if (styleContainer) styleContainer.style.display = 'block';
+                loadStyleCategoriesForItem();
+            } else if (sourceType === 'style_category') {
+                if (styleCategoryDirContainer) styleCategoryDirContainer.style.display = 'block';
+                loadStyleCategoriesForDir();
             }
         }
 
@@ -2003,10 +2537,30 @@
             }
         }
 
+        // 加载产品列表（用于模块项选择器，支持分类筛选）
+        async function loadProductsForItemSelector(categoryId, subcategoryId) {
+            try {
+                let url = '/api/admin/homepage/products';
+                const params = [];
+                if (categoryId) params.push('category_id=' + categoryId);
+                if (subcategoryId) params.push('subcategory_id=' + subcategoryId);
+                if (params.length) url += '?' + params.join('&');
+                const data = await fetchHomepageApi(url);
+                if (data.status === 'success') {
+                    allProducts = data.data || [];
+                    renderItemProductSelector();
+                }
+            } catch (error) {
+                console.error('加载产品列表失败:', error);
+            }
+        }
+
         // 为模块项打开产品选择器
-        function openProductSelectorForItem() {
+        async function openProductSelectorForItem() {
             selectedItemProduct = null;
-            renderItemProductSelector();
+            document.getElementById('itemProductSelectorCategory1').value = '';
+            document.getElementById('itemProductSelectorCategory2').innerHTML = '<option value="">全部</option>';
+            await loadProductsForItemSelector(null, null);
             new bootstrap.Modal(document.getElementById('itemProductSelectorModal')).show();
         }
 
@@ -2035,7 +2589,7 @@
                         </div>
                         <div class="product-selector-info">
                             <div class="product-selector-name">${product.name}</div>
-                            <div class="product-selector-category">${product.category_name || '未分类'}</div>
+                            <div class="product-selector-category">${[product.category_name, product.subcategory_name].filter(Boolean).join(' / ') || '未分类'}</div>
                         </div>
                     </div>
                 `;
@@ -2071,54 +2625,214 @@
             bootstrap.Modal.getInstance(document.getElementById('itemProductSelectorModal')).hide();
         }
 
-        // 加载分类列表（用于模块项）
+        // 加载分类列表（用于模块项，使用分类树）
         async function loadCategoriesForItem() {
-            if (productCategories.length > 0) {
-                renderCategoriesForItem();
-                return;
+            if (productCategoriesTree.length === 0) {
+                await loadProductCategoriesTree();
             }
+            renderCategoriesForItem();
+        }
+
+        // 渲染分类下拉列表（用于模块项，一级->二级级联）
+        function renderCategoriesForItem() {
+            const sel1 = document.getElementById('moduleItemCategory1');
+            const sel2 = document.getElementById('moduleItemCategory2');
+            if (!sel1) return;
             
-            try {
-                const response = await fetch('/api/miniprogram/product-categories');
-                const data = await response.json();
-                if (data.status === 'success') {
-                    productCategories = data.data;
-                    renderCategoriesForItem();
+            sel1.innerHTML = '<option value="">请选择一级分类</option>';
+            productCategoriesTree.forEach(cat => {
+                const opt = document.createElement('option');
+                opt.value = cat.id;
+                opt.textContent = cat.name;
+                sel1.appendChild(opt);
+            });
+            sel2.innerHTML = '<option value="">请选择二级分类（可选）</option>';
+        }
+
+        // 模块项一级分类变化
+        function onModuleItemCategory1Change() {
+            const sel1 = document.getElementById('moduleItemCategory1');
+            const sel2 = document.getElementById('moduleItemCategory2');
+            const cat1 = sel1?.value || '';
+            sel2.innerHTML = '<option value="">请选择二级分类（可选）</option>';
+            document.getElementById('moduleItemCategoryId').value = '';
+            if (cat1) {
+                const cat = productCategoriesTree.find(c => c.id == cat1);
+                if (cat && cat.subcategories && cat.subcategories.length) {
+                    cat.subcategories.forEach(sub => {
+                        const opt = document.createElement('option');
+                        opt.value = sub.id;
+                        opt.textContent = sub.name;
+                        sel2.appendChild(opt);
+                    });
                 }
-            } catch (error) {
-                console.error('加载分类失败:', error);
+                document.getElementById('moduleItemCategoryId').value = cat1;
+                updateModuleItemCategoryPreview(cat1, '');
+            } else {
+                document.getElementById('moduleItemImagePreview').innerHTML = '<p class="text-muted">选择分类后显示图片</p>';
             }
         }
 
-        // 渲染分类下拉列表（用于模块项）
-        function renderCategoriesForItem() {
-            const select = document.getElementById('moduleItemCategoryId');
-            if (!select) return;
-            
-            select.innerHTML = '<option value="">请选择分类</option>';
-            
-            productCategories.forEach(category => {
-                const option = document.createElement('option');
-                option.value = category.id;
-                option.textContent = category.name;
-                select.appendChild(option);
-            });
-            
-            // 监听分类选择变化，更新图片预览
-            select.onchange = function() {
-                const categoryId = this.value;
-                if (!categoryId) {
-                    document.getElementById('moduleItemImagePreview').innerHTML = '<p class="text-muted">选择分类后显示图片</p>';
-                    return;
+        // 模块项二级分类变化
+        function onModuleItemCategory2Change() {
+            const sel1 = document.getElementById('moduleItemCategory1');
+            const sel2 = document.getElementById('moduleItemCategory2');
+            const cat1 = sel1?.value || '';
+            const cat2 = sel2?.value || '';
+            document.getElementById('moduleItemCategoryId').value = cat2 || cat1 || '';
+            updateModuleItemCategoryPreview(cat1, cat2);
+        }
+
+        // 更新模块项分类图片预览
+        function updateModuleItemCategoryPreview(cat1Id, cat2Id) {
+            const preview = document.getElementById('moduleItemImagePreview');
+            if (!preview) return;
+            let imageUrl = '';
+            let cat = productCategoriesTree.find(c => c.id == cat1Id);
+            if (cat2Id && cat && cat.subcategories) {
+                const sub = cat.subcategories.find(s => s.id == cat2Id);
+                if (sub && sub.image_url) imageUrl = sub.image_url;
+            }
+            if (!imageUrl && cat && cat.image_url) imageUrl = cat.image_url;
+            if (imageUrl) {
+                preview.innerHTML = `<img src="${imageUrl}" style="max-width: 100%; border-radius: 8px;" onerror="this.parentElement.innerHTML='<p class=\\'text-muted\\'>图片加载失败</p>'">`;
+            } else {
+                preview.innerHTML = '<p class="text-muted">该分类暂无图片</p>';
+            }
+        }
+
+        // ========== 风格图片选择 ==========
+        let styleCategoriesTree = [];
+
+        async function loadStyleCategoriesForItem() {
+            try {
+                const response = await fetch('/api/admin/styles/categories');
+                const data = await response.json();
+                if (data.status === 'success') {
+                    styleCategoriesTree = data.data || [];
+                    const sel1 = document.getElementById('moduleItemStyleCategory1');
+                    sel1.innerHTML = '<option value="">请选择一级风格分类</option>';
+                    styleCategoriesTree.forEach(c => {
+                        const opt = document.createElement('option');
+                        opt.value = c.id;
+                        opt.textContent = c.name;
+                        sel1.appendChild(opt);
+                    });
+                    document.getElementById('moduleItemStyleCategory2').innerHTML = '<option value="">请选择二级风格分类（可选）</option>';
+                    document.getElementById('moduleItemStyleImagesGrid').innerHTML = '<p class="text-muted small">选择风格分类后显示风格图片</p>';
                 }
-                
-                const category = productCategories.find(c => c.id == categoryId);
-                if (category && category.image_url) {
-                    document.getElementById('moduleItemImagePreview').innerHTML = `<img src="${category.image_url}" style="max-width: 100%; border-radius: 8px;" onerror="this.parentElement.innerHTML='<p class=\\'text-muted\\'>图片加载失败</p>'">`;
+            } catch (error) {
+                console.error('加载风格分类失败:', error);
+            }
+        }
+
+        function onModuleItemStyleCategory1Change() {
+            const cat1 = document.getElementById('moduleItemStyleCategory1')?.value;
+            const sel2 = document.getElementById('moduleItemStyleCategory2');
+            sel2.innerHTML = '<option value="">请选择二级风格分类（可选）</option>';
+            document.getElementById('moduleItemStyleImageId').value = '';
+            if (cat1) {
+                const cat = styleCategoriesTree.find(c => c.id == cat1);
+                if (cat && cat.subcategories && cat.subcategories.length) {
+                    cat.subcategories.forEach(sub => {
+                        const opt = document.createElement('option');
+                        opt.value = sub.id;
+                        opt.textContent = sub.name;
+                        sel2.appendChild(opt);
+                    });
+                }
+                loadStyleImagesForItem(cat1, '');
+            } else {
+                document.getElementById('moduleItemStyleImagesGrid').innerHTML = '<p class="text-muted small">选择风格分类后显示风格图片</p>';
+            }
+        }
+
+        function onModuleItemStyleCategory2Change() {
+            const cat1 = document.getElementById('moduleItemStyleCategory1')?.value;
+            const cat2 = document.getElementById('moduleItemStyleCategory2')?.value;
+            document.getElementById('moduleItemStyleImageId').value = '';
+            if (cat1) {
+                loadStyleImagesForItem(cat1, cat2);
+            }
+        }
+
+        async function loadStyleCategoriesForDir() {
+            try {
+                if (styleCategoriesTree.length === 0) {
+                    const response = await fetch('/api/admin/styles/categories');
+                    const data = await response.json();
+                    if (data.status === 'success') styleCategoriesTree = data.data || [];
+                }
+                const sel1 = document.getElementById('moduleItemStyleCategoryDir1');
+                if (sel1) {
+                    sel1.innerHTML = '<option value="">请选择一级风格分类</option>';
+                    styleCategoriesTree.forEach(c => {
+                        const opt = document.createElement('option');
+                        opt.value = c.id;
+                        opt.textContent = c.name;
+                        sel1.appendChild(opt);
+                    });
+                }
+                const sel2 = document.getElementById('moduleItemStyleCategoryDir2');
+                if (sel2) sel2.innerHTML = '<option value="">请选择二级风格分类（可选）</option>';
+            } catch (e) { console.error('加载风格分类目录失败:', e); }
+        }
+
+        function onModuleItemStyleCategoryDir1Change() {
+            const cat1 = document.getElementById('moduleItemStyleCategoryDir1')?.value;
+            const sel2 = document.getElementById('moduleItemStyleCategoryDir2');
+            sel2.innerHTML = '<option value="">请选择二级风格分类（可选）</option>';
+            if (cat1) {
+                const cat = styleCategoriesTree.find(c => c.id == cat1);
+                if (cat && cat.subcategories && cat.subcategories.length) {
+                    cat.subcategories.forEach(sub => {
+                        const opt = document.createElement('option');
+                        opt.value = sub.id;
+                        opt.textContent = sub.name;
+                        sel2.appendChild(opt);
+                    });
+                }
+            }
+        }
+
+        function onModuleItemStyleCategoryDir2Change() {}
+
+        async function loadStyleImagesForItem(categoryId, subcategoryId, preserveSelectedId) {
+            const grid = document.getElementById('moduleItemStyleImagesGrid');
+            grid.innerHTML = '<p class="text-muted small">加载中...</p>';
+            try {
+                let url = '/api/admin/styles/images?per_page=100&category_id=' + categoryId;
+                if (subcategoryId) url += '&subcategory_id=' + subcategoryId;
+                const response = await fetch(url);
+                const data = await response.json();
+                if (data.status === 'success' && data.data && Array.isArray(data.data)) {
+                    const images = data.data;
+                    grid.innerHTML = '';
+                    if (images.length === 0) {
+                        grid.innerHTML = '<p class="text-muted small">该分类下暂无风格图片</p>';
+                        return;
+                    }
+                    const selectedId = preserveSelectedId || document.getElementById('moduleItemStyleImageId')?.value;
+                    images.forEach(img => {
+                        const div = document.createElement('div');
+                        div.className = 'style-image-item border rounded p-1 ' + (selectedId == img.id ? 'border-primary' : '');
+                        div.style.cssText = 'cursor:pointer;width:80px;height:80px;flex-shrink:0;';
+                        div.innerHTML = `<img src="${img.image_url || ''}" alt="${img.name}" style="width:100%;height:100%;object-fit:cover;border-radius:4px;" onerror="this.parentElement.innerHTML='<span class=\\'small\\'>无图</span>'">`;
+                        div.onclick = () => {
+                            document.querySelectorAll('.style-image-item').forEach(el => el.classList.remove('border-primary'));
+                            div.classList.add('border-primary');
+                            document.getElementById('moduleItemStyleImageId').value = img.id;
+                            document.getElementById('moduleItemImagePreview').innerHTML = `<img src="${img.image_url || ''}" style="max-width:100%;border-radius:8px;" onerror="this.parentElement.innerHTML='<p class=\\'text-muted\\'>图片加载失败</p>'">`;
+                        };
+                        grid.appendChild(div);
+                    });
                 } else {
-                    document.getElementById('moduleItemImagePreview').innerHTML = '<p class="text-muted">该分类暂无图片</p>';
+                    grid.innerHTML = '<p class="text-muted small">加载失败</p>';
                 }
-            };
+            } catch (error) {
+                console.error('加载风格图片失败:', error);
+                grid.innerHTML = '<p class="text-muted small">加载失败</p>';
+            }
         }
 
         // 重置模块项表单
@@ -2128,6 +2842,14 @@
             document.getElementById('moduleItemProductId').value = '';
             document.getElementById('moduleItemProductIdValue').value = '';
             document.getElementById('moduleItemCategoryId').value = '';
+            document.getElementById('moduleItemCategory1').value = '';
+            document.getElementById('moduleItemCategory2').innerHTML = '<option value="">请选择二级分类（可选）</option>';
+            document.getElementById('moduleItemStyleCategory1').value = '';
+            document.getElementById('moduleItemStyleCategory2').innerHTML = '<option value="">请选择二级风格分类（可选）</option>';
+            document.getElementById('moduleItemStyleCategoryDir1').value = '';
+            document.getElementById('moduleItemStyleCategoryDir2').innerHTML = '<option value="">请选择二级风格分类（可选）</option>';
+            document.getElementById('moduleItemStyleImageId').value = '';
+            document.getElementById('moduleItemStyleImagesGrid').innerHTML = '<p class="text-muted small">选择风格分类后显示风格图片</p>';
             document.getElementById('moduleItemTitle').value = '';
             document.getElementById('moduleItemDesc').value = '';
             document.getElementById('moduleItemTag').value = '';
@@ -2139,13 +2861,25 @@
         }
 
         // 初始化时加载数据
-        document.addEventListener('DOMContentLoaded', function() {
-            loadBanners();
-            loadHomepageConfig();
-            loadCategoryNavs();
-            loadProductSections();
-            loadProductCategories();  // 加载产品分类列表
-            loadProductsForSelector();  // 预加载产品列表
+        document.addEventListener('DOMContentLoaded', async function() {
+            bindModalEvents();
+            try {
+                await Promise.all([
+                    loadBanners(),
+                    loadHomepageConfig(),
+                    loadCategoryNavs(),
+                    loadProductSections(),
+                    loadProductCategories(),
+                    loadProductCategoriesTree(),
+                    loadProductsForSelector(null, null)
+                ]);
+            } catch (e) {
+                console.error('首页配置数据加载失败:', e);
+                alert('数据加载失败。请确认：\n1. 服务已用 python test_server.py 或 python start.py 启动\n2. 控制台是否有「管理后台首页配置API蓝图已注册」提示');
+            }
+            populateProductSelectorCategoryFilters();
+            updateSubCategoryList();
+            updateDetailPanel();
         });
         
     </script>
@@ -2362,8 +3096,22 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="mb-3">
-                        <small class="text-muted">已选择 <span id="productSelectorCount">0</span> 个产品</small>
+                    <div class="row mb-3 align-items-end">
+                        <div class="col-auto">
+                            <label class="form-label small mb-1">一级分类</label>
+                            <select class="form-control form-control-sm" id="productSelectorCategory1" style="min-width: 120px;" onchange="onProductSelectorCategoryChange()">
+                                <option value="">全部</option>
+                            </select>
+                        </div>
+                        <div class="col-auto">
+                            <label class="form-label small mb-1">二级分类</label>
+                            <select class="form-control form-control-sm" id="productSelectorCategory2" style="min-width: 120px;" onchange="onProductSelectorCategoryChange()">
+                                <option value="">全部</option>
+                            </select>
+                        </div>
+                        <div class="col">
+                            <small class="text-muted">已选择 <span id="productSelectorCount">0</span> 个产品</small>
+                        </div>
                     </div>
                     <div id="productSelectorList" class="product-selector-list">
                         <!-- 产品列表将通过JavaScript动态加载 -->
@@ -2394,9 +3142,11 @@
                                     <label class="form-label">图片来源 *</label>
                                     <select class="form-control" id="moduleItemSourceType" required onchange="handleItemSourceTypeChange()">
                                         <option value="product">产品图片</option>
-                                        <option value="category">分类图片</option>
+                                        <option value="category">分类目录</option>
+                                        <option value="style">风格图片</option>
+                                        <option value="style_category">风格分类目录</option>
                                     </select>
-                                    <small class="text-muted">选择使用产品图片还是分类图片</small>
+                                    <small class="text-muted">IP联名：选「分类目录」或「风格分类目录」则按该分类下全部图片轮播；其他模块用单张</small>
                                 </div>
                                 <div class="mb-3" id="moduleItemProductContainer" style="display: none;">
                                     <label class="form-label">选择产品 *</label>
@@ -2410,13 +3160,60 @@
                                 </div>
                                 <div class="mb-3" id="moduleItemCategoryContainer" style="display: none;">
                                     <label class="form-label">选择分类 *</label>
-                                    <select class="form-control" id="moduleItemCategoryId" required>
-                                        <option value="">请选择分类</option>
-                                    </select>
+                                    <div class="row g-2">
+                                        <div class="col">
+                                            <select class="form-control" id="moduleItemCategory1" onchange="onModuleItemCategory1Change()">
+                                                <option value="">请选择一级分类</option>
+                                            </select>
+                                        </div>
+                                        <div class="col">
+                                            <select class="form-control" id="moduleItemCategory2" onchange="onModuleItemCategory2Change()">
+                                                <option value="">请选择二级分类（可选）</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <input type="hidden" id="moduleItemCategoryId">
+                                    <small class="text-muted">IP联名：选该分类后，将轮播该分类下所有产品图片；其他模块用分类封面图</small>
+                                </div>
+                                <div class="mb-3" id="moduleItemStyleCategoryDirContainer" style="display: none;">
+                                    <label class="form-label">选择风格分类目录 *</label>
+                                    <div class="row g-2">
+                                        <div class="col">
+                                            <select class="form-control" id="moduleItemStyleCategoryDir1" onchange="onModuleItemStyleCategoryDir1Change()">
+                                                <option value="">请选择一级风格分类</option>
+                                            </select>
+                                        </div>
+                                        <div class="col">
+                                            <select class="form-control" id="moduleItemStyleCategoryDir2" onchange="onModuleItemStyleCategoryDir2Change()">
+                                                <option value="">请选择二级风格分类（可选）</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <small class="text-muted">IP联名专有：选该分类后，将轮播该分类下所有风格图片</small>
+                                </div>
+                                <div class="mb-3" id="moduleItemStyleContainer" style="display: none;">
+                                    <label class="form-label">选择风格 *</label>
+                                    <div class="row g-2 mb-2">
+                                        <div class="col">
+                                            <select class="form-control" id="moduleItemStyleCategory1" onchange="onModuleItemStyleCategory1Change()">
+                                                <option value="">请选择一级风格分类</option>
+                                            </select>
+                                        </div>
+                                        <div class="col">
+                                            <select class="form-control" id="moduleItemStyleCategory2" onchange="onModuleItemStyleCategory2Change()">
+                                                <option value="">请选择二级风格分类（可选）</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div id="moduleItemStyleImagesGrid" class="d-flex flex-wrap gap-2" style="max-height: 200px; overflow-y: auto;">
+                                        <p class="text-muted small">选择风格分类后显示风格图片</p>
+                                    </div>
+                                    <input type="hidden" id="moduleItemStyleImageId">
                                 </div>
                                 <div class="mb-3">
                                     <label class="form-label">标题</label>
                                     <input type="text" class="form-control" id="moduleItemTitle" placeholder="如：产品标题">
+                                    <small class="text-muted" id="moduleItemTitleHint" style="display:none;">IP联名/作品展示时，此处填写二级分类名称（如：迪士尼、漫威），将显示在小程序子分类标签栏</small>
                                 </div>
                                 <div class="mb-3">
                                     <label class="form-label">描述</label>
@@ -2470,6 +3267,20 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
+                    <div class="row mb-3 align-items-end">
+                        <div class="col-auto">
+                            <label class="form-label small mb-1">一级分类</label>
+                            <select class="form-control form-control-sm" id="itemProductSelectorCategory1" style="min-width: 120px;" onchange="onItemProductSelectorCategoryChange()">
+                                <option value="">全部</option>
+                            </select>
+                        </div>
+                        <div class="col-auto">
+                            <label class="form-label small mb-1">二级分类</label>
+                            <select class="form-control form-control-sm" id="itemProductSelectorCategory2" style="min-width: 120px;" onchange="onItemProductSelectorCategoryChange()">
+                                <option value="">全部</option>
+                            </select>
+                        </div>
+                    </div>
                     <div id="itemProductSelectorList" class="product-selector-list">
                         <!-- 产品列表将通过JavaScript动态加载 -->
                     </div>

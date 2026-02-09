@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>选片详情 - {{ brand_name }}后台</title>
     <link href="/static/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/static/css/ux-components.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         * {
@@ -978,6 +979,15 @@
             </script>
             {% endif %}
 
+            <!-- 样机预览入口（当产品绑定了样机模板时显示） -->
+            {% if available_mockup_templates and available_mockup_templates|length > 0 %}
+            <div class="mockup-preview-section" style="margin-bottom: 20px;">
+                <button type="button" class="btn btn-outline-primary w-100" onclick="openMockupModal()" style="padding: 10px 16px;">
+                    <i class="fas fa-image me-2"></i>样机预览
+                </button>
+            </div>
+            {% endif %}
+
             <!-- 套餐信息 -->
             <div class="package-info">
                 <div class="section-title">套餐信息</div>
@@ -1026,12 +1036,72 @@
         </aside>
     </div>
 
+    <!-- 确认选片模态框 -->
+    <div id="confirmSelectionModal" class="confirm-modal" style="display: none;">
+        <div class="confirm-modal-content">
+            <div class="confirm-modal-header">
+                <h3>确认选片</h3>
+                <button type="button" class="confirm-modal-close" onclick="closeConfirmModal()">&times;</button>
+            </div>
+            <div class="confirm-modal-body">
+                <div id="confirmImageList" class="confirm-image-list"></div>
+                <div class="confirm-total">
+                    <span class="confirm-total-label">总计：</span>
+                    <span class="confirm-total-price">¥<span id="confirmTotalPrice">0.00</span></span>
+                </div>
+            </div>
+            <div class="confirm-modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeConfirmModal()">取消</button>
+                <button type="button" class="btn btn-primary" id="confirmSubmitBtn" onclick="submitConfirmedSelection()">确认提交</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 样机预览模态框 -->
+    <div id="mockupModal" class="confirm-modal" style="display: none;">
+        <div class="confirm-modal-content" style="max-width: 700px;">
+            <div class="confirm-modal-header">
+                <h3><i class="fas fa-image me-2"></i>样机预览</h3>
+                <button type="button" class="confirm-modal-close" onclick="closeMockupModal()">&times;</button>
+            </div>
+            <div class="confirm-modal-body">
+                <div class="mb-3">
+                    <label class="form-label">选择图片</label>
+                    <div class="d-flex flex-wrap gap-2" id="mockupImageList"></div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">选择样机模板</label>
+                    <select class="form-select" id="mockupTemplateSelect"></select>
+                </div>
+                <div class="mb-3">
+                    <button type="button" class="btn btn-primary" id="mockupGenerateBtn" onclick="generateMockup()">
+                        <i class="fas fa-magic me-1"></i> 生成套图
+                    </button>
+                </div>
+                <div id="mockupResult" style="display: none;">
+                    <hr>
+                    <label class="form-label">生成结果</label>
+                    <div class="text-center p-3 bg-light rounded">
+                        <img id="mockupResultImg" src="" alt="样机套图" style="max-width: 100%; max-height: 300px;">
+                        <div class="mt-2">
+                            <a id="mockupDownloadLink" href="#" download class="btn btn-sm btn-outline-primary">
+                                <i class="fas fa-download me-1"></i> 下载
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="/static/js/bootstrap.bundle.min.js"></script>
+    <script src="/static/js/ux-components.js"></script>
     <script>
         // 全局变量和函数，确保onclick可以访问
         const freeSelectionCount = {{ free_selection_count }};
         const extraPhotoPrice = {{ extra_photo_price }};
         const effectImages = {{ effect_images | tojson }};
+        const availableMockupTemplates = {{ available_mockup_templates | tojson | safe }};
         const designImageUrl = {% if design_image_url %}'{{ design_image_url }}'{% else %}null{% endif %};
         console.log('🎨 初始化设计图片URL:', designImageUrl);
         
@@ -1503,7 +1573,7 @@
         
         // 裁切图片
         window.cropImage = function() {
-            alert('裁切功能开发中，将支持自定义裁剪区域');
+            UX.Toast.info('裁切功能开发中，将支持自定义裁剪区域');
             // TODO: 实现裁切功能，可以使用canvas或者第三方库如cropperjs
         }
         
@@ -1550,7 +1620,7 @@
         window.toggleDesign = function() {
             console.log('🎨 点击设计按钮, designImageUrl:', designImageUrl);
             if (!designImageUrl) {
-                alert('当前风格主题未配置设计图片');
+                UX.Toast.warning('当前风格主题未配置设计图片');
                 return;
             }
             
@@ -1749,7 +1819,7 @@
                 console.log('🔍 [选片] order.id:', '{{ order.id }}');
                 
                 if (!selectedImageIds || selectedImageIds.length === 0) {
-                    alert('请至少选择一张照片');
+                    UX.Toast.warning('请至少选择一张照片');
                     console.warn('⚠️ [选片] 没有选中的照片');
                     return;
                 }
@@ -1758,7 +1828,7 @@
                 const orderId = '{{ order.id }}';
                 if (!orderId || orderId.trim() === '') {
                     console.error('❌ [选片] order.id 为空');
-                    alert('订单ID不存在，无法提交选片');
+                    UX.Toast.error('订单ID不存在，无法提交选片');
                     return;
                 }
                 
@@ -1771,7 +1841,7 @@
                 window.location.href = confirmUrl;
             } catch (error) {
                 console.error('❌ [选片] submitSelection 出错:', error);
-                alert('提交选片时出错: ' + error.message);
+                UX.Toast.error('提交选片时出错: ' + error.message);
             }
         }
         
@@ -1893,8 +1963,14 @@
                 selectedImageIds.push(imageId);
             });
             
-            // 提交选片结果
-            fetch('{{ url_for("photo_selection.photo_selection_submit", order_id=order.id) }}', {
+            // 提交选片结果（使用 UX 组件优化）
+            const submitButton = document.querySelector('#confirmSubmitBtn');
+            if (submitButton) {
+                submitButton.disabled = true;
+                submitButton.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>提交中...';
+            }
+
+            fetch('{{ url_for("photo_selection.photo_selection_submit.photo_selection_submit", order_id=order.id) }}', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -1903,20 +1979,115 @@
                     selected_image_ids: selectedImageIds
                 })
             })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    alert(data.message || '选片成功');
+            .then(response => UX.handleApiResponse(response, {
+                showSuccessToast: true,
+                showErrorToast: true,
+                successMessage: '选片成功',
+                onSuccess: (data) => {
                     closeConfirmModal();
-                    window.location.href = '{{ url_for("photo_selection.photo_selection_list") }}';
-                } else {
-                    alert(data.message || '选片失败');
+                    setTimeout(() => {
+                        window.location.href = '{{ url_for("photo_selection.photo_selection_list.photo_selection_list") }}';
+                    }, 500);
+                },
+                onError: () => {
+                    if (submitButton) {
+                        submitButton.disabled = false;
+                        submitButton.innerHTML = '确认提交';
+                    }
                 }
-            })
+            }))
             .catch(error => {
                 console.error('提交选片失败:', error);
-                alert('提交选片失败，请重试');
+                UX.Toast.error('提交选片失败，请检查网络连接后重试');
+                if (submitButton) {
+                    submitButton.disabled = false;
+                    submitButton.innerHTML = '确认提交';
+                }
             });
+        }
+
+        // ========== 样机预览 ==========
+        let mockupSelectedImageUrl = null;
+
+        function openMockupModal() {
+            if (!availableMockupTemplates || availableMockupTemplates.length === 0) return;
+            const modal = document.getElementById('mockupModal');
+            if (!modal) return;
+
+            // 渲染图片选择（使用当前选中的或第一张）
+            const imgList = document.getElementById('mockupImageList');
+            imgList.innerHTML = effectImages.map((img, idx) => {
+                const isCurrent = (currentImageId != null && img.id == currentImageId) || (currentImageId == null && idx === 0);
+                if (isCurrent) mockupSelectedImageUrl = img.url;
+                return `<div class="border rounded p-1 text-center mockup-img-opt" style="width: 70px; cursor: pointer; ${isCurrent ? 'border-color: #4361ee !important;' : ''}" data-idx="${idx}" onclick="selectMockupImageByIdx(${idx})">
+                    <img src="${img.url}" style="width: 60px; height: 60px; object-fit: cover;" alt="">
+                </div>`;
+            }).join('');
+
+            // 渲染模板选择
+            const sel = document.getElementById('mockupTemplateSelect');
+            sel.innerHTML = '<option value="">请选择样机模板</option>' + availableMockupTemplates.map(t =>
+                `<option value="${t.id}">${t.name}</option>`
+            ).join('');
+
+            document.getElementById('mockupResult').style.display = 'none';
+            modal.style.display = 'flex';
+        }
+
+        function closeMockupModal() {
+            document.getElementById('mockupModal').style.display = 'none';
+        }
+
+        function selectMockupImageByIdx(idx) {
+            if (effectImages[idx]) {
+                mockupSelectedImageUrl = effectImages[idx].url;
+            }
+            document.querySelectorAll('#mockupImageList .mockup-img-opt').forEach(div => {
+                div.style.borderColor = parseInt(div.dataset.idx) === idx ? '#4361ee' : '';
+            });
+        }
+
+        async function generateMockup() {
+            const templateId = document.getElementById('mockupTemplateSelect').value;
+            if (!templateId || !mockupSelectedImageUrl) {
+                if (typeof UX !== 'undefined' && UX.Toast) UX.Toast.error('请选择图片和样机模板');
+                else alert('请选择图片和样机模板');
+                return;
+            }
+            const btn = document.getElementById('mockupGenerateBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> 生成中...';
+            document.getElementById('mockupResult').style.display = 'none';
+
+            try {
+                const r = await fetch('/api/admin/mockup/generate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        template_id: parseInt(templateId),
+                        image_url: mockupSelectedImageUrl,
+                        output_format: 'jpg'
+                    })
+                });
+                const data = await r.json();
+                if (data.code === 0 && data.data) {
+                    const previewUrl = data.data.preview_url;
+                    document.getElementById('mockupResultImg').src = previewUrl;
+                    document.getElementById('mockupDownloadLink').href = previewUrl;
+                    document.getElementById('mockupDownloadLink').download = '样机套图.jpg';
+                    document.getElementById('mockupResult').style.display = 'block';
+                    if (typeof UX !== 'undefined' && UX.Toast) UX.Toast.success('生成成功');
+                } else {
+                    if (typeof UX !== 'undefined' && UX.Toast) UX.Toast.error(data.message || '生成失败');
+                    else alert(data.message || '生成失败');
+                }
+            } catch (e) {
+                if (typeof UX !== 'undefined' && UX.Toast) UX.Toast.error('生成失败: ' + e.message);
+                else alert('生成失败: ' + e.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-magic me-1"></i> 生成套图';
+            }
         }
     </script>
 </body>

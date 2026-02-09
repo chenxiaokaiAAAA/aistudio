@@ -1,0 +1,717 @@
+{
+  "summary": {
+    "total_files": 88,
+    "needs_refactor": 1,
+    "already_using_helpers": 52,
+    "already_using_common": 9
+  },
+  "files_needing_refactor": [
+    "app\\routes\\miniprogram\\common.py"
+  ],
+  "all_results": [
+    {
+      "file": "app\\routes\\admin.py",
+      "has_local_definition": false,
+      "has_import_from_helpers": false,
+      "has_import_from_common": false,
+      "uses_get_models": false,
+      "needs_refactor": false
+    },
+    {
+      "file": "app\\routes\\admin_coupon_api.py",
+      "has_local_definition": false,
+      "has_import_from_helpers": true,
+      "has_import_from_common": false,
+      "uses_get_models": true,
+      "needs_refactor": false
+    },
+    {
+      "file": "app\\routes\\admin_dashboard_api.py",
+      "has_local_definition": false,
+      "has_import_from_helpers": false,
+      "has_import_from_common": false,
+      "uses_get_models": true,
+      "needs_refactor": false
+    },
+    {
+      "file": "app\\routes\\admin_groupon_api.py",
+      "has_local_definition": false,
+      "has_import_from_helpers": true,
+      "has_import_from_common": false,
+      "uses_get_models": true,
+      "needs_refactor": false
+    },
+    {
+      "file": "app\\routes\\admin_groupon_package_api.py",
+      "has_local_definition": false,
+      "has_import_from_helpers": true,
+      "has_import_from_common": false,
+      "uses_get_models": true,
+      "needs_refactor": false
+    },
+    {
+      "file": "app\\routes\\admin_groupon_verify.py",
+      "has_local_definition": false,
+      "has_import_from_helpers": true,
+      "has_import_from_common": false,
+      "uses_get_models": false,
+      "needs_refactor": false
+    },
+    {
+      "file": "app\\routes\\admin_homepage_api.py",
+      "has_local_definition": false,
+      "has_import_from_helpers": true,
+      "has_import_from_common": false,
+      "uses_get_models": true,
+      "needs_refactor": false
+    },
+    {
+      "file": "app\\routes\\admin_image_cleanup.py",
+      "has_local_definition": false,
+      "has_import_from_helpers": false,
+      "has_import_from_common": false,
+      "uses_get_models": true,
+      "needs_refactor": false
+    },
+    {
+      "file": "app\\routes\\admin_miniprogram_config_api.py",
+      "has_local_definition": false,
+      "has_import_from_helpers": true,
+      "has_import_from_common": false,
+      "uses_get_models": true,
+      "needs_refactor": false
+    },
+    {
+      "file": "app\\routes\\admin_notification_api.py",
+      "has_local_definition": false,
+      "has_import_from_helpers": true,
+      "has_import_from_common": false,
+      "uses_get_models": true,
+      "needs_refactor": false
+    },
+    {
+      "file": "app\\routes\\admin_orders.py",
+      "has_local_definition": false,
+      "has_import_from_helpers": false,
+      "has_import_from_common": false,
+      "uses_get_models": false,
+      "needs_refactor": false
+    },
+    {
+      "file": "app\\routes\\admin_orders_detail_api.py",
+      "has_local_definition": false,
+      "has_import_from_helpers": true,
+      "has_import_from_common": false,
+      "uses_get_models": false,
+      "needs_refactor": false
+    },
+    {
+      "file": "app\\routes\\admin_orders_list_api.py",
+      "has_local_definition": false,
+      "has_import_from_helpers": true,
+      "has_import_from_common": false,
+      "uses_get_models": false,
+      "needs_refactor": false
+    },
+    {
+      "file": "app\\routes\\admin_orders_operations_api.py",
+      "has_local_definition": false,
+      "has_import_from_helpers": true,
+      "has_import_from_common": false,
+      "uses_get_models": false,
+      "needs_refactor": false
+    },
+    {
+      "file": "app\\routes\\admin_payment_management.py",
+      "has_local_definition": false,
+      "has_import_from_helpers": true,
+      "has_import_from_common": false,
+      "uses_get_models": false,
+      "needs_refactor": false
+    },
+    {
+      "file": "app\\routes\\admin_polling_config_api.py",
+      "has_local_definition": false,
+      "has_import_from_helpers": true,
+      "has_import_from_common": false,
+      "uses_get_models": true,
+      "needs_refactor": false
+    },
+    {
+      "file": "app\\routes\\admin_print_config_api.py",
+      "has_local_definition": false,
+      "has_import_from_helpers": true,
+      "has_import_from_common": false,
+      "uses_get_models": false,
+      "needs_refactor": false
+    },
+    {
+      "file": "app\\routes\\admin_products_api.py",
+      "has_local_definition": false,
+      "has_import_from_helpers": true,
+      "has_import_from_common": false,
+      "uses_get_models": false,
+      "needs_refactor": false
+    },
+    {
+      "file": "app\\routes\\admin_product_categories_api.py",
+      "has_local_definition": false,
+      "has_import_from_helpers": true,
+      "has_import_from_common": false,
+      "uses_get_models": true,
+      "needs_refactor": false
+    },
+    {
+      "file": "app\\routes\\admin_profile.py",
+      "has_local_definition": false,
+      "has_import_from_helpers": true,
+      "has_import_from_common": false,
+      "uses_get_models": false,
+      "needs_refactor": false
+    },
+    {
+      "file": "app\\routes\\admin_promotion_api.py",
+      "has_local_definition": false,
+      "has_import_from_helpers": true,
+      "has_import_from_common": false,
+      "uses_get_models": true,
+      "needs_refactor": false
+    },
+    {
+      "file": "app\\routes\\admin_refund_api.py",
+      "has_local_definition": false,
+      "has_import_from_helpers": true,
+      "has_import_from_common": false,
+      "uses_get_models": false,
+      "needs_refactor": false
+    },
+    {
+      "file": "app\\routes\\admin_routes.py",
+      "has_local_definition": false,
+      "has_import_from_helpers": true,
+      "has_import_from_common": false,
+      "uses_get_models": false,
+      "needs_refactor": false
+    },
+    {
+      "file": "app\\routes\\admin_shop_api.py",
+      "has_local_definition": false,
+      "has_import_from_helpers": true,
+      "has_import_from_common": false,
+      "uses_get_models": true,
+      "needs_refactor": false
+    },
+    {
+      "file": "app\\routes\\admin_styles_api.py",
+      "has_local_definition": false,
+      "has_import_from_helpers": false,
+      "has_import_from_common": false,
+      "uses_get_models": false,
+      "needs_refactor": false
+    },
+    {
+      "file": "app\\routes\\admin_styles_categories_api.py",
+      "has_local_definition": false,
+      "has_import_from_helpers": true,
+      "has_import_from_common": false,
+      "uses_get_models": false,
+      "needs_refactor": false
+    },
+    {
+      "file": "app\\routes\\admin_styles_images_api.py",
+      "has_local_definition": false,
+      "has_import_from_helpers": true,
+      "has_import_from_common": false,
+      "uses_get_models": false,
+      "needs_refactor": false
+    },
+    {
+      "file": "app\\routes\\admin_styles_utils.py",
+      "has_local_definition": false,
+      "has_import_from_helpers": false,
+      "has_import_from_common": false,
+      "uses_get_models": false,
+      "needs_refactor": false
+    },
+    {
+      "file": "app\\routes\\admin_styles_workflow_api.py",
+      "has_local_definition": false,
+      "has_import_from_helpers": true,
+      "has_import_from_common": false,
+      "uses_get_models": true,
+      "needs_refactor": false
+    },
+    {
+      "file": "app\\routes\\admin_system_api.py",
+      "has_local_definition": false,
+      "has_import_from_helpers": true,
+      "has_import_from_common": false,
+      "uses_get_models": false,
+      "needs_refactor": false
+    },
+    {
+      "file": "app\\routes\\admin_third_party_groupon_api.py",
+      "has_local_definition": false,
+      "has_import_from_helpers": true,
+      "has_import_from_common": false,
+      "uses_get_models": true,
+      "needs_refactor": false
+    },
+    {
+      "file": "app\\routes\\admin_tools_api.py",
+      "has_local_definition": false,
+      "has_import_from_helpers": true,
+      "has_import_from_common": false,
+      "uses_get_models": true,
+      "needs_refactor": false
+    },
+    {
+      "file": "app\\routes\\admin_users_api.py",
+      "has_local_definition": false,
+      "has_import_from_helpers": true,
+      "has_import_from_common": false,
+      "uses_get_models": true,
+      "needs_refactor": false
+    },
+    {
+      "file": "app\\routes\\ai.py",
+      "has_local_definition": false,
+      "has_import_from_helpers": false,
+      "has_import_from_common": false,
+      "uses_get_models": false,
+      "needs_refactor": false
+    },
+    {
+      "file": "app\\routes\\ai_config_api.py",
+      "has_local_definition": false,
+      "has_import_from_helpers": true,
+      "has_import_from_common": false,
+      "uses_get_models": false,
+      "needs_refactor": false
+    },
+    {
+      "file": "app\\routes\\ai_debug_api.py",
+      "has_local_definition": false,
+      "has_import_from_helpers": true,
+      "has_import_from_common": false,
+      "uses_get_models": false,
+      "needs_refactor": false
+    },
+    {
+      "file": "app\\routes\\ai_provider.py",
+      "has_local_definition": false,
+      "has_import_from_helpers": false,
+      "has_import_from_common": false,
+      "uses_get_models": false,
+      "needs_refactor": false
+    },
+    {
+      "file": "app\\routes\\ai_routes.py",
+      "has_local_definition": false,
+      "has_import_from_helpers": false,
+      "has_import_from_common": false,
+      "uses_get_models": false,
+      "needs_refactor": false
+    },
+    {
+      "file": "app\\routes\\ai_tasks_api.py",
+      "has_local_definition": false,
+      "has_import_from_helpers": true,
+      "has_import_from_common": false,
+      "uses_get_models": false,
+      "needs_refactor": false
+    },
+    {
+      "file": "app\\routes\\auth.py",
+      "has_local_definition": false,
+      "has_import_from_helpers": false,
+      "has_import_from_common": false,
+      "uses_get_models": false,
+      "needs_refactor": false
+    },
+    {
+      "file": "app\\routes\\base.py",
+      "has_local_definition": false,
+      "has_import_from_helpers": false,
+      "has_import_from_common": false,
+      "uses_get_models": false,
+      "needs_refactor": false
+    },
+    {
+      "file": "app\\routes\\coupon_api.py",
+      "has_local_definition": false,
+      "has_import_from_helpers": true,
+      "has_import_from_common": false,
+      "uses_get_models": true,
+      "needs_refactor": false
+    },
+    {
+      "file": "app\\routes\\debug_api.py",
+      "has_local_definition": false,
+      "has_import_from_helpers": true,
+      "has_import_from_common": false,
+      "uses_get_models": false,
+      "needs_refactor": false
+    },
+    {
+      "file": "app\\routes\\logistics_api.py",
+      "has_local_definition": false,
+      "has_import_from_helpers": true,
+      "has_import_from_common": false,
+      "uses_get_models": true,
+      "needs_refactor": false
+    },
+    {
+      "file": "app\\routes\\media.py",
+      "has_local_definition": false,
+      "has_import_from_helpers": true,
+      "has_import_from_common": false,
+      "uses_get_models": true,
+      "needs_refactor": false
+    },
+    {
+      "file": "app\\routes\\meitu.py",
+      "has_local_definition": false,
+      "has_import_from_helpers": true,
+      "has_import_from_common": false,
+      "uses_get_models": false,
+      "needs_refactor": false
+    },
+    {
+      "file": "app\\routes\\merchant.py",
+      "has_local_definition": false,
+      "has_import_from_helpers": true,
+      "has_import_from_common": false,
+      "uses_get_models": true,
+      "needs_refactor": false
+    },
+    {
+      "file": "app\\routes\\order.py",
+      "has_local_definition": false,
+      "has_import_from_helpers": false,
+      "has_import_from_common": false,
+      "uses_get_models": false,
+      "needs_refactor": false
+    },
+    {
+      "file": "app\\routes\\payment.py",
+      "has_local_definition": false,
+      "has_import_from_helpers": false,
+      "has_import_from_common": false,
+      "uses_get_models": false,
+      "needs_refactor": false
+    },
+    {
+      "file": "app\\routes\\photo_selection.py",
+      "has_local_definition": false,
+      "has_import_from_helpers": true,
+      "has_import_from_common": false,
+      "uses_get_models": true,
+      "needs_refactor": false
+    },
+    {
+      "file": "app\\routes\\playground_api.py",
+      "has_local_definition": false,
+      "has_import_from_helpers": true,
+      "has_import_from_common": false,
+      "uses_get_models": true,
+      "needs_refactor": false
+    },
+    {
+      "file": "app\\routes\\promotion_api.py",
+      "has_local_definition": false,
+      "has_import_from_helpers": true,
+      "has_import_from_common": false,
+      "uses_get_models": true,
+      "needs_refactor": false
+    },
+    {
+      "file": "app\\routes\\qrcode_api.py",
+      "has_local_definition": false,
+      "has_import_from_helpers": true,
+      "has_import_from_common": false,
+      "uses_get_models": false,
+      "needs_refactor": false
+    },
+    {
+      "file": "app\\routes\\staff_permission.py",
+      "has_local_definition": false,
+      "has_import_from_helpers": false,
+      "has_import_from_common": false,
+      "uses_get_models": true,
+      "needs_refactor": false
+    },
+    {
+      "file": "app\\routes\\user_api.py",
+      "has_local_definition": false,
+      "has_import_from_helpers": true,
+      "has_import_from_common": false,
+      "uses_get_models": true,
+      "needs_refactor": false
+    },
+    {
+      "file": "app\\routes\\user_api_main.py",
+      "has_local_definition": false,
+      "has_import_from_helpers": false,
+      "has_import_from_common": false,
+      "uses_get_models": false,
+      "needs_refactor": false
+    },
+    {
+      "file": "app\\routes\\user_auth_api.py",
+      "has_local_definition": false,
+      "has_import_from_helpers": true,
+      "has_import_from_common": false,
+      "uses_get_models": false,
+      "needs_refactor": false
+    },
+    {
+      "file": "app\\routes\\__init__.py",
+      "has_local_definition": false,
+      "has_import_from_helpers": false,
+      "has_import_from_common": false,
+      "uses_get_models": false,
+      "needs_refactor": false
+    },
+    {
+      "file": "app\\routes\\franchisee\\admin.py",
+      "has_local_definition": false,
+      "has_import_from_helpers": false,
+      "has_import_from_common": false,
+      "uses_get_models": true,
+      "needs_refactor": false
+    },
+    {
+      "file": "app\\routes\\franchisee\\api.py",
+      "has_local_definition": false,
+      "has_import_from_helpers": false,
+      "has_import_from_common": false,
+      "uses_get_models": true,
+      "needs_refactor": false
+    },
+    {
+      "file": "app\\routes\\franchisee\\common.py",
+      "has_local_definition": false,
+      "has_import_from_helpers": true,
+      "has_import_from_common": false,
+      "uses_get_models": false,
+      "needs_refactor": false
+    },
+    {
+      "file": "app\\routes\\franchisee\\coupons.py",
+      "has_local_definition": false,
+      "has_import_from_helpers": false,
+      "has_import_from_common": false,
+      "uses_get_models": true,
+      "needs_refactor": false
+    },
+    {
+      "file": "app\\routes\\franchisee\\frontend.py",
+      "has_local_definition": false,
+      "has_import_from_helpers": false,
+      "has_import_from_common": false,
+      "uses_get_models": true,
+      "needs_refactor": false
+    },
+    {
+      "file": "app\\routes\\franchisee\\groupon.py",
+      "has_local_definition": false,
+      "has_import_from_helpers": false,
+      "has_import_from_common": false,
+      "uses_get_models": true,
+      "needs_refactor": false
+    },
+    {
+      "file": "app\\routes\\franchisee\\permissions.py",
+      "has_local_definition": false,
+      "has_import_from_helpers": true,
+      "has_import_from_common": false,
+      "uses_get_models": true,
+      "needs_refactor": false
+    },
+    {
+      "file": "app\\routes\\franchisee\\permissions_list.py",
+      "has_local_definition": false,
+      "has_import_from_helpers": true,
+      "has_import_from_common": false,
+      "uses_get_models": true,
+      "needs_refactor": false
+    },
+    {
+      "file": "app\\routes\\franchisee\\__init__.py",
+      "has_local_definition": false,
+      "has_import_from_helpers": false,
+      "has_import_from_common": false,
+      "uses_get_models": false,
+      "needs_refactor": false
+    },
+    {
+      "file": "app\\routes\\miniprogram\\catalog.py",
+      "has_local_definition": false,
+      "has_import_from_helpers": false,
+      "has_import_from_common": true,
+      "uses_get_models": true,
+      "needs_refactor": false
+    },
+    {
+      "file": "app\\routes\\miniprogram\\common.py",
+      "has_local_definition": true,
+      "has_import_from_helpers": false,
+      "has_import_from_common": false,
+      "uses_get_models": true,
+      "needs_refactor": true
+    },
+    {
+      "file": "app\\routes\\miniprogram\\digital_avatar.py",
+      "has_local_definition": false,
+      "has_import_from_helpers": false,
+      "has_import_from_common": true,
+      "uses_get_models": true,
+      "needs_refactor": false
+    },
+    {
+      "file": "app\\routes\\miniprogram\\groupon.py",
+      "has_local_definition": false,
+      "has_import_from_helpers": false,
+      "has_import_from_common": true,
+      "uses_get_models": true,
+      "needs_refactor": false
+    },
+    {
+      "file": "app\\routes\\miniprogram\\media.py",
+      "has_local_definition": false,
+      "has_import_from_helpers": false,
+      "has_import_from_common": false,
+      "uses_get_models": false,
+      "needs_refactor": false
+    },
+    {
+      "file": "app\\routes\\miniprogram\\orders.py",
+      "has_local_definition": false,
+      "has_import_from_helpers": false,
+      "has_import_from_common": true,
+      "uses_get_models": true,
+      "needs_refactor": false
+    },
+    {
+      "file": "app\\routes\\miniprogram\\promotion.py",
+      "has_local_definition": false,
+      "has_import_from_helpers": false,
+      "has_import_from_common": false,
+      "uses_get_models": false,
+      "needs_refactor": false
+    },
+    {
+      "file": "app\\routes\\miniprogram\\refund.py",
+      "has_local_definition": false,
+      "has_import_from_helpers": false,
+      "has_import_from_common": true,
+      "uses_get_models": true,
+      "needs_refactor": false
+    },
+    {
+      "file": "app\\routes\\miniprogram\\share_reward.py",
+      "has_local_definition": false,
+      "has_import_from_helpers": false,
+      "has_import_from_common": true,
+      "uses_get_models": true,
+      "needs_refactor": false
+    },
+    {
+      "file": "app\\routes\\miniprogram\\shop.py",
+      "has_local_definition": false,
+      "has_import_from_helpers": false,
+      "has_import_from_common": true,
+      "uses_get_models": true,
+      "needs_refactor": false
+    },
+    {
+      "file": "app\\routes\\miniprogram\\third_party_groupon.py",
+      "has_local_definition": false,
+      "has_import_from_helpers": false,
+      "has_import_from_common": true,
+      "uses_get_models": true,
+      "needs_refactor": false
+    },
+    {
+      "file": "app\\routes\\miniprogram\\works.py",
+      "has_local_definition": false,
+      "has_import_from_helpers": false,
+      "has_import_from_common": true,
+      "uses_get_models": true,
+      "needs_refactor": false
+    },
+    {
+      "file": "app\\routes\\miniprogram\\__init__.py",
+      "has_local_definition": false,
+      "has_import_from_helpers": false,
+      "has_import_from_common": false,
+      "uses_get_models": false,
+      "needs_refactor": false
+    },
+    {
+      "file": "app\\routes\\user_api\\auth.py",
+      "has_local_definition": false,
+      "has_import_from_helpers": true,
+      "has_import_from_common": false,
+      "uses_get_models": true,
+      "needs_refactor": false
+    },
+    {
+      "file": "app\\routes\\user_api\\commission.py",
+      "has_local_definition": false,
+      "has_import_from_helpers": true,
+      "has_import_from_common": false,
+      "uses_get_models": true,
+      "needs_refactor": false
+    },
+    {
+      "file": "app\\routes\\user_api\\coupons.py",
+      "has_local_definition": false,
+      "has_import_from_helpers": true,
+      "has_import_from_common": false,
+      "uses_get_models": true,
+      "needs_refactor": false
+    },
+    {
+      "file": "app\\routes\\user_api\\messages.py",
+      "has_local_definition": false,
+      "has_import_from_helpers": true,
+      "has_import_from_common": false,
+      "uses_get_models": true,
+      "needs_refactor": false
+    },
+    {
+      "file": "app\\routes\\user_api\\profile.py",
+      "has_local_definition": false,
+      "has_import_from_helpers": true,
+      "has_import_from_common": false,
+      "uses_get_models": true,
+      "needs_refactor": false
+    },
+    {
+      "file": "app\\routes\\user_api\\promotion.py",
+      "has_local_definition": false,
+      "has_import_from_helpers": true,
+      "has_import_from_common": false,
+      "uses_get_models": true,
+      "needs_refactor": false
+    },
+    {
+      "file": "app\\routes\\user_api\\visit.py",
+      "has_local_definition": false,
+      "has_import_from_helpers": true,
+      "has_import_from_common": false,
+      "uses_get_models": true,
+      "needs_refactor": false
+    },
+    {
+      "file": "app\\routes\\user_api\\__init__.py",
+      "has_local_definition": false,
+      "has_import_from_helpers": false,
+      "has_import_from_common": false,
+      "uses_get_models": false,
+      "needs_refactor": false
+    }
+  ]
+}

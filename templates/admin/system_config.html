@@ -300,6 +300,80 @@
                                     </div>
                                 </div>
                             </div>
+                            
+                            <!-- 图片压缩配置 -->
+                            <h6 class="mt-4 mb-3">图片压缩配置</h6>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="imageAutoCompress" class="form-label">自动压缩</label>
+                                        <select class="form-select" id="imageAutoCompress">
+                                            <option value="true">启用</option>
+                                            <option value="false">禁用</option>
+                                        </select>
+                                        <div class="help-text">是否在上传时自动压缩图片</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="imageCompressMaxSizeMb" class="form-label">压缩触发大小（MB）</label>
+                                        <input type="number" class="form-control" id="imageCompressMaxSizeMb" 
+                                               placeholder="5" value="5" min="1" max="100" step="0.1">
+                                        <div class="help-text">超过此大小的图片才会被压缩</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="imageCompressMaxDimension" class="form-label">压缩后最大尺寸（像素）</label>
+                                        <input type="number" class="form-control" id="imageCompressMaxDimension" 
+                                               placeholder="1920" value="1920" min="100" max="10000" step="10">
+                                        <div class="help-text">压缩后图片的最大边长（保持宽高比）</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="imageCompressQuality" class="form-label">压缩质量</label>
+                                        <input type="number" class="form-control" id="imageCompressQuality" 
+                                               placeholder="85" value="85" min="1" max="100">
+                                        <div class="help-text">JPEG压缩质量（1-100，数值越大质量越好，文件也越大）</div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- 缩略图配置 -->
+                            <h6 class="mt-4 mb-3">缩略图配置</h6>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="imageAutoThumbnail" class="form-label">自动生成缩略图</label>
+                                        <select class="form-select" id="imageAutoThumbnail">
+                                            <option value="true">启用</option>
+                                            <option value="false">禁用</option>
+                                        </select>
+                                        <div class="help-text">是否在上传时自动生成缩略图</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="imageThumbnailMaxSize" class="form-label">缩略图最大尺寸（像素）</label>
+                                        <input type="number" class="form-control" id="imageThumbnailMaxSize" 
+                                               placeholder="1920" value="1920" min="100" max="10000" step="10">
+                                        <div class="help-text">缩略图的最大边长（保持宽高比）</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="imageThumbnailQuality" class="form-label">缩略图质量</label>
+                                        <input type="number" class="form-control" id="imageThumbnailQuality" 
+                                               placeholder="85" value="85" min="1" max="100">
+                                        <div class="help-text">缩略图JPEG质量（1-100，数值越大质量越好）</div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                         
                         <div id="ossStorageConfig" style="display: none;">
@@ -426,6 +500,7 @@
     </div>
 
     <script src="/static/js/bootstrap.bundle.min.js"></script>
+    {% include 'admin/_ux_scripts.html' %}
     <script>
         // 页面加载时获取配置
         document.addEventListener('DOMContentLoaded', function() {
@@ -561,6 +636,28 @@
                     if (configs.image_upload_environment) {
                         document.getElementById('imageUploadEnvironment').value = configs.image_upload_environment;
                     }
+                    // 填充图片压缩配置
+                    if (configs.image_auto_compress !== undefined) {
+                        document.getElementById('imageAutoCompress').value = configs.image_auto_compress;
+                    }
+                    if (configs.image_compress_max_size_mb) {
+                        document.getElementById('imageCompressMaxSizeMb').value = configs.image_compress_max_size_mb;
+                    }
+                    if (configs.image_compress_max_dimension) {
+                        document.getElementById('imageCompressMaxDimension').value = configs.image_compress_max_dimension;
+                    }
+                    if (configs.image_compress_quality) {
+                        document.getElementById('imageCompressQuality').value = configs.image_compress_quality;
+                    }
+                    if (configs.image_auto_thumbnail !== undefined) {
+                        document.getElementById('imageAutoThumbnail').value = configs.image_auto_thumbnail;
+                    }
+                    if (configs.image_thumbnail_max_size) {
+                        document.getElementById('imageThumbnailMaxSize').value = configs.image_thumbnail_max_size;
+                    }
+                    if (configs.image_thumbnail_quality) {
+                        document.getElementById('imageThumbnailQuality').value = configs.image_thumbnail_quality;
+                    }
                 }
             } catch (error) {
                 console.error('加载配置失败:', error);
@@ -673,6 +770,15 @@
                     data.oss_secret_key = secretKey;
                 }
             }
+            
+            // 添加图片压缩配置
+            data.compress_max_size_mb = document.getElementById('imageCompressMaxSizeMb').value.trim();
+            data.compress_max_dimension = document.getElementById('imageCompressMaxDimension').value.trim();
+            data.compress_quality = document.getElementById('imageCompressQuality').value.trim();
+            data.auto_compress = document.getElementById('imageAutoCompress').value;
+            data.thumbnail_max_size = document.getElementById('imageThumbnailMaxSize').value.trim();
+            data.thumbnail_quality = document.getElementById('imageThumbnailQuality').value.trim();
+            data.auto_thumbnail = document.getElementById('imageAutoThumbnail').value;
             
             try {
                 const response = await fetch('/api/admin/system-config/image-paths', {

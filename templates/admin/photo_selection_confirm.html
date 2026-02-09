@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh">
 <head>
     <meta charset="UTF-8">
@@ -402,13 +402,15 @@
     <script>
         console.log('🔍 [确认选片] 页面开始初始化');
         const effectImages = {{ effect_images | tojson }};
-        const shopProducts = {{ shop_products | tojson }};
+        const shopProducts = {{ products_data | tojson }};
+        const styleProductsMap = {{ style_products_map | tojson }};
         const orderId = {{ order.id }};
         const freeSelectionCount = {{ free_selection_count | default(1) }};
         
         console.log('🔍 [确认选片] effectImages:', effectImages);
         console.log('🔍 [确认选片] effectImages.length:', effectImages.length);
         console.log('🔍 [确认选片] shopProducts:', shopProducts);
+        console.log('🔍 [确认选片] styleProductsMap:', styleProductsMap);
         console.log('🔍 [确认选片] orderId:', orderId);
         console.log('🔍 [确认选片] freeSelectionCount:', freeSelectionCount);
         
@@ -652,18 +654,30 @@
             currentImageIndex = index;
             const modal = document.getElementById('productModal');
             modal.style.display = 'flex';
-            renderProducts();
+            // 按该照片的风格过滤可选产品：只显示与该风格绑定的产品
+            const image = effectImages[index];
+            const styleCategoryId = image ? image.style_category_id : null;
+            const mapKey = styleCategoryId != null ? String(styleCategoryId) : 'all';
+            const productsToShow = (styleProductsMap[mapKey] !== undefined)
+                ? styleProductsMap[mapKey]
+                : (styleProductsMap['all'] || shopProducts);
+            console.log('🔍 [添加产品] 图片index=', index, 'style_category_id=', styleCategoryId, '可选产品数=', productsToShow.length);
+            renderProducts(productsToShow);
         }
         
         function closeProductModal() {
             document.getElementById('productModal').style.display = 'none';
         }
         
-        function renderProducts() {
+        function renderProducts(products) {
             const productList = document.getElementById('productList');
             productList.innerHTML = '';
-            
-            shopProducts.forEach(product => {
+            const list = products || shopProducts;
+            if (list.length === 0) {
+                productList.innerHTML = '<div style="padding: 20px; color: #999; text-align: center;">该风格暂无绑定产品，请在产品管理中为风格绑定产品</div>';
+                return;
+            }
+            list.forEach(product => {
                 const card = document.createElement('div');
                 card.className = 'product-card';
                 card.innerHTML = `

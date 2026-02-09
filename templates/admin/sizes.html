@@ -1621,6 +1621,7 @@
     </div>
 
     <script src="/static/js/bootstrap.bundle.min.js"></script>
+    {% include 'admin/_ux_scripts.html' %}
     <script>
         // 二级分类数据（从后端传递）
         const subcategoriesByCategory = {{ subcategories_by_category | tojson | safe }};

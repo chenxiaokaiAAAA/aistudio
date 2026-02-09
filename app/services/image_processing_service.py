@@ -2,131 +2,148 @@
 """
 图片处理服务 - 串联美图API和AI工作流
 """
+
+import logging
+
+logger = logging.getLogger(__name__)
 import os
 import sys
 import threading
 import time
 from datetime import datetime
 
+
 def process_order_images(order_id, order_number=None, style_category_id=None, style_image_id=None):
     """
     处理订单图片：先经过美图API（如果启用），然后调用AI工作流
-    
+
     Args:
         order_id: 订单ID
         order_number: 订单号（可选）
         style_category_id: 风格分类ID（可选）
         style_image_id: 风格图片ID（可选）
-    
+
     Returns:
         tuple: (success: bool, message: str)
     """
     try:
         # 获取数据库模型
-        if 'test_server' not in sys.modules:
+        if "test_server" not in sys.modules:
             return False, "数据库未初始化"
-        
-        test_server_module = sys.modules['test_server']
+
+        test_server_module = sys.modules["test_server"]
         db = test_server_module.db
         Order = test_server_module.Order
         OrderImage = test_server_module.OrderImage
         MeituAPIConfig = test_server_module.MeituAPIConfig
         MeituAPIPreset = test_server_module.MeituAPIPreset
         MeituAPICallLog = test_server_module.MeituAPICallLog
-        StyleImage = test_server_module.StyleImage if hasattr(test_server_module, 'StyleImage') else None
-        StyleCategory = test_server_module.StyleCategory if hasattr(test_server_module, 'StyleCategory') else None
-        
+        StyleImage = (
+            test_server_module.StyleImage if hasattr(test_server_module, "StyleImage") else None
+        )
+        StyleCategory = (
+            test_server_module.StyleCategory
+            if hasattr(test_server_module, "StyleCategory")
+            else None
+        )
+
         # 获取订单
         order = Order.query.get(order_id)
         if not order:
             return False, "订单不存在"
-        
+
         # 检查订单类型：只有"立即拍摄"（shooting）类型的订单才走全自动流程
         # "立即制作"（making）类型的订单不走全自动流程，需要人工处理
-        if order.order_mode == 'making':
-            print(f"ℹ️ 订单 {order.order_number} 类型为'立即制作'，跳过全自动处理流程，等待人工处理")
+        if order.order_mode == "making":
+            logger.info(
+                f"ℹ️ 订单 {order.order_number} 类型为'立即制作'，跳过全自动处理流程，等待人工处理"
+            )
             return False, "立即制作类型的订单不走全自动流程"
-        
+
         # 如果订单类型未设置，默认走全自动流程（兼容旧订单）
-        if order.order_mode and order.order_mode != 'shooting':
-            print(f"⚠️ 订单 {order.order_number} 类型为未知类型 '{order.order_mode}'，跳过全自动处理流程")
+        if order.order_mode and order.order_mode != "shooting":
+            logger.warning(
+                "订单 {order.order_number} 类型为未知类型 '{order.order_mode}'，跳过全自动处理流程"
+            )
             return False, f"订单类型 '{order.order_mode}' 不支持全自动处理"
-        
-        print(f"✅ 订单 {order.order_number} 类型为'立即拍摄'，开始全自动处理流程（AI美颜 -> AI任务）")
-        
+
+        logger.info(
+            f"✅ 订单 {order.order_number} 类型为'立即拍摄'，开始全自动处理流程（AI美颜 -> AI任务）"
+        )
+
         # 获取订单的所有原图（支持多图处理）
         app = test_server_module.app
         all_images = OrderImage.query.filter_by(order_id=order.id).all()
-        
+
         if not all_images:
             return False, "订单没有上传的图片"
-        
+
         # 获取所有图片路径
         image_paths = []
         for img in all_images:
-            img_path = os.path.join(app.config['UPLOAD_FOLDER'], img.path)
+            img_path = os.path.join(app.config["UPLOAD_FOLDER"], img.path)
             if os.path.exists(img_path):
-                image_paths.append({
-                    'path': img_path,
-                    'order_image': img,
-                    'is_main': img.is_main
-                })
-        
+                image_paths.append({"path": img_path, "order_image": img, "is_main": img.is_main})
+
         if not image_paths:
             return False, "订单没有可用的图片文件"
-        
+
         # 优先使用主图，如果没有主图则使用第一张
-        main_image_info = next((img for img in image_paths if img['is_main']), image_paths[0])
-        original_image_path = main_image_info['path']
-        
+        main_image_info = next((img for img in image_paths if img["is_main"]), image_paths[0])
+        original_image_path = main_image_info["path"]
+
         # 检查美图API是否在流程中启用
         meitu_config = MeituAPIConfig.query.filter_by(is_active=True).first()
         use_meitu = False
         retouched_image_path = None
-        
+
         # 如果启用美图API，确保订单状态为"美颜处理中"
         if meitu_config and meitu_config.enable_in_workflow:
-            print(f"✅ 美图API已在流程中启用，开始处理订单 {order_number or order.order_number} 的图片")
+            logger.info(
+                f"✅ 美图API已在流程中启用，开始处理订单 {order_number or order.order_number} 的图片"
+            )
             use_meitu = True
-            
+
             # 确保订单状态为"美颜处理中"（如果当前状态是shooting或paid）
-            if hasattr(order, 'status') and order.status in ['shooting', 'paid']:
-                order.status = 'retouching'  # 美颜处理中
+            if hasattr(order, "status") and order.status in ["shooting", "paid"]:
+                order.status = "retouching"  # 美颜处理中
                 db.session.commit()
-                print(f"✅ 订单 {order.order_number} 状态已更新为: retouching（美颜处理中）- 开始调用美图API")
-            
+                logger.info(
+                    f"✅ 订单 {order.order_number} 状态已更新为: retouching（美颜处理中）- 开始调用美图API"
+                )
+
             # 获取预设ID（根据风格分类或风格图片）
             preset_id = None
             if style_category_id:
                 preset = MeituAPIPreset.query.filter_by(
-                    style_category_id=style_category_id,
-                    is_active=True
+                    style_category_id=style_category_id, is_active=True
                 ).first()
                 if preset:
                     preset_id = preset.preset_id
             elif style_image_id:
                 preset = MeituAPIPreset.query.filter_by(
-                    style_image_id=style_image_id,
-                    is_active=True
+                    style_image_id=style_image_id, is_active=True
                 ).first()
                 if preset:
                     preset_id = preset.preset_id
-            
+
             if preset_id:
                 # 调用美图API（带超时和轮询处理）
                 try:
-                    from app.services.meitu_api_service import call_meitu_api, download_result_image
                     import json
+
                     import requests
-                    
-                    print(f"📞 调用美图API，预设ID: {preset_id}")
+
+                    from app.services.meitu_api_service import call_meitu_api, download_result_image
+
+                    logger.info(f"📞 调用美图API，预设ID: {preset_id}")
                     start_time = time.time()
-                    
+
                     # 设置总超时时间（120秒 = 2分钟）
                     total_timeout = 120
                     poll_interval = 3  # 每3秒轮询一次
                     max_poll_attempts = total_timeout // poll_interval  # 最多轮询次数
-                    
+
                     # 调用美图API（异步接口，返回msg_id）
                     success, result_path, error_msg, call_log = call_meitu_api(
                         image_path=original_image_path,
@@ -139,163 +156,210 @@ def process_order_images(order_id, order_number=None, style_category_id=None, st
                         db=db,
                         MeituAPICallLog=MeituAPICallLog,
                         order_id=order.id,
-                        order_number=order.order_number
+                        order_number=order.order_number,
                     )
-                    
+
                     if not success or not call_log:
-                        print(f"❌ 美图API调用失败: {error_msg}，跳过美图处理，直接进行AI工作流")
+                        logger.error("美图API调用失败: {error_msg}，跳过美图处理，直接进行AI工作流")
                         use_meitu = False
                         # 美图API调用失败，更新状态为ai_processing
-                        if hasattr(order, 'status') and order.status == 'retouching':
-                            order.status = 'ai_processing'  # AI任务处理中
+                        if hasattr(order, "status") and order.status == "retouching":
+                            order.status = "ai_processing"  # AI任务处理中
                             db.session.commit()
-                            print(f"✅ 订单 {order.order_number} 状态已更新为: ai_processing（AI任务处理中）- 美图API调用失败，直接进入AI工作流")
+                            logger.info(
+                                f"✅ 订单 {order.order_number} 状态已更新为: ai_processing（AI任务处理中）- 美图API调用失败，直接进入AI工作流"
+                            )
                     else:
                         # 解析msg_id（从call_log的response_data中获取）
                         msg_id = None
                         if call_log.response_data:
                             try:
                                 response_data = json.loads(call_log.response_data)
-                                msg_id = response_data.get('msg_id')
-                            except:
+                                msg_id = response_data.get("msg_id")
+                            except Exception:
                                 pass
-                        
+
                         if not msg_id:
-                            print(f"⚠️  未获取到msg_id，跳过美图处理，直接进行AI工作流")
+                            logger.warning("未获取到msg_id，跳过美图处理，直接进行AI工作流")
                             use_meitu = False
                             # 未获取到msg_id，更新状态为ai_processing
-                            if hasattr(order, 'status') and order.status == 'retouching':
-                                order.status = 'ai_processing'  # AI任务处理中
+                            if hasattr(order, "status") and order.status == "retouching":
+                                order.status = "ai_processing"  # AI任务处理中
                                 db.session.commit()
-                                print(f"✅ 订单 {order.order_number} 状态已更新为: ai_processing（AI任务处理中）- 未获取到msg_id，直接进入AI工作流")
+                                logger.info(
+                                    f"✅ 订单 {order.order_number} 状态已更新为: ai_processing（AI任务处理中）- 未获取到msg_id，直接进入AI工作流"
+                                )
                         else:
                             # 轮询查询结果（最多等待2分钟）
-                            print(f"🔄 开始轮询美图API结果，msg_id: {msg_id}")
+                            logger.info(f"🔄 开始轮询美图API结果，msg_id: {msg_id}")
                             result_found = False
-                            
+
                             for attempt in range(max_poll_attempts):
                                 elapsed_time = time.time() - start_time
                                 if elapsed_time >= total_timeout:
-                                    print(f"⏱️  美图API轮询超时（{elapsed_time:.2f}秒），跳过美图处理，直接进行AI工作流")
+                                    logger.info(
+                                        f"⏱️  美图API轮询超时（{elapsed_time:.2f}秒），跳过美图处理，直接进行AI工作流"
+                                    )
                                     use_meitu = False
                                     break
-                                
+
                                 # 查询结果（通过查询call_log的状态）
                                 db.session.refresh(call_log)
-                                
-                                if call_log.status == 'success' and call_log.result_image_url:
+
+                                if call_log.status == "success" and call_log.result_image_url:
                                     # 成功获取结果
                                     result_image_url = call_log.result_image_url
-                                    print(f"✅ 美图API处理完成，结果图片URL: {result_image_url}")
-                                    
+                                    logger.info(
+                                        f"✅ 美图API处理完成，结果图片URL: {result_image_url}"
+                                    )
+
                                     # 下载结果图片
-                                    result_image_path = download_result_image(result_image_url, order.order_number)
+                                    result_image_path = download_result_image(
+                                        result_image_url, order.order_number
+                                    )
                                     if result_image_path and os.path.exists(result_image_path):
                                         retouched_image_path = result_image_path
                                         result_found = True
-                                        
+
                                         # 保存美颜后的图片到订单
                                         retouched_image = OrderImage(
                                             order_id=order.id,
                                             path=os.path.basename(retouched_image_path),
-                                            image_type='retouched',
-                                            is_main=False
+                                            image_type="retouched",
+                                            is_main=False,
                                         )
                                         db.session.add(retouched_image)
-                                        
+
                                         # 更新订单的美颜完成时间
-                                        if hasattr(order, 'retouch_completed_at'):
+                                        if hasattr(order, "retouch_completed_at"):
                                             order.retouch_completed_at = datetime.now()
-                                        
+
                                         # 美图API处理完成，更新状态为"AI任务处理中"
-                                        if hasattr(order, 'status') and order.status == 'retouching':
-                                            order.status = 'ai_processing'  # AI任务处理中
-                                            print(f"✅ 订单 {order.order_number} 状态已更新为: ai_processing（AI任务处理中）- 美图API处理完成")
-                                        
+                                        if (
+                                            hasattr(order, "status")
+                                            and order.status == "retouching"
+                                        ):
+                                            order.status = "ai_processing"  # AI任务处理中
+                                            logger.info(
+                                                f"✅ 订单 {order.order_number} 状态已更新为: ai_processing（AI任务处理中）- 美图API处理完成"
+                                            )
+
                                         db.session.commit()
-                                        print(f"✅ 美颜后的图片已保存到订单: {retouched_image_path}")
+                                        logger.info(
+                                            f"✅ 美颜后的图片已保存到订单: {retouched_image_path}"
+                                        )
                                         break
                                     else:
-                                        print(f"⚠️  下载美图结果图片失败，跳过美图处理")
+                                        logger.warning("下载美图结果图片失败，跳过美图处理")
                                         use_meitu = False
                                         # 下载失败，更新状态为ai_processing
-                                        if hasattr(order, 'status') and order.status == 'retouching':
-                                            order.status = 'ai_processing'  # AI任务处理中
+                                        if (
+                                            hasattr(order, "status")
+                                            and order.status == "retouching"
+                                        ):
+                                            order.status = "ai_processing"  # AI任务处理中
                                             db.session.commit()
-                                            print(f"✅ 订单 {order.order_number} 状态已更新为: ai_processing（AI任务处理中）- 美图结果下载失败，直接进入AI工作流")
+                                            logger.info(
+                                                f"✅ 订单 {order.order_number} 状态已更新为: ai_processing（AI任务处理中）- 美图结果下载失败，直接进入AI工作流"
+                                            )
                                         break
-                                
-                                elif call_log.status == 'failed':
+
+                                elif call_log.status == "failed":
                                     # 处理失败
-                                    error_msg = call_log.error_message or '未知错误'
-                                    print(f"❌ 美图API处理失败: {error_msg}，跳过美图处理，直接进行AI工作流")
+                                    error_msg = call_log.error_message or "未知错误"
+                                    logger.error(
+                                        "美图API处理失败: {error_msg}，跳过美图处理，直接进行AI工作流"
+                                    )
                                     use_meitu = False
                                     break
-                                
+
                                 # 等待后继续轮询
                                 time.sleep(poll_interval)
-                                print(f"⏳ 等待美图API结果... ({attempt + 1}/{max_poll_attempts})")
-                            
+                                logger.info(
+                                    f"⏳ 等待美图API结果... ({attempt + 1}/{max_poll_attempts})"
+                                )
+
                             if not result_found and use_meitu:
                                 # 轮询结束但未找到结果
                                 elapsed_time = time.time() - start_time
-                                print(f"⏱️  美图API轮询超时（{elapsed_time:.2f}秒），跳过美图处理，直接进行AI工作流")
+                                logger.info(
+                                    f"⏱️  美图API轮询超时（{elapsed_time:.2f}秒），跳过美图处理，直接进行AI工作流"
+                                )
                                 use_meitu = False
                                 # 美图API超时，更新状态为ai_processing
-                                if hasattr(order, 'status') and order.status == 'retouching':
-                                    order.status = 'ai_processing'  # AI任务处理中
+                                if hasattr(order, "status") and order.status == "retouching":
+                                    order.status = "ai_processing"  # AI任务处理中
                                     db.session.commit()
-                                    print(f"✅ 订单 {order.order_number} 状态已更新为: ai_processing（AI任务处理中）- 美图API超时，直接进入AI工作流")
-                
+                                    logger.info(
+                                        f"✅ 订单 {order.order_number} 状态已更新为: ai_processing（AI任务处理中）- 美图API超时，直接进入AI工作流"
+                                    )
+
                 except Exception as e:
-                    print(f"❌ 调用美图API异常: {str(e)}，跳过美图处理，直接进行AI工作流")
+                    logger.error("调用美图API异常: {str(e)}，跳过美图处理，直接进行AI工作流")
                     import traceback
+
                     traceback.print_exc()
                     use_meitu = False
                     # 美图API异常，更新状态为ai_processing
-                    if hasattr(order, 'status') and order.status == 'retouching':
-                        order.status = 'ai_processing'  # AI任务处理中
+                    if hasattr(order, "status") and order.status == "retouching":
+                        order.status = "ai_processing"  # AI任务处理中
                         db.session.commit()
-                        print(f"✅ 订单 {order.order_number} 状态已更新为: ai_processing（AI任务处理中）- 美图API异常，直接进入AI工作流")
+                        logger.info(
+                            f"✅ 订单 {order.order_number} 状态已更新为: ai_processing（AI任务处理中）- 美图API异常，直接进入AI工作流"
+                        )
             else:
-                print(f"⚠️  未找到对应的美图API预设配置，跳过美图处理")
+                logger.warning("未找到对应的美图API预设配置，跳过美图处理")
                 use_meitu = False
                 # 如果原本状态是retouching但跳过了美图处理，更新为ai_processing
-                if hasattr(order, 'status') and order.status == 'retouching':
-                    order.status = 'ai_processing'  # AI任务处理中
+                if hasattr(order, "status") and order.status == "retouching":
+                    order.status = "ai_processing"  # AI任务处理中
                     db.session.commit()
-                    print(f"✅ 订单 {order.order_number} 状态已更新为: ai_processing（AI任务处理中）- 跳过美图处理")
-        
+                    logger.info(
+                        f"✅ 订单 {order.order_number} 状态已更新为: ai_processing（AI任务处理中）- 跳过美图处理"
+                    )
+
         # 如果美图API未启用，确保状态为ai_processing
-        if not use_meitu and hasattr(order, 'status'):
-            if order.status in ['retouching', 'shooting', 'paid']:
-                order.status = 'ai_processing'  # AI任务处理中
+        if not use_meitu and hasattr(order, "status"):
+            if order.status in ["retouching", "shooting", "paid"]:
+                order.status = "ai_processing"  # AI任务处理中
                 db.session.commit()
-                print(f"✅ 订单 {order.order_number} 状态已更新为: ai_processing（AI任务处理中）- 美图API未启用，直接进入AI工作流")
-        
+                logger.info(
+                    f"✅ 订单 {order.order_number} 状态已更新为: ai_processing（AI任务处理中）- 美图API未启用，直接进入AI工作流"
+                )
+
         # 调用AI工作流处理
-        print(f"🤖 开始调用AI工作流处理订单 {order_number or order.order_number}")
-        
+        logger.info(f"🤖 开始调用AI工作流处理订单 {order_number or order.order_number}")
+
         # 确定使用的图片路径（优先使用美颜后的图片）
-        input_image_path = retouched_image_path if (use_meitu and retouched_image_path) else original_image_path
-        
+        input_image_path = (
+            retouched_image_path if (use_meitu and retouched_image_path) else original_image_path
+        )
+
         # 获取风格分类ID和风格图片ID（如果未提供）
         if not style_category_id:
             # 尝试从订单的style_name查找对应的StyleImage
-            if hasattr(order, 'style_name') and order.style_name and StyleImage:
+            if hasattr(order, "style_name") and order.style_name and StyleImage:
                 # 通过风格名称查找StyleImage
-                style_image = StyleImage.query.filter_by(name=order.style_name, is_active=True).first()
+                style_image = StyleImage.query.filter_by(
+                    name=order.style_name, is_active=True
+                ).first()
                 if style_image:
                     style_image_id = style_image.id
                     style_category_id = style_image.category_id
-                    print(f"✅ 通过风格名称 '{order.style_name}' 找到风格图片ID: {style_image_id}, 分类ID: {style_category_id}")
+                    logger.info(
+                        f"✅ 通过风格名称 '{order.style_name}' 找到风格图片ID: {style_image_id}, 分类ID: {style_category_id}"
+                    )
                 else:
                     # 尝试通过风格代码查找
-                    style_image = StyleImage.query.filter_by(code=order.style_name, is_active=True).first()
+                    style_image = StyleImage.query.filter_by(
+                        code=order.style_name, is_active=True
+                    ).first()
                     if style_image:
                         style_image_id = style_image.id
                         style_category_id = style_image.category_id
-                        print(f"✅ 通过风格代码 '{order.style_name}' 找到风格图片ID: {style_image_id}, 分类ID: {style_category_id}")
+                        logger.info(
+                            f"✅ 通过风格代码 '{order.style_name}' 找到风格图片ID: {style_image_id}, 分类ID: {style_category_id}"
+                        )
                     else:
                         # 尝试模糊匹配（包含关系）
                         all_styles = StyleImage.query.filter_by(is_active=True).all()
@@ -304,49 +368,68 @@ def process_order_images(order_id, order_number=None, style_category_id=None, st
                                 style_image = s
                                 style_image_id = s.id
                                 style_category_id = s.category_id
-                                print(f"✅ 通过模糊匹配 '{order.style_name}' 找到风格图片: '{s.name}' (ID: {style_image_id}, 分类ID: {style_category_id})")
+                                logger.info(
+                                    f"✅ 通过模糊匹配 '{order.style_name}' 找到风格图片: '{s.name}' (ID: {style_image_id}, 分类ID: {style_category_id})"
+                                )
                                 break
-        
+
         # 如果仍然没有style_category_id，尝试使用传入的style_image_id参数
         if not style_category_id and style_image_id and StyleImage:
             style_image = StyleImage.query.get(style_image_id)
             if style_image:
                 style_category_id = style_image.category_id
-                print(f"✅ 通过风格图片ID {style_image_id} 找到分类ID: {style_category_id}")
-        
+                logger.info(f"✅ 通过风格图片ID {style_image_id} 找到分类ID: {style_category_id}")
+
         if not style_category_id:
-            return False, f"订单没有关联的风格分类（风格名称: {getattr(order, 'style_name', 'N/A')}）"
-        
+            return (
+                False,
+                f"订单没有关联的风格分类（风格名称: {getattr(order, 'style_name', 'N/A')}）",
+            )
+
         # 调用AI工作流服务（使用任务队列）
         try:
             from app.services.task_queue_service import submit_task
-            
+
             # 提交任务到队列
             task_data = {
-                'order_id': order.id,
-                'style_category_id': style_category_id,
-                'style_image_id': style_image_id,
-                'kwargs': {
-                    'db': db,
-                    'Order': Order,
-                    'AITask': test_server_module.AITask if hasattr(test_server_module, 'AITask') else None,
-                    'StyleCategory': test_server_module.StyleCategory if hasattr(test_server_module, 'StyleCategory') else None,
-                    'StyleImage': test_server_module.StyleImage if hasattr(test_server_module, 'StyleImage') else None,
-                    'OrderImage': OrderImage
-                }
+                "order_id": order.id,
+                "style_category_id": style_category_id,
+                "style_image_id": style_image_id,
+                "kwargs": {
+                    "db": db,
+                    "Order": Order,
+                    "AITask": (
+                        test_server_module.AITask if hasattr(test_server_module, "AITask") else None
+                    ),
+                    "StyleCategory": (
+                        test_server_module.StyleCategory
+                        if hasattr(test_server_module, "StyleCategory")
+                        else None
+                    ),
+                    "StyleImage": (
+                        test_server_module.StyleImage
+                        if hasattr(test_server_module, "StyleImage")
+                        else None
+                    ),
+                    "OrderImage": OrderImage,
+                },
             }
-            
+
             # 提交到队列（如果队列未启动，回退到直接调用）
-            queue_submitted = submit_task('comfyui', task_data)
-            
+            queue_submitted = submit_task("comfyui", task_data)
+
             if queue_submitted:
-                print(f"✅ AI工作流任务已提交到队列，订单ID: {order.id}, 订单号: {order.order_number}")
+                logger.info(
+                    f"✅ AI工作流任务已提交到队列，订单ID: {order.id}, 订单号: {order.order_number}"
+                )
                 return True, "图片处理流程已提交到队列"
             else:
                 # 队列提交失败，回退到直接调用（兼容模式）
-                print(f"⚠️ 队列提交失败，使用直接调用模式（订单ID: {order.id}, 订单号: {order.order_number}）")
+                logger.warning(
+                    "队列提交失败，使用直接调用模式（订单ID: {order.id}, 订单号: {order.order_number}）"
+                )
                 from app.services.workflow_service import create_ai_task
-                
+
                 try:
                     success, ai_task, error_message = create_ai_task(
                         order_id=order.id,
@@ -354,80 +437,134 @@ def process_order_images(order_id, order_number=None, style_category_id=None, st
                         style_image_id=style_image_id,
                         db=db,
                         Order=Order,
-                        AITask=test_server_module.AITask if hasattr(test_server_module, 'AITask') else None,
-                        StyleCategory=test_server_module.StyleCategory if hasattr(test_server_module, 'StyleCategory') else None,
-                        StyleImage=test_server_module.StyleImage if hasattr(test_server_module, 'StyleImage') else None,
-                        OrderImage=OrderImage
+                        AITask=(
+                            test_server_module.AITask
+                            if hasattr(test_server_module, "AITask")
+                            else None
+                        ),
+                        StyleCategory=(
+                            test_server_module.StyleCategory
+                            if hasattr(test_server_module, "StyleCategory")
+                            else None
+                        ),
+                        StyleImage=(
+                            test_server_module.StyleImage
+                            if hasattr(test_server_module, "StyleImage")
+                            else None
+                        ),
+                        OrderImage=OrderImage,
                     )
-                    
+
                     if success and ai_task:
-                        print(f"✅ AI工作流任务创建成功，任务ID: {ai_task.id}, 订单ID: {order.id}, 订单号: {order.order_number}")
+                        logger.info(
+                            f"✅ AI工作流任务创建成功，任务ID: {ai_task.id}, 订单ID: {order.id}, 订单号: {order.order_number}"
+                        )
                         return True, "图片处理流程启动成功"
                     elif success and not ai_task:
-                        print(f"⚠️ AI工作流任务创建返回成功但任务对象为空，订单ID: {order.id}, 订单号: {order.order_number}")
+                        logger.warning(
+                            "AI工作流任务创建返回成功但任务对象为空，订单ID: {order.id}, 订单号: {order.order_number}"
+                        )
                         return False, "AI工作流任务创建返回成功但任务对象为空"
                     else:
-                        print(f"❌ AI工作流任务创建失败: {error_message}, 订单ID: {order.id}, 订单号: {order.order_number}")
+                        logger.error(
+                            "AI工作流任务创建失败: {error_message}, 订单ID: {order.id}, 订单号: {order.order_number}"
+                        )
                         import traceback
+
                         traceback.print_exc()
                         return False, f"AI工作流任务创建失败: {error_message}"
                 except Exception as e:
-                    print(f"❌ 直接调用create_ai_task异常: {str(e)}, 订单ID: {order.id}, 订单号: {order.order_number}")
+                    logger.error(
+                        "直接调用create_ai_task异常: {str(e)}, 订单ID: {order.id}, 订单号: {order.order_number}"
+                    )
                     import traceback
+
                     traceback.print_exc()
                     return False, f"AI工作流任务创建异常: {str(e)}"
         except ImportError:
             # 如果任务队列服务不可用，回退到直接调用
-            print(f"⚠️ 任务队列服务不可用，使用直接调用模式")
+            logger.warning("任务队列服务不可用，使用直接调用模式")
             from app.services.workflow_service import create_ai_task
-            
+
             success, ai_task, error_message = create_ai_task(
                 order_id=order.id,
                 style_category_id=style_category_id,
                 style_image_id=style_image_id,
                 db=db,
                 Order=Order,
-                AITask=test_server_module.AITask if hasattr(test_server_module, 'AITask') else None,
-                StyleCategory=test_server_module.StyleCategory if hasattr(test_server_module, 'StyleCategory') else None,
-                StyleImage=test_server_module.StyleImage if hasattr(test_server_module, 'StyleImage') else None,
-                OrderImage=OrderImage
+                AITask=test_server_module.AITask if hasattr(test_server_module, "AITask") else None,
+                StyleCategory=(
+                    test_server_module.StyleCategory
+                    if hasattr(test_server_module, "StyleCategory")
+                    else None
+                ),
+                StyleImage=(
+                    test_server_module.StyleImage
+                    if hasattr(test_server_module, "StyleImage")
+                    else None
+                ),
+                OrderImage=OrderImage,
             )
-            
+
             if success:
-                print(f"✅ AI工作流任务创建成功，任务ID: {ai_task.id if ai_task else 'N/A'}")
-                
+                logger.info(f"✅ AI工作流任务创建成功，任务ID: {ai_task.id if ai_task else 'N/A'}")
+
                 # 创建产品的额外赠送工作流任务
                 try:
                     from app.services.bonus_workflow_service import create_bonus_workflows_for_order
-                    
+
                     bonus_success, bonus_count, bonus_error = create_bonus_workflows_for_order(
                         order_id=order.id,
                         db=db,
                         Order=Order,
-                        Product=test_server_module.Product if hasattr(test_server_module, 'Product') else None,
-                        ProductBonusWorkflow=test_server_module.ProductBonusWorkflow if hasattr(test_server_module, 'ProductBonusWorkflow') else None,
-                        APITemplate=test_server_module.APITemplate if hasattr(test_server_module, 'APITemplate') else None,
-                        StyleImage=test_server_module.StyleImage if hasattr(test_server_module, 'StyleImage') else None,
-                        AITask=test_server_module.AITask if hasattr(test_server_module, 'AITask') else None,
-                        OrderImage=OrderImage
+                        Product=(
+                            test_server_module.Product
+                            if hasattr(test_server_module, "Product")
+                            else None
+                        ),
+                        ProductBonusWorkflow=(
+                            test_server_module.ProductBonusWorkflow
+                            if hasattr(test_server_module, "ProductBonusWorkflow")
+                            else None
+                        ),
+                        APITemplate=(
+                            test_server_module.APITemplate
+                            if hasattr(test_server_module, "APITemplate")
+                            else None
+                        ),
+                        StyleImage=(
+                            test_server_module.StyleImage
+                            if hasattr(test_server_module, "StyleImage")
+                            else None
+                        ),
+                        AITask=(
+                            test_server_module.AITask
+                            if hasattr(test_server_module, "AITask")
+                            else None
+                        ),
+                        OrderImage=OrderImage,
                     )
-                    
+
                     if bonus_success and bonus_count > 0:
-                        print(f"🎁 已创建 {bonus_count} 个赠送工作流任务")
-                    elif bonus_error and "未启用" not in bonus_error and "没有配置" not in bonus_error:
-                        print(f"⚠️  创建赠送工作流任务失败: {bonus_error}")
+                        logger.info(f"🎁 已创建 {bonus_count} 个赠送工作流任务")
+                    elif (
+                        bonus_error
+                        and "未启用" not in bonus_error
+                        and "没有配置" not in bonus_error
+                    ):
+                        logger.warning("创建赠送工作流任务失败: {bonus_error}")
                 except Exception as e:
-                    print(f"⚠️  创建赠送工作流任务异常: {str(e)}")
+                    logger.warning("创建赠送工作流任务异常: {str(e)}")
                     # 不影响主流程
-                
+
                 return True, "图片处理流程启动成功"
             else:
-                print(f"❌ AI工作流任务创建失败: {error_message}")
+                logger.error("AI工作流任务创建失败: {error_message}")
                 return False, f"AI工作流任务创建失败: {error_message}"
-    
+
     except Exception as e:
-        print(f"❌ 处理订单图片失败: {str(e)}")
+        logger.error("处理订单图片失败: {str(e)}")
         import traceback
+
         traceback.print_exc()
         return False, f"处理失败: {str(e)}"
-

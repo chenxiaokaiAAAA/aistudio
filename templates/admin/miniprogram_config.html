@@ -73,6 +73,9 @@
     <!-- 导航栏 -->
     {% include 'admin/_navbar.html' %}
 
+    <!-- 诱饵输入框：吸引浏览器自动填充，保护下方配置输入框不被填成 admin -->
+    <input type="text" name="username" id="autofill_trap" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0;pointer-events:none" tabindex="-1" aria-hidden="true">
+
     <div class="container mt-4">
         <div class="row">
             <div class="col-md-12">
@@ -83,14 +86,19 @@
                 <!-- 小程序基础配置 -->
                 <div class="config-card">
                     <h5><i class="fas fa-mobile-alt"></i> 小程序基础配置</h5>
-                    <form id="miniprogramConfigForm">
+                    <form id="miniprogramConfigForm" autocomplete="off">
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="mb-3">
-                                    <label for="appid" class="form-label">小程序AppID</label>
-                                    <input type="text" class="form-control" id="appid" 
-                                           placeholder="wxxxxxxxxxxxxxxxxxx" required>
-                                    <div class="help-text">在微信公众平台 -> 开发 -> 开发设置中获取</div>
+                                    <label for="miniprogram_appid" class="form-label">小程序AppID</label>
+                                    <div class="input-group">
+                                        <input type="text" class="form-control" id="miniprogram_appid" name="miniprogram_appid"
+                                               placeholder="wxxxxxxxxxxxxxxxxxx" required autocomplete="off">
+                                        <button type="button" class="btn btn-outline-secondary" onclick="syncAppidFromPay()" title="从支付AppID同步">
+                                            <i class="fas fa-sync-alt"></i> 同步
+                                        </button>
+                                    </div>
+                                    <div class="help-text">在微信公众平台 -> 开发 -> 开发设置中获取。若显示admin，可点击「同步」从支付AppID复制</div>
                                 </div>
                             </div>
                             <div class="col-md-6">
@@ -98,7 +106,7 @@
                                     <label for="app_secret" class="form-label">小程序AppSecret</label>
                                     <div class="password-input-group">
                                         <input type="password" class="form-control" id="app_secret" 
-                                               placeholder="xxxxxxxxxxxxxxxxxxxxxxxxxxxxx">
+                                               placeholder="xxxxxxxxxxxxxxxxxxxxxxxxxxxxx" autocomplete="new-password">
                                         <button type="button" class="password-toggle" onclick="togglePassword('app_secret')">
                                             <i class="fas fa-eye" id="app_secret_toggle"></i>
                                         </button>
@@ -113,21 +121,21 @@
                 <!-- 微信支付配置 -->
                 <div class="config-card">
                     <h5><i class="fas fa-credit-card"></i> 微信支付配置</h5>
-                    <form id="wechatPayConfigForm">
+                    <form id="wechatPayConfigForm" autocomplete="off">
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="mb-3">
                                     <label for="pay_appid" class="form-label">支付AppID</label>
                                     <input type="text" class="form-control" id="pay_appid" 
-                                           placeholder="wxxxxxxxxxxxxxxxxxx">
+                                           placeholder="wxxxxxxxxxxxxxxxxxx" autocomplete="off">
                                     <div class="help-text">通常与小程序AppID相同，或使用支付专用AppID</div>
                                 </div>
                             </div>
                             <div class="col-md-6">
                                 <div class="mb-3">
-                                    <label for="pay_mch_id" class="form-label">商户号 (mch_id)</label>
-                                    <input type="text" class="form-control" id="pay_mch_id" 
-                                           placeholder="1234567890">
+                                    <label for="wechat_mch_id" class="form-label">商户号 (mch_id)</label>
+                                    <input type="text" class="form-control" id="wechat_mch_id" name="wechat_mch_id"
+                                           placeholder="1234567890" autocomplete="off">
                                     <div class="help-text">在微信商户平台 -> 账户中心 -> 商户信息中获取</div>
                                 </div>
                             </div>
@@ -138,7 +146,7 @@
                                     <label for="pay_api_key" class="form-label">API密钥</label>
                                     <div class="password-input-group">
                                         <input type="password" class="form-control" id="pay_api_key" 
-                                               placeholder="xxxxxxxxxxxxxxxxxxxxxxxxxxxxx">
+                                               placeholder="xxxxxxxxxxxxxxxxxxxxxxxxxxxxx" autocomplete="new-password">
                                         <button type="button" class="password-toggle" onclick="togglePassword('pay_api_key')">
                                             <i class="fas fa-eye" id="pay_api_key_toggle"></i>
                                         </button>
@@ -150,7 +158,7 @@
                                 <div class="mb-3">
                                     <label for="pay_notify_url" class="form-label">支付回调地址</label>
                                     <input type="text" class="form-control" id="pay_notify_url" 
-                                           placeholder="https://photogooo/api/payment/notify">
+                                           placeholder="https://photogooo/api/payment/notify" autocomplete="off">
                                     <div class="help-text">支付结果通知的回调URL，需要在微信商户平台配置</div>
                                 </div>
                             </div>
@@ -177,6 +185,17 @@
 
     <script src="/static/js/bootstrap.bundle.min.js"></script>
     <script>
+        // 从支付AppID同步到小程序AppID（修复浏览器自动填充的admin）
+        function syncAppidFromPay() {
+            const payAppid = document.getElementById('pay_appid').value.trim();
+            if (payAppid && payAppid.startsWith('wx')) {
+                document.getElementById('miniprogram_appid').value = payAppid;
+                showAlert('已从支付AppID同步', 'success');
+            } else {
+                showAlert('请先填写正确的支付AppID', 'warning');
+            }
+        }
+
         // 切换密码显示/隐藏
         function togglePassword(inputId) {
             const input = document.getElementById(inputId);
@@ -194,37 +213,84 @@
 
         // 加载配置
         function loadConfig() {
-            fetch('/api/admin/miniprogram-config')
-                .then(response => response.json())
-                .then(data => {
+            fetch('/api/admin/miniprogram-config', { credentials: 'same-origin' })
+                .then(async response => {
+                    const text = await response.text();
+                    let data;
+                    try {
+                        data = text ? JSON.parse(text) : {};
+                    } catch (e) {
+                        if (text.startsWith('<')) {
+                            if (response.status === 401 || response.status === 302) {
+                                showAlert('登录已过期，请重新登录', 'danger');
+                            } else {
+                                showAlert('接口返回异常，请刷新页面或重新登录', 'danger');
+                            }
+                            return;
+                        }
+                        throw e;
+                    }
                     if (data.status === 'success') {
                         const config = data.data;
-                        document.getElementById('appid').value = config.appid || '';
-                        document.getElementById('app_secret').value = config.app_secret || '';
-                        document.getElementById('pay_appid').value = config.pay_appid || '';
-                        document.getElementById('pay_mch_id').value = config.pay_mch_id || '';
-                        document.getElementById('pay_api_key').value = config.pay_api_key || '';
-                        document.getElementById('pay_notify_url').value = config.pay_notify_url || '';
-                        
-                        // 显示成功消息
+                        const correctAppid = config.appid || '';
+                        const correctMchId = config.pay_mch_id || '';
+                        function applyConfig() {
+                            document.getElementById('miniprogram_appid').value = correctAppid;
+                            document.getElementById('app_secret').value = config.app_secret || '';
+                            document.getElementById('pay_appid').value = config.pay_appid || '';
+                            document.getElementById('wechat_mch_id').value = correctMchId;
+                            document.getElementById('pay_api_key').value = config.pay_api_key || '';
+                            document.getElementById('pay_notify_url').value = config.pay_notify_url || '';
+                        }
+                        applyConfig();  // 立即应用
+                        setTimeout(applyConfig, 300);
+                        setTimeout(applyConfig, 800);
+                        setTimeout(applyConfig, 1500);
+                        setTimeout(applyConfig, 2500);
+                        // 监听：若被浏览器改成 admin 则立即恢复
+                        const appidEl = document.getElementById('miniprogram_appid');
+                        const mchIdEl = document.getElementById('wechat_mch_id');
+                        function guardAdmin(e) {
+                            const el = e.target;
+                            const val = (el.value || '').trim();
+                            if (el.id === 'miniprogram_appid' && val.toLowerCase().startsWith('admin') && correctAppid) {
+                                el.value = correctAppid;
+                            } else if (el.id === 'wechat_mch_id' && val.toLowerCase().startsWith('admin')) {
+                                el.value = correctMchId;
+                            }
+                        }
+                        appidEl.addEventListener('input', guardAdmin);
+                        appidEl.addEventListener('change', guardAdmin);
+                        mchIdEl.addEventListener('input', guardAdmin);
+                        mchIdEl.addEventListener('change', guardAdmin);
                         showAlert('配置加载成功', 'success');
                     } else {
-                        showAlert('加载配置失败: ' + data.message, 'danger');
+                        showAlert('加载配置失败: ' + (data.message || '未知错误'), 'danger');
                     }
                 })
                 .catch(error => {
                     console.error('Error:', error);
-                    showAlert('加载配置失败: ' + error.message, 'danger');
+                    showAlert('加载配置失败: ' + (error.message || '网络错误'), 'danger');
                 });
         }
 
         // 保存配置
         function saveConfig() {
+            let appid = document.getElementById('miniprogram_appid').value.trim();
+            const pay_appid = document.getElementById('pay_appid').value.trim();
+            let pay_mch_id = document.getElementById('wechat_mch_id').value.trim();
+            // 修复浏览器自动填充：若 appid 被填成 admin/admin2222 等无效值但 pay_appid 正确，则用 pay_appid
+            if (!appid.startsWith('wx') && pay_appid && pay_appid.startsWith('wx')) {
+                appid = pay_appid;
+            }
+            if (pay_mch_id.toLowerCase().startsWith('admin')) {
+                pay_mch_id = '';
+            }
             const config = {
-                appid: document.getElementById('appid').value.trim(),
+                appid: appid,
                 app_secret: document.getElementById('app_secret').value.trim(),
-                pay_appid: document.getElementById('pay_appid').value.trim(),
-                pay_mch_id: document.getElementById('pay_mch_id').value.trim(),
+                pay_appid: pay_appid,
+                pay_mch_id: pay_mch_id,
                 pay_api_key: document.getElementById('pay_api_key').value.trim(),
                 pay_notify_url: document.getElementById('pay_notify_url').value.trim()
             };
@@ -237,22 +303,38 @@
 
             fetch('/api/admin/miniprogram-config', {
                 method: 'POST',
+                credentials: 'same-origin',
                 headers: {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify(config)
             })
-                .then(response => response.json())
-                .then(data => {
+                .then(async response => {
+                    const text = await response.text();
+                    let data;
+                    try {
+                        data = text ? JSON.parse(text) : {};
+                    } catch (e) {
+                        if (text.startsWith('<')) {
+                            if (response.status === 401 || response.status === 302) {
+                                showAlert('登录已过期，请重新登录后重试', 'danger');
+                            } else {
+                                showAlert('服务器返回了错误页面，请刷新后重试或联系管理员', 'danger');
+                            }
+                            return;
+                        }
+                        throw new Error('响应格式错误');
+                    }
                     if (data.status === 'success') {
                         showAlert('配置保存成功！请重启服务使配置生效', 'success');
+                        loadConfig();  // 保存后重新加载，验证是否持久化
                     } else {
-                        showAlert('保存配置失败: ' + data.message, 'danger');
+                        showAlert('保存配置失败: ' + (data.message || '未知错误'), 'danger');
                     }
                 })
                 .catch(error => {
                     console.error('Error:', error);
-                    showAlert('保存配置失败: ' + error.message, 'danger');
+                    showAlert('保存配置失败: ' + (error.message || '网络错误，请检查连接'), 'danger');
                 });
         }
 

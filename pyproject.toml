@@ -1,0 +1,82 @@
+# Python项目配置文件
+# 用于代码质量检查工具（black, mypy, flake8等）
+
+[tool.black]
+line-length = 100
+target-version = ['py39', 'py310', 'py311', 'py312']
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.git
+  | \.venv
+  | venv
+  | __pycache__
+  | \.eggs
+  | \.mypy_cache
+  | \.pytest_cache
+  | \.ruff_cache
+  | build
+  | dist
+)/
+'''
+
+[tool.mypy]
+python_version = "3.9"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false  # 逐步启用
+disallow_incomplete_defs = false
+check_untyped_defs = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+warn_unreachable = true
+strict_equality = true
+show_error_codes = true
+
+# 忽略某些模块
+[[tool.mypy.overrides]]
+module = [
+    "flask.*",
+    "werkzeug.*",
+    "PIL.*",
+    "sqlalchemy.*",
+    "flask_login.*",
+    "flask_compress.*",
+]
+ignore_missing_imports = true
+
+[tool.pylint.messages_control]
+disable = [
+    "C0103",  # 变量命名
+    "C0111",  # 缺少docstring（逐步添加）
+    "R0903",  # 类方法太少
+    "R0913",  # 参数太多
+]
+
+[tool.pylint.format]
+max-line-length = 100
+
+[tool.flake8]
+max-line-length = 100
+exclude = [
+    ".git",
+    "__pycache__",
+    ".venv",
+    "venv",
+    "build",
+    "dist",
+    ".eggs",
+    "*.egg",
+]
+ignore = [
+    "E501",  # 行长度（由black处理）
+    "W503",  # 行前断行
+    "E203",  # 空格前冒号
+]
+
+[tool.isort]
+profile = "black"
+line_length = 100
+skip = [".venv", "venv", "__pycache__", ".git"]

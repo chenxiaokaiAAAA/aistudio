@@ -53,6 +53,9 @@ class PrinterSystemClient:
     
     def _find_size_info(self, size_key):
         """查找尺寸配置信息（支持别名映射）"""
+        # 0. 支持传入对象（ProductSize/ShopProductSize 等，提取 size_name）
+        if hasattr(size_key, 'size_name') and size_key.size_name:
+            size_key = size_key.size_name
         # 1. 检查别名映射
         if size_key in SIZE_ALIAS_MAPPING:
             size_key = SIZE_ALIAS_MAPPING[size_key]

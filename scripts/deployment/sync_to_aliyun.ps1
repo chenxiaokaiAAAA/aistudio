@@ -1,4 +1,4 @@
-# Sync to Aliyun Server
+﻿# Sync to Aliyun Server
 # Usage: .\scripts\deployment\sync_to_aliyun.ps1 -CodeOnly
 
 param(
@@ -196,7 +196,7 @@ if ($KeyPath -and (Test-Path $KeyPath)) {
                     }
                 } else {
                     Write-Host "[Error] Failed to fix SSH key permissions automatically" -ForegroundColor Red
-                    Write-Host "[Info] Please run: scripts\deployment\修复SSH密钥权限.ps1" -ForegroundColor Yellow
+                    Write-Host "[Info] Please run the SSH key fix script in scripts/deployment/" -ForegroundColor Yellow
                     $connectionFailed = $true
                 }
             } else {
@@ -224,6 +224,33 @@ $hasDatabaseOnly = $DatabaseOnly
 $hasImagesOnly = $ImagesOnly
 $hasAll = $All
 
+# If no option specified via parameter, show interactive menu
+if (-not ($hasCodeOnly -or $hasDatabaseOnly -or $hasImagesOnly -or $hasAll)) {
+    Write-Host ""
+    Write-Host "Select sync content:" -ForegroundColor Yellow
+    Write-Host "  1. Code only (via Git)" -ForegroundColor White
+    Write-Host "  2. Database only" -ForegroundColor White
+    Write-Host "  3. Images only" -ForegroundColor White
+    Write-Host "  4. All (code + database + images)" -ForegroundColor White
+    Write-Host "  0. Cancel" -ForegroundColor Gray
+    Write-Host ""
+    $menuChoice = Read-Host "Enter option (1-4, Enter=4)"
+    if ($menuChoice -eq "0") {
+        Write-Host "Cancelled" -ForegroundColor Yellow
+        exit 0
+    }
+    if ([string]::IsNullOrWhiteSpace($menuChoice) -or $menuChoice -eq "4") {
+        $hasAll = $true
+    } elseif ($menuChoice -eq "1") { $hasCodeOnly = $true }
+    elseif ($menuChoice -eq "2") { $hasDatabaseOnly = $true }
+    elseif ($menuChoice -eq "3") { $hasImagesOnly = $true }
+    else {
+        Write-Host "[Warning] Invalid option, using default: All" -ForegroundColor Yellow
+        $hasAll = $true
+    }
+    Write-Host ""
+}
+
 # If All is explicitly specified, sync everything
 if ($hasAll) {
     $syncCode = $true
@@ -235,7 +262,7 @@ if ($hasAll) {
     $syncDatabase = $hasDatabaseOnly
     $syncImages = $hasImagesOnly
 } else {
-    # If no option is specified, default to All
+    # Fallback default to All
     $syncCode = $true
     $syncDatabase = $true
     $syncImages = $true
@@ -461,11 +488,11 @@ if ($syncImages) {
                     
                     if ($LASTEXITCODE -eq 0) {
                         Write-Host ""
-                        Write-Host "    ┌─ Sync Statistics ──────────────────────────────┐" -ForegroundColor Cyan
-                        Write-Host "    │ New Files: $($newFiles.Count)" -ForegroundColor Green
-                        Write-Host "    │ Updated Files: $($updatedFiles.Count)" -ForegroundColor Yellow
-                        Write-Host "    │ Skipped Files: $skippedFiles" -ForegroundColor Gray
-                        Write-Host "    └──────────────────────────────────────────┘" -ForegroundColor Cyan
+                        Write-Host "    +-- Sync Statistics --------------------------------+" -ForegroundColor Cyan
+                        Write-Host "    | New Files: $($newFiles.Count)" -ForegroundColor Green
+                        Write-Host "    | Updated Files: $($updatedFiles.Count)" -ForegroundColor Yellow
+                        Write-Host "    | Skipped Files: $skippedFiles" -ForegroundColor Gray
+                        Write-Host "    +--------------------------------------------------+" -ForegroundColor Cyan
                         
                         if ($newFiles.Count -gt 0) {
                             Write-Host ""
@@ -493,7 +520,7 @@ if ($syncImages) {
                         
                         $syncSuccess = $true
                     } else {
-                        Write-Host "    [错误] rsync 同步失败" -ForegroundColor Red
+                        Write-Host "    [Error] rsync sync failed" -ForegroundColor Red
                         Write-Host $rsyncOutput -ForegroundColor Red
                     }
                 } else {
@@ -520,7 +547,7 @@ if ($syncImages) {
                     $remoteFilesInfo = @{}
                     $escapedPath = $remotePath.Replace("'", "''")
                     $statFormat = '%s|%Y|%n'
-                    $getRemoteFilesCmd = "if [ -d '$escapedPath' ]; then find '$escapedPath' -type f -exec stat -c '$statFormat' {} \\; 2>/dev/null; fi"
+                    $getRemoteFilesCmd = ("if [ -d '{0}' ]; then find '{0}' -type f -exec stat -c '{1}' {{}} \; 2>/dev/null; fi" -f $escapedPath, $statFormat)
                     $remoteFilesOutput = Invoke-SSHCommand -Command $getRemoteFilesCmd
                     
                     if ($remoteFilesOutput -and $LASTEXITCODE -eq 0) {
@@ -547,22 +574,22 @@ if ($syncImages) {
                     foreach ($localFile in $localFiles) {
                         $relPath = $localFile.RelativePath
                         if ($remoteFilesInfo.ContainsKey($relPath)) {
-                            # 文件已存在于远程服务器，检查是否需要更新
+                            # File exists on remote, check if update needed
                             $remoteInfo = $remoteFilesInfo[$relPath]
                             $localMTime = [DateTimeOffset]$localFile.LastWriteTime
                             $localUnixTime = $localMTime.ToUnixTimeSeconds()
                             
-                            # 增量同步逻辑：比较文件大小和修改时间
+                            # Incremental sync: compare size and mtime
                             if ($localFile.Size -ne $remoteInfo.Size -or $localUnixTime -gt $remoteInfo.MTime) {
-                                # 文件有变化，需要覆盖
+                                # File changed, need overwrite
                                 $filesToSync += $localFile
                                 $updatedFiles += $localFile
                             } else {
-                                # 文件未变化，跳过（增量同步）
+                                # File unchanged, skip (incremental)
                                 $filesToSkip += $localFile
                             }
                         } else {
-                            # 新文件，需要同步
+                            # New file, need sync
                             $filesToSync += $localFile
                             $newFiles += $localFile
                         }
@@ -570,13 +597,13 @@ if ($syncImages) {
                     
                     # Display sync summary
                     Write-Host ""
-                    Write-Host "    ┌─ Sync Statistics (Incremental+Overwrite) ─────┐" -ForegroundColor Cyan
-                    Write-Host "    │ Local Files: $($localFiles.Count)" -ForegroundColor White
-                    Write-Host "    │ To Sync: $($filesToSync.Count) (will overwrite remote)" -ForegroundColor Yellow
-                    Write-Host "    │   ├─ New Files: $($newFiles.Count)" -ForegroundColor Green
-                    Write-Host "    │   └─ Updated Files: $($updatedFiles.Count) (overwrite modified)" -ForegroundColor Yellow
-                    Write-Host "    │ Skipped (unchanged): $($filesToSkip.Count) (incremental sync, save time)" -ForegroundColor Gray
-                    Write-Host "    └──────────────────────────────────────────┘" -ForegroundColor Cyan
+                    Write-Host "    +-- Sync Statistics (Incremental+Overwrite) ---------+" -ForegroundColor Cyan
+                    Write-Host "    | Local Files: $($localFiles.Count)" -ForegroundColor White
+                    Write-Host "    | To Sync: $($filesToSync.Count) (will overwrite remote)" -ForegroundColor Yellow
+                    Write-Host "    |   +- New Files: $($newFiles.Count)" -ForegroundColor Green
+                    Write-Host "    |   +- Updated Files: $($updatedFiles.Count) (overwrite modified)" -ForegroundColor Yellow
+                    Write-Host "    | Skipped (unchanged): $($filesToSkip.Count) (incremental sync, save time)" -ForegroundColor Gray
+                    Write-Host "    +--------------------------------------------------+" -ForegroundColor Cyan
                     Write-Host ""
                     
                     # Show new files
@@ -587,7 +614,7 @@ if ($syncImages) {
                         }
                         if ($newFiles.Count -gt 10) {
                             $moreCount = $newFiles.Count - 10
-                            Write-Host "      ... 还有 $moreCount 个新文件" -ForegroundColor DarkGreen
+                            Write-Host "      ... and $moreCount more new files" -ForegroundColor DarkGreen
                         }
                         Write-Host ""
                     }
@@ -600,14 +627,14 @@ if ($syncImages) {
                         }
                         if ($updatedFiles.Count -gt 10) {
                             $moreCount = $updatedFiles.Count - 10
-                            Write-Host "      ... 还有 $moreCount 个文件被更新" -ForegroundColor DarkYellow
+                            Write-Host "      ... and $moreCount more files updated" -ForegroundColor DarkYellow
                         }
                         Write-Host ""
                     }
                     
                     # If no files to sync, skip
                     if ($filesToSync.Count -eq 0) {
-                        Write-Host "    [OK] 所有文件都是最新的，跳过同步" -ForegroundColor Green
+                        Write-Host "    [OK] All files up to date, skipping sync" -ForegroundColor Green
                         $syncSuccess = $true
                     } else {
                         # Create remote directory
@@ -636,7 +663,7 @@ if ($syncImages) {
                                 Invoke-SSHCommand -Command $subDirCmd | Out-Null
                             }
                             
-                            # Transfer files in this directory (scp 默认会覆盖同名文件)
+                            # Transfer files (scp overwrites by default)
                             foreach ($file in $filesInDir) {
                                 $leafName = Split-Path -Leaf $file.RelativePath
                                 if ($dirPath -and $dirPath -ne ".") {
@@ -645,7 +672,7 @@ if ($syncImages) {
                                     $remoteFilePath = "$remotePath/$leafName"
                                 }
                                 
-                                # scp 会覆盖远程同名文件（增量+覆盖模式）
+                                # scp overwrites remote files (incremental+overwrite)
                                 if ($KeyPath -and (Test-Path $KeyPath)) {
                                     $scpTarget = "${ServerUser}@${ServerIP}:${remoteFilePath}"
                                     scp -i $KeyPath $file.FullPath $scpTarget 2>&1 | Out-Null
@@ -657,21 +684,21 @@ if ($syncImages) {
                                 if ($LASTEXITCODE -eq 0) {
                                     $transferredCount++
                                     if ($transferredCount % 10 -eq 0) {
-                                        Write-Host "      [进度] 已传输 $transferredCount/$($filesToSync.Count) 个文件..." -ForegroundColor DarkGray
+                                        Write-Host "      [Progress] $transferredCount/$($filesToSync.Count) files transferred..." -ForegroundColor DarkGray
                                     }
                                 } else {
                                     $failedCount++
-                                    Write-Host "      [错误] 传输失败: $($file.RelativePath)" -ForegroundColor Red
+                                    Write-Host "      [Error] Transfer failed: $($file.RelativePath)" -ForegroundColor Red
                                 }
                             }
                         }
                         
                         Write-Host ""
                         if ($transferredCount -gt 0) {
-                            Write-Host "    [OK] 成功传输 $transferredCount 个文件" -ForegroundColor Green
+                            Write-Host "    [OK] Transferred $transferredCount files" -ForegroundColor Green
                         }
                         if ($failedCount -gt 0) {
-                            Write-Host "    [警告] $failedCount 个文件传输失败" -ForegroundColor Yellow
+                            Write-Host "    [Warning] $failedCount files failed to transfer" -ForegroundColor Yellow
                         }
                         
                         $syncSuccess = ($failedCount -eq 0)

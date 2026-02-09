@@ -323,6 +323,7 @@
     </div>
 
     <script src="/static/js/bootstrap.bundle.min.js"></script>
+    {% include 'admin/_ux_scripts.html' %}
     <script>
         // 初始化数据
         subcategoriesByCategory = {{ subcategories_by_category | tojson | safe }};

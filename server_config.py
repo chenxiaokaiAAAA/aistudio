@@ -23,11 +23,11 @@ SERVER_CONFIG = {
         'notify_url': 'http://127.0.0.1:8000/api/payment/notify'  # 可以改为 'http://192.168.2.54:8000/api/payment/notify'
     },
     'production': {
-        'base_url': 'https://photogooo',
-        'api_base_url': 'https://photogooo/api',
-        'static_url': 'https://photogooo/static',
-        'media_url': 'https://photogooo/media',
-        'notify_url': 'https://photogooo/api/payment/notify'
+        'base_url': 'http://121.43.143.59',  # 临时使用IP地址，域名申请后改为域名
+        'api_base_url': 'http://121.43.143.59/api',
+        'static_url': 'http://121.43.143.59/static',
+        'media_url': 'http://121.43.143.59/media',
+        'notify_url': 'http://121.43.143.59/api/payment/notify'
     }
 }
 

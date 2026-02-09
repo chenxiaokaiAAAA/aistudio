@@ -1,0 +1,72 @@
+[MASTER]
+# 忽略的文件和目录
+ignore=venv,.venv,__pycache__,migrations,instance,.pytest_cache,.mypy_cache
+# Python版本
+py-version=3.9
+
+[MESSAGES CONTROL]
+# 禁用的检查项
+disable=
+    C0103,  # 变量命名（允许snake_case和camelCase）
+    C0111,  # 缺少docstring（逐步添加）
+    C0114,  # 缺少模块docstring
+    C0115,  # 缺少类docstring
+    C0116,  # 缺少函数docstring
+    R0903,  # 类方法太少（数据模型类）
+    R0913,  # 参数太多（某些函数需要）
+    R0912,  # 分支太多
+    R0914,  # 局部变量太多
+    W0212,  # 访问受保护成员
+    C0301,  # 行太长（由black处理）
+    C0303,  # 尾随空格（由black处理）
+    C0304,  # 缺少最终换行（由black处理）
+
+[FORMAT]
+# 最大行长度
+max-line-length=100
+# 缩进
+indent-string='    '
+# 期望的行结束
+expected-line-ending-format=LF
+
+[BASIC]
+# 命名约定
+# 函数名：snake_case
+function-naming-style=snake_case
+# 变量名：snake_case
+variable-naming-style=snake_case
+# 常量名：UPPER_SNAKE_CASE
+const-naming-style=UPPER_SNAKE_CASE
+# 类名：PascalCase
+class-naming-style=PascalCase
+# 模块名：snake_case
+module-naming-style=snake_case
+
+[DESIGN]
+# 最大参数数量
+max-args=10
+# 最大属性数量
+max-attributes=15
+# 最大局部变量数量
+max-locals=20
+# 最大返回语句数量
+max-returns=8
+# 最大分支数量
+max-branches=15
+# 最大语句数量
+max-statements=60
+# 最大父类数量
+max-parents=7
+# 最大公共方法数量
+max-public-methods=30
+
+[IMPORTS]
+# 导入顺序
+import-order=google
+# 允许的导入顺序
+known-standard-library=os,sys,json,logging,datetime,pathlib,typing
+known-third-party=flask,werkzeug,sqlalchemy,flask_login,flask_compress,redis,requests,PIL
+
+[EXCEPTIONS]
+# 覆盖的异常
+overgeneral-exceptions=Exception
