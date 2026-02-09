@@ -62,8 +62,8 @@ SYNC_OPTIONS = {
     },
     "4": {
         "name": "同步全部",
-        "dirs": ["instance", "uploads", "final_works", "hd_images"],
-        "description": "同步数据库+图片（代码通过Git）"
+        "dirs": ["app", "batch", "config", "scripts", "static", "templates", "workflows", "docs", "instance", "uploads", "final_works", "hd_images"],
+        "description": "同步代码+数据库+图片（含API文档等全部更新）"
     }
 }
 
@@ -1153,8 +1153,13 @@ def sync_code_via_git():
             if result.stdout:
                 print(f"   输出: {result.stdout.strip()[:200]}")
         else:
-            error_msg = result.stderr if result.stderr else (result.stdout if result.stdout else "未知错误")
-            print(f"⚠️  服务器代码更新可能失败: {error_msg[:200]}")
+            error_msg = (result.stderr or result.stdout or "未知错误").strip()
+            if "not a git repository" in error_msg.lower():
+                print("⚠️  服务器目录不是 Git 仓库，git pull 已跳过")
+                print("   提示: 若需在服务器用 Git 更新，请先执行: cd /root/project_code && git init && git remote add origin <你的仓库URL>")
+                print("   或者: 服务器可能是通过文件同步部署的，代码已推送到 GitHub，可手动处理")
+            else:
+                print(f"⚠️  服务器代码更新可能失败: {error_msg[:200]}")
     except Exception as e:
         print(f"⚠️  SSH连接失败: {e}")
         print("   提示: 请检查SSH密钥权限和服务器连接")
