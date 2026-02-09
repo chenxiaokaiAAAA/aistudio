@@ -1104,21 +1104,29 @@ def sync_code_via_git():
                     encoding='utf-8',
                     errors='replace'
                 )
-                # 推送
-                subprocess.run(
+                # 推送（只推当前分支，避免 main 不存在时报错）
+                push_result = subprocess.run(
                     ["git", "push", "origin", "master"], 
                     cwd=LOCAL_PROJECT_PATH,
+                    capture_output=True,
+                    text=True,
                     encoding='utf-8',
                     errors='replace'
                 )
-                if subprocess.run(
-                    ["git", "push", "origin", "main"], 
-                    cwd=LOCAL_PROJECT_PATH,
-                    encoding='utf-8',
-                    errors='replace'
-                ).returncode != 0:
-                    pass
-                print("✅ 代码已推送到GitHub")
+                if push_result.returncode != 0:
+                    push_result = subprocess.run(
+                        ["git", "push", "origin", "main"], 
+                        cwd=LOCAL_PROJECT_PATH,
+                        capture_output=True,
+                        text=True,
+                        encoding='utf-8',
+                        errors='replace'
+                    )
+                if push_result.returncode == 0:
+                    print("✅ 代码已推送到GitHub")
+                else:
+                    err = (push_result.stderr or push_result.stdout or "").strip()
+                    print(f"⚠️  Git推送失败: {err[:150]}")
     except Exception as e:
         print(f"⚠️  Git操作失败: {e}")
         import traceback
@@ -1126,17 +1134,19 @@ def sync_code_via_git():
     
     # 在服务器上拉取最新代码
     print("🔄 在服务器上拉取最新代码...")
-    # SSH 命令使用 PEM 文件（SSH 不支持 PPK，需要 PEM）
     ssh_key = PEM_PATH if os.path.exists(PEM_PATH) else KEY_PATH
-    ssh_cmd = f"ssh -i \"{ssh_key}\" -o StrictHostKeyChecking=no {REMOTE_USER}@{REMOTE_HOST} 'cd {REMOTE_PROJECT_PATH} && git pull origin master 2>&1 || git pull origin main 2>&1'"
+    ssh_key_unix = ssh_key.replace("\\", "/")  # 避免 Windows 路径转义问题
+    remote_cmd = f"cd {REMOTE_PROJECT_PATH} && (git pull origin master 2>&1 || git pull origin main 2>&1)"
     try:
+        # 使用列表参数避免 shell 引号转义问题
         result = subprocess.run(
-            ssh_cmd, 
-            shell=True, 
+            ["ssh", "-i", ssh_key_unix, "-o", "StrictHostKeyChecking=no",
+             f"{REMOTE_USER}@{REMOTE_HOST}", remote_cmd],
             capture_output=True, 
             text=True,
             encoding='utf-8',
-            errors='replace'
+            errors='replace',
+            timeout=60
         )
         if result.returncode == 0:
             print("✅ 服务器代码已更新")
