@@ -7,6 +7,7 @@
 
 import os
 import sys
+import shutil
 import subprocess
 import datetime
 import time
@@ -80,6 +81,27 @@ def load_database_url():
     return db_url
 
 
+def find_pg_dump():
+    """查找 pg_dump 可执行文件路径"""
+    # 1. 先查 PATH
+    pg_dump = shutil.which("pg_dump")
+    if pg_dump:
+        return pg_dump
+    # 2. 常见 PostgreSQL 安装路径 (Windows)
+    for ver in ("18", "17", "16", "15", "14", "13", "12"):
+        for drive in ("C", "D", "E"):
+            path = f"{drive}:\\Program Files\\PostgreSQL\\{ver}\\bin\\pg_dump.exe"
+            if os.path.exists(path):
+                return path
+    # 3. Program Files (x86)
+    pf86 = os.environ.get("ProgramFiles(x86)", "C:\\Program Files (x86)")
+    for ver in ("18", "17", "16", "15", "14"):
+        path = os.path.join(pf86, f"PostgreSQL\\{ver}\\bin\\pg_dump.exe")
+        if os.path.exists(path):
+            return path
+    return None
+
+
 def sync_postgresql_to_remote():
     """使用 pg_dump + scp + psql 同步 PostgreSQL 到远程服务器"""
     db_url = load_database_url()
@@ -96,6 +118,11 @@ def sync_postgresql_to_remote():
     except Exception as e:
         print(f"   [错误] 解析 DATABASE_URL 失败: {e}")
         return False
+    pg_dump_exe = find_pg_dump()
+    if not pg_dump_exe:
+        print(f"   [错误] 未找到 pg_dump，请将 PostgreSQL 的 bin 目录加入系统 PATH")
+        print(f"   例如: C:\\Program Files\\PostgreSQL\\16\\bin")
+        return False
     dump_path = os.path.join(LOCAL_PROJECT_PATH, "instance", "pet_painting_dump_temp.sql")
     remote_dump = f"{REMOTE_PROJECT_PATH}/instance/pet_painting_dump_temp.sql"
     os.makedirs(os.path.dirname(dump_path), exist_ok=True)
@@ -104,7 +131,7 @@ def sync_postgresql_to_remote():
     env = os.environ.copy()
     env["PGPASSWORD"] = pg_pass
     r = subprocess.run(
-        ["pg_dump", "-h", pg_host, "-p", str(pg_port), "-U", pg_user, "-d", pg_db, "-F", "p", "-f", dump_path],
+        [pg_dump_exe, "-h", pg_host, "-p", str(pg_port), "-U", pg_user, "-d", pg_db, "-F", "p", "-f", dump_path],
         env=env, capture_output=True, text=True, timeout=3600, encoding="utf-8", errors="replace"
     )
     if r.returncode != 0:
