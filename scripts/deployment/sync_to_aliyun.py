@@ -1151,15 +1151,19 @@ def sync_code_via_git():
     ssh_key_unix = ssh_key.replace("\\", "/")  # 避免 Windows 路径转义问题
     remote_cmd = f"cd {REMOTE_PROJECT_PATH} && (git pull origin master 2>&1 || git pull origin main 2>&1)"
     try:
-        # 使用列表参数避免 shell 引号转义问题
+        # 使用列表参数；延长超时并加保活，避免网络慢时 60 秒超时
         result = subprocess.run(
-            ["ssh", "-i", ssh_key_unix, "-o", "StrictHostKeyChecking=no",
+            ["ssh", "-i", ssh_key_unix,
+             "-o", "StrictHostKeyChecking=no",
+             "-o", "ConnectTimeout=30",
+             "-o", "ServerAliveInterval=15",
+             "-o", "ServerAliveCountMax=6",
              f"{REMOTE_USER}@{REMOTE_HOST}", remote_cmd],
-            capture_output=True, 
+            capture_output=True,
             text=True,
             encoding='utf-8',
             errors='replace',
-            timeout=60
+            timeout=180
         )
         if result.returncode == 0:
             print("✅ 服务器代码已更新")
@@ -1173,9 +1177,12 @@ def sync_code_via_git():
                 print("   或者: 服务器可能是通过文件同步部署的，代码已推送到 GitHub，可手动处理")
             else:
                 print(f"⚠️  服务器代码更新可能失败: {error_msg[:200]}")
+    except subprocess.TimeoutExpired:
+        print("⚠️  SSH 连接超时（已延长至 3 分钟）")
+        print("   提示: 可在服务器上手动执行: cd /root/project_code && git pull origin master")
     except Exception as e:
         print(f"⚠️  SSH连接失败: {e}")
-        print("   提示: 请检查SSH密钥权限和服务器连接")
+        print("   提示: 请检查SSH密钥权限和服务器连接；或服务器上手动执行: cd /root/project_code && git pull origin master")
 
 def main():
     print(f"\n{'='*50}")
