@@ -28,12 +28,12 @@ max_requests_jitter = 50
 preload_app = True  # 预加载应用，提高性能
 
 # 日志配置
-accesslog = "logs/access.log"
-errorlog = "logs/error.log"
+accesslog = "logs/access.log"  # 访问日志仍写文件
+# errorlog 设为 "-" 使应用/worker 日志输出到 stderr，便于 journalctl -u aistudio -f 实时查看
+errorlog = "-"
 loglevel = "info"
 access_log_format = '%(h)s %(l)s %(u)s %(t)s "%(r)s" %(s)s %(b)s "%(f)s" "%(a)s" %(D)s'
-# 同时输出到标准输出（可以通过 journalctl 查看）
-capture_output = True
+capture_output = True  # 将 worker 的 stdout/stderr 重定向到 errorlog（即 stderr → journalctl）
 enable_stdio_inheritance = True
 
 # 进程管理

@@ -1,7 +1,0 @@
-open sftp://root@121.43.143.59/ -privatekey="E:/AI-STUDIO/aistudio -V14/aliyun-key/aistudio.ppk" -hostkey="*"
-option batch abort
-option confirm off
-# 同步本地到远程；-criteria=none (全量覆盖)
-synchronize remote -delete -mirror -criteria=none "E:/AI-STUDIO/aistudio -V14/app/" "/root/project_code/app/"
-close
-exit

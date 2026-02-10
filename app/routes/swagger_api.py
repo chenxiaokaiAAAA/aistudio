@@ -619,6 +619,7 @@ def init_swagger(app):
         # 注册带横向标签的 /docs 入口（减轻纵向内容过多、便于按模块筛选）
         @app.route("/docs")
         def api_docs_page():
+            logger.info("API 文档页 /docs 被访问")
             return render_template("api_docs.html")
 
         logger.info("✅ Swagger/OpenAPI 文档已启用: /docs（横向筛选）, /apidocs（共 %d 个路径，自动更新）", len(template["paths"]))

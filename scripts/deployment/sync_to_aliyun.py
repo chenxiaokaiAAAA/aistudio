@@ -59,13 +59,13 @@ SYNC_OPTIONS = {
     },
     "3": {
         "name": "仅同步代码",
-        "dirs": ["app", "batch", "config", "scripts", "static", "templates", "workflows"],
-        "description": "同步代码目录（通过Git推送）"
+        "dirs": ["app", "batch", "config", "data", "scripts", "static", "templates", "workflows"],
+        "description": "同步代码目录（通过Git推送，含 data 样机模板等）"
     },
     "4": {
         "name": "同步全部",
-        "dirs": ["app", "batch", "config", "scripts", "static", "templates", "workflows", "docs", "instance", "uploads", "final_works", "hd_images"],
-        "description": "同步代码+数据库+图片（含API文档等全部更新）"
+        "dirs": ["app", "batch", "config", "data", "scripts", "static", "templates", "workflows", "docs", "instance", "uploads", "final_works", "hd_images"],
+        "description": "同步代码+数据库+图片（含 data/mockup_templates、API文档等全部更新）"
     }
 }
 

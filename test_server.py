@@ -967,10 +967,13 @@ try:
     
     print("✅ 路由Blueprint已注册：payment_bp, user_bp, miniprogram_bp, order_bp, ai_bp, meitu_bp, ai_provider_bp")
 
-    # 注册 Swagger/OpenAPI 交互式文档
+    # 注册 Swagger/OpenAPI 交互式文档（用 print 确保在 Gunicorn 日志中可见）
     try:
         from app.routes.swagger_api import init_swagger
-        init_swagger(app)
+        if init_swagger(app):
+            print("✅ Swagger/OpenAPI 文档已启用: /docs, /apidocs")
+        else:
+            print("⚠️ Swagger/OpenAPI 文档未启用（请在 venv 中执行: pip install flasgger 后重启）")
     except Exception as e:
         print(f"⚠️  Swagger/OpenAPI 文档注册失败: {e}")
 except ImportError as e:
