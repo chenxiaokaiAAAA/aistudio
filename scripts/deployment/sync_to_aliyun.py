@@ -697,8 +697,8 @@ def run_winscp(local_dir, remote_dir):
     winscp_script = f"""open sftp://{REMOTE_USER}@{REMOTE_HOST}/ -privatekey="{key_path_escaped}" -hostkey="*"
 option batch abort
 option confirm off
-# 同步本地到远程，-delete 删除远程多余文件，-mirror 强制覆盖（含较新的远程文件）
-synchronize remote -delete -mirror "{local_path}" "{remote_path}"
+# 同步本地到远程；-criteria=time,size 任一时间或大小不同即上传，避免误判为未修改
+synchronize remote -delete -mirror -criteria=time,size "{local_path}" "{remote_path}"
 close
 exit
 """
@@ -1085,15 +1085,20 @@ def sync_code_via_git():
             print("⚠️  检测到未提交的更改")
             commit = input("是否提交并推送? (Y/N): ").strip().upper()
             if commit == "Y":
-                # 添加文件
+                # 添加文件（排除 aistudio-小程序v2，不随同步提交）
                 subprocess.run(
                     ["git", "add", "."], 
                     cwd=LOCAL_PROJECT_PATH,
                     encoding='utf-8',
                     errors='replace'
                 )
+                subprocess.run(
+                    ["git", "reset", "aistudio-小程序v2"],
+                    cwd=LOCAL_PROJECT_PATH,
+                    capture_output=True,
+                )
                 # 提交
-                commit_msg = input("请输入提交信息（直接回车使用默认）: ").strip()
+                commit_msg = input("请输入提交说明/版本号（用于 Git 记录，如 2026V2，回车用默认）: ").strip()
                 if not commit_msg:
                     commit_msg = f"Update code: sync to server {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
                 subprocess.run(
@@ -1396,6 +1401,8 @@ def main():
     for log in sync_log:
         print(f"  {log}")
     print(f"\n📊 总计: 新增/更新 {total_uploaded} 个文件，跳过 {total_skipped} 个未修改文件")
+    print(f"{'='*50}")
+    print("💡 若后台数据与本地不一致，请：(1) 下面选 Y 重启服务器应用；(2) 确认服务器 .env 里 DATABASE_URL 与恢复的数据库一致。")
     print(f"{'='*50}\n")
     
     # 询问是否重启服务
