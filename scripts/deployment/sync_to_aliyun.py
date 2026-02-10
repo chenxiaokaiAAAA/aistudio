@@ -130,8 +130,9 @@ def sync_postgresql_to_remote():
     print(f"   导出本地数据库...")
     env = os.environ.copy()
     env["PGPASSWORD"] = pg_pass
+    # --clean --if-exists：导出时包含 DROP 语句，恢复时先删后建，确保服务器数据被本地完全覆盖
     r = subprocess.run(
-        [pg_dump_exe, "-h", pg_host, "-p", str(pg_port), "-U", pg_user, "-d", pg_db, "-F", "p", "-f", dump_path],
+        [pg_dump_exe, "-h", pg_host, "-p", str(pg_port), "-U", pg_user, "-d", pg_db, "-F", "p", "--clean", "--if-exists", "-f", dump_path],
         env=env, capture_output=True, text=True, timeout=3600, encoding="utf-8", errors="replace"
     )
     if r.returncode != 0:
@@ -151,15 +152,30 @@ def sync_postgresql_to_remote():
     if r2.returncode != 0:
         print(f"   [错误] 上传失败: {r2.stderr or r2.stdout}")
         return False
+    # 恢复时使用服务器 .env 中的密码（与本地可不同），避免覆盖服务器配置
+    server_pass = pg_pass
+    get_env_cmd = f'ssh {ssh_key} -o StrictHostKeyChecking=no {REMOTE_USER}@{REMOTE_HOST} "grep -E \'^DATABASE_URL=\' {REMOTE_PROJECT_PATH}/.env 2>/dev/null | head -1 | sed \'s/^DATABASE_URL=//\'"'
+    r_env = subprocess.run(get_env_cmd, shell=True, capture_output=True, text=True, timeout=10, cwd=LOCAL_PROJECT_PATH)
+    if r_env.returncode == 0 and r_env.stdout and "postgresql" in r_env.stdout:
+        try:
+            from urllib.parse import urlparse, unquote
+            server_url = r_env.stdout.strip().strip('"').strip("'")
+            p = urlparse(server_url)
+            if p.password is not None:
+                server_pass = unquote(p.password)
+        except Exception:
+            pass
     print(f"   在服务器上恢复...")
-    pass_esc = pg_pass.replace("'", "'\"'\"'")
+    pass_esc = server_pass.replace("'", "'\"'\"'")
     restore_cmd = f"cd {REMOTE_PROJECT_PATH} && PGPASSWORD='{pass_esc}' psql -h localhost -p {pg_port} -U {pg_user} -d {pg_db} -f instance/pet_painting_dump_temp.sql -q 2>/dev/null; rm -f instance/pet_painting_dump_temp.sql"
     ssh_cmd = f'ssh {ssh_key} -o StrictHostKeyChecking=no {REMOTE_USER}@{REMOTE_HOST} "{restore_cmd}"'
     r3 = subprocess.run(ssh_cmd, shell=True, capture_output=True, text=True, timeout=600, cwd=LOCAL_PROJECT_PATH)
-    if r3.returncode == 0:
-        print(f"   [OK] PostgreSQL 同步完成")
+    if r3.returncode != 0:
+        print(f"   [警告] 恢复可能未完全成功，请检查服务器")
         return True
-    print(f"   [警告] 恢复可能未完全成功，请检查服务器")
+    print(f"   [OK] PostgreSQL 同步完成")
+    # 不再用本地 DATABASE_URL 覆盖服务器 .env（本地与服务器密码可不同，避免同步后服务器无法启动）
+    print(f"   [提示] 服务器 .env 未修改，请保持服务器自己的 DATABASE_URL 与 PostgreSQL 密码一致")
     return True
 
 
@@ -596,8 +612,10 @@ def count_remote_files(remote_dir, show_debug=False):
             print(f"    [调试] 执行异常: {e}")
         return -1
 
-def run_winscp(local_dir, remote_dir):
-    """使用 WinSCP 同步目录，返回同步结果"""
+def run_winscp(local_dir, remote_dir, full_overwrite=False):
+    """使用 WinSCP 同步目录，返回同步结果。
+    full_overwrite: True=全量(同名一律覆盖)，False=增量(仅传时间/大小有变化的)
+    """
     # 确保本地目录存在
     if not os.path.exists(local_dir):
         return 1, "", f"本地目录不存在: {local_dir}"
@@ -682,23 +700,13 @@ def run_winscp(local_dir, remote_dir):
         print(f"    [警告] 使用 PEM 密钥文件（WinSCP 可能不支持，建议转换为 PPK）: {KEY_PATH}")
     
     # WinSCP 脚本格式：每行一个命令
-    # 注意：WinSCP 的 synchronize remote 命令默认只同步新文件或更新的文件
-    # 不会覆盖未修改的文件（即使内容不同）
-    # 
-    # 为了强制覆盖所有文件，我们需要：
-    # 1. 设置 option transfer 为 "overwrite" 模式（覆盖所有文件）
-    # 2. 使用 synchronize remote -delete 来确保完全同步
-    # 
-    # WinSCP 的 transfer 选项：
-    # - overwrite: 覆盖所有文件（即使远程较新）
-    # - resume: 断点续传（默认）
-    # - ascii: ASCII模式
-    # - binary: 二进制模式（默认）
+    # full_overwrite: -criteria=none 同名一律覆盖；否则 -criteria=time,size 仅传有变化的
+    criteria = "none" if full_overwrite else "time,size"
     winscp_script = f"""open sftp://{REMOTE_USER}@{REMOTE_HOST}/ -privatekey="{key_path_escaped}" -hostkey="*"
 option batch abort
 option confirm off
-# 同步本地到远程；-criteria=time,size 任一时间或大小不同即上传，避免误判为未修改
-synchronize remote -delete -mirror -criteria=time,size "{local_path}" "{remote_path}"
+# 同步本地到远程；-criteria={criteria} {"(全量覆盖)" if full_overwrite else "(增量)"}
+synchronize remote -delete -mirror -criteria={criteria} "{local_path}" "{remote_path}"
 close
 exit
 """
@@ -1193,6 +1201,24 @@ def main():
     print(f"\n✅ 已选择: {option['name']}")
     print(f"   将同步目录: {', '.join(option['dirs'])}")
     
+    # 有文件目录需要 WinSCP 时，询问同步模式（增量 / 全量）
+    # “同步全部”时默认全量，避免增量误判导致全部跳过、服务器未更新
+    sync_mode_full = (option["name"] == "同步全部")
+    file_dirs = [d for d in option['dirs'] if d != "instance"]
+    if USE_WINSCP and file_dirs:
+        print("\n📂 文件同步模式:")
+        print("   1. 增量 - 仅传有变化的文件（快，推荐日常使用）")
+        print("   2. 全量 - 覆盖所有同名文件（慢，确保与本地完全一致）")
+        if option["name"] == "同步全部":
+            default_mode = "2"
+            prompt_suffix = "，直接回车=全量"
+        else:
+            default_mode = "1"
+            prompt_suffix = "，直接回车=增量"
+        mode_choice = input(f"请选择 (1/2{prompt_suffix}): ").strip() or default_mode
+        sync_mode_full = (mode_choice == "2")
+        print(f"   使用: {'全量覆盖' if sync_mode_full else '增量同步'}")
+    
     confirm = input("\n确认开始同步? (Y/N): ").strip().upper()
     if confirm != "Y":
         print("已取消同步")
@@ -1260,7 +1286,7 @@ def main():
         
         # 根据可用工具选择同步方法
         if USE_WINSCP:
-            code, stdout, stderr = run_winscp(local_dir, remote_dir)
+            code, stdout, stderr = run_winscp(local_dir, remote_dir, full_overwrite=sync_mode_full)
             if code == 0:
                 # WinSCP 同步完成
                 # 从 stderr 中获取统计信息（run_winscp 返回的统计信息在 stderr 中）
@@ -1400,7 +1426,10 @@ def main():
     print(f"{'='*50}")
     for log in sync_log:
         print(f"  {log}")
-    print(f"\n📊 总计: 新增/更新 {total_uploaded} 个文件，跳过 {total_skipped} 个未修改文件")
+    if option['name'] == "仅同步数据库" and any("PostgreSQL" in log or "instance" in log for log in sync_log):
+        print(f"\n📊 数据库已覆盖恢复（仅同步数据库时无文件计数）")
+    else:
+        print(f"\n📊 总计: 新增/更新 {total_uploaded} 个文件，跳过 {total_skipped} 个未修改文件")
     print(f"{'='*50}")
     print("💡 若后台数据与本地不一致，请：(1) 下面选 Y 重启服务器应用；(2) 确认服务器 .env 里 DATABASE_URL 与恢复的数据库一致。")
     print(f"{'='*50}\n")

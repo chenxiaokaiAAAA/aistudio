@@ -326,7 +326,7 @@ def miniprogram_verify_groupon():
         return jsonify({"status": "error", "message": f"团购核销失败: {str(e)}"}), 500
 
 
-@bp.route("/groupon/check-staf", methods=["GET"])
+@bp.route("/groupon/check-staff", methods=["GET"])
 def check_staff():
     """检查用户是否有团购核销权限"""
     try:
