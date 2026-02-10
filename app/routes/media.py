@@ -11,6 +11,7 @@ import os
 import sys
 import zipfile
 from io import BytesIO
+from urllib.parse import unquote
 
 from flask import Blueprint, current_app, jsonify, send_file, send_from_directory
 from flask_login import login_required
@@ -343,10 +344,11 @@ def public_mockup(filename):
         return jsonify({"error": str(e)}), 500
 
 
-@media_bp.route("/media/original/<filename>")
+@media_bp.route("/media/original/<path:filename>")
 def media_original(filename):
-    """访问原图（无需登录，供小程序等使用）"""
+    """访问原图（无需登录，供小程序等使用）。filename 支持 URL 编码（如 %20）。"""
     try:
+        filename = unquote(filename, encoding="utf-8")
         upload_folder = current_app.config["UPLOAD_FOLDER"]
 
         # 确保路径是绝对路径，与上传接口的处理方式保持一致
@@ -367,7 +369,7 @@ def media_original(filename):
 
         # 检查文件是否存在
         if not os.path.exists(filepath):
-            logger.error("文件不存在: {filepath}")
+            logger.error("文件不存在: %s", filepath)
             # 列出目录内容以便调试
             if os.path.exists(upload_folder):
                 files = os.listdir(upload_folder)
@@ -380,17 +382,17 @@ def media_original(filename):
         real_upload_folder = os.path.realpath(upload_folder)
         real_filepath = os.path.realpath(filepath)
         if not real_filepath.startswith(real_upload_folder):
-            logger.error("路径遍历攻击尝试: {filepath}")
+            logger.error("路径遍历攻击尝试: %s", filepath)
             return jsonify({"error": "非法路径"}), 403
 
         file_size = os.path.getsize(filepath)
         logger.info(f"✅ 返回文件: {filepath}, 大小: {file_size} bytes")
         return send_from_directory(upload_folder, filename, as_attachment=False)
     except Exception as e:
-        logger.error("访问原图失败: {e}")
         import traceback
 
         traceback.print_exc()
+        logger.error("访问原图失败: %s", e)
         return jsonify({"error": f"访问文件失败: {str(e)}"}), 500
 
 
@@ -419,9 +421,10 @@ def media_category_nav(filename):
         return jsonify({"error": str(e)}), 500
 
 
-@media_bp.route("/media/final/<filename>")
+@media_bp.route("/media/final/<path:filename>")
 def media_final(filename):
-    """访问效果图（无需登录，供小程序等使用）"""
+    """访问效果图（无需登录，供小程序等使用）。filename 支持 URL 编码（如 %20）。"""
+    filename = unquote(filename, encoding="utf-8")
     logger.info(f"请求效果图: {filename}")
     final_path = os.path.join(current_app.config["FINAL_FOLDER"], filename)
     logger.info(f"效果图路径: {final_path}")

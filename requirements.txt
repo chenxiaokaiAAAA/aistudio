@@ -3,7 +3,8 @@ Flask-SQLAlchemy==3.0.5
 Flask-Login==0.6.3
 Werkzeug==2.3.7
 qrcode==7.4.2
-Pillow==10.0.1
+# Pillow>=10.3.0 为 psd-tools 所需，与样机套图兼容
+Pillow>=10.3.0
 # 样机套图 - PSD智能对象替换
 psd-tools>=1.9.0
 gunicorn==21.2.0

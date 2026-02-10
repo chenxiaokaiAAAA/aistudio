@@ -420,12 +420,9 @@ if (typeof window !== 'undefined') {
         handleApiResponse
     };
 
-    // 兼容性：保留 alert 但使用 Toast 替代
+    // 兼容性：用 Toast 替代 alert，不再打 console.warn 避免控制台刷屏
     const originalAlert = window.alert;
     window.alert = function(message) {
-        console.warn('建议使用 UX.Toast 替代 alert()');
         Toast.info(message);
-        // 仍然调用原始 alert 作为后备（可选）
-        // originalAlert(message);
     };
 }

@@ -812,15 +812,16 @@ def api_delete_print_size_config(config_id):
 @login_required
 @admin_api_required
 def api_get_printer_orders():
-    """获取打印任务列表"""
+    """获取打印任务列表（优先选片订单 SelectionOrder，与「开始打印」使用同一表）"""
     try:
-        models = get_models(["Order", "ShopOrder"])
+        models = get_models(["Order", "ShopOrder", "SelectionOrder"])
         if not models:
             logger.error("获取打印任务列表失败: 系统未初始化")
             return jsonify({"status": "error", "message": "系统未初始化"}), 500
 
         Order = models.get("Order")
         ShopOrder = models.get("ShopOrder")
+        SelectionOrder = models.get("SelectionOrder")
 
         if not Order:
             logger.error(f"获取打印任务列表失败: Order模型未找到。可用模型: {list(models.keys())}")
@@ -831,7 +832,77 @@ def api_get_printer_orders():
         page = int(request.args.get("page", 1))
         per_page = int(request.args.get("per_page", 20))
 
-        # 查询商城订单（打印任务）
+        # 优先查询选片订单（SelectionOrder），与 start-print 使用同一表，否则列表里看不到支付后的打印任务
+        if SelectionOrder:
+            try:
+                query = SelectionOrder.query
+                has_printer_status = hasattr(SelectionOrder, "printer_send_status")
+                if status_filter and has_printer_status:
+                    try:
+                        if status_filter == "not_sent":
+                            query = query.filter(
+                                (SelectionOrder.printer_send_status.is_(None))
+                                | (SelectionOrder.printer_send_status == "not_sent")
+                            )
+                        elif status_filter == "sending":
+                            query = query.filter(SelectionOrder.printer_send_status == "sending")
+                        elif status_filter == "sent_success":
+                            query = query.filter(SelectionOrder.printer_send_status == "sent_success")
+                        elif status_filter == "sent_failed":
+                            query = query.filter(SelectionOrder.printer_send_status == "sent_failed")
+                    except Exception as filter_error:
+                        logger.warning(
+                            f"过滤SelectionOrder.printer_send_status失败: {filter_error}"
+                        )
+                query = query.order_by(SelectionOrder.created_at.desc())
+                pagination = query.paginate(page=page, per_page=per_page, error_out=False)
+                orders = []
+                for so in pagination.items:
+                    try:
+                        order_data = {
+                            "id": so.id,
+                            "order_number": so.order_number,
+                            "customer_name": so.customer_name or "",
+                            "customer_phone": so.customer_phone or "",
+                            "product_name": so.product_name or "",
+                            "size_name": so.size_name or "",
+                            "quantity": so.quantity or 1,
+                            "price": float(so.price or 0),
+                            "status": so.status or "pending",
+                            "printer_send_status": getattr(so, "printer_send_status", None)
+                            or "not_sent",
+                            "printer_send_time": (
+                                so.printer_send_time.isoformat()
+                                if hasattr(so, "printer_send_time") and so.printer_send_time
+                                else None
+                            ),
+                            "printer_error_message": getattr(so, "printer_error_message", None),
+                            "image_url": so.image_url,
+                            "created_at": (
+                                so.created_at.isoformat() if so.created_at else None
+                            ),
+                        }
+                        orders.append(order_data)
+                    except Exception as order_error:
+                        logger.warning(f"处理选片订单数据失败: {order_error}")
+                        continue
+                return jsonify(
+                    {
+                        "status": "success",
+                        "data": orders,
+                        "pagination": {
+                            "page": page,
+                            "per_page": per_page,
+                            "total": pagination.total,
+                            "pages": pagination.pages,
+                        },
+                    }
+                )
+            except Exception as sel_order_error:
+                logger.warning(f"查询SelectionOrder失败，回退到ShopOrder: {sel_order_error}")
+                SelectionOrder = None
+
+        # 回退：查询商城订单（ShopOrder）
         query = None
         if ShopOrder:
             try:

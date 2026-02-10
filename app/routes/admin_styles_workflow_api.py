@@ -405,11 +405,11 @@ def test_workflow(image_id):
                     else:
                         error_msg = error_message or "未知错误"
                         task_errors.append(f"图片 {idx + 1}: {error_msg}")
-                        logger.error("图片 {idx + 1} 的AI任务创建失败: {error_msg}")
+                        logger.error(f"图片 {idx + 1} 的AI任务创建失败: {error_msg}")
                 except Exception as e:
                     error_msg = f"创建AI任务异常: {str(e)}"
                     task_errors.append(f"图片 {idx + 1}: {error_msg}")
-                    logger.error("图片 {idx + 1} 的AI任务创建异常: {error_msg}")
+                    logger.error(f"图片 {idx + 1} 的AI任务创建异常: {error_msg}")
                     import traceback
 
                     traceback.print_exc()
@@ -423,7 +423,7 @@ def test_workflow(image_id):
             for step_name, step_time in test_workflow_step_times.items():
                 percentage = (step_time / total_duration * 100) if total_duration > 0 else 0
                 logger.info(f"   {step_name}: {step_time:.3f} 秒 ({percentage:.1f}%)")
-            logger.info()
+            logger.info("")
 
             # 返回结果
             if len(created_tasks) > 0:
@@ -455,7 +455,7 @@ def test_workflow(image_id):
                 )
 
         except Exception as e:
-            logger.warning("创建测试订单或AI任务失败: {str(e)}")
+            logger.warning(f"创建测试订单或AI任务失败: {str(e)}")
             import traceback
 
             traceback.print_exc()

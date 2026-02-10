@@ -54,10 +54,24 @@ def main():
         print(f"❌ 连接失败: {e}")
         sys.exit(1)
 
+    # 所有使用自增 id 且在工作流/API 中会插入的表（pg_dump 恢复后序列可能不同步）
     fixes = [
         ("ai_config", "id", 1),
         ("user_visits", "id", 0),
-        ("orders", "id", 1),  # 解决创建订单时主键重复 (id)=(4) 已存在
+        ("orders", "id", 1),
+        ("order_image", "id", 1),
+        # AI 任务、测试工作流、API 工作流
+        ("ai_tasks", "id", 1),
+        # AI 美颜任务（美图 API 调用日志）
+        ("meitu_api_call_log", "id", 1),
+        # 选片订单、风格图片等
+        ("selection_orders", "id", 1),
+        ("style_image", "id", 1),
+        ("style_category", "id", 1),
+        # 其他可能在工作流/配置中插入的表
+        ("operation_logs", "id", 1),
+        ("coupons", "id", 1),
+        ("user_coupons", "id", 1),
     ]
 
     for table, col, default in fixes:

@@ -202,7 +202,7 @@ def admin_order_detail(order_id):
     # 获取当前订单的AI任务（从批量查询的映射中获取）
     ai_tasks = ai_tasks_map.get(order.id, [])
     if AITask and not ai_tasks:
-        # 如果批量查询失败，回退到单个查询
+        # 如果批量查询未命中，回退到单个查询
         try:
             ai_tasks = (
                 AITask.query.filter_by(order_id=order.id, status="completed")
@@ -210,57 +210,45 @@ def admin_order_detail(order_id):
                 .order_by(AITask.completed_at.desc())
                 .all()
             )
+        except Exception as e:
+            logger.info(f"从AITask查询效果图失败: {e}")
+            import traceback
+            traceback.print_exc()
 
+    # 从 AITask 构建效果图列表（批量查询或单查命中后都要执行，否则订单详情效果图为空）
+    if ai_tasks:
+        try:
             for task in ai_tasks:
-                if task.output_image_path:
-                    # 处理output_image_path：可能是相对路径、绝对路径或云端URL
-                    output_path = task.output_image_path
+                if not task.output_image_path:
+                    continue
+                output_path = task.output_image_path
+                if output_path.startswith("http://") or output_path.startswith("https://"):
+                    image_url = output_path
+                    filename = output_path.split("/")[-1]
+                else:
+                    filename = (
+                        os.path.basename(output_path.replace("\\", "/"))
+                        if ("/" in output_path or "\\" in output_path)
+                        else output_path
+                    )
+                    from app.utils.image_thumbnail import get_thumbnail_path
 
-                    # 如果是云端URL，直接使用
-                    if output_path.startswith("http://") or output_path.startswith("https://"):
-                        image_url = output_path
-                        filename = output_path.split("/")[-1]  # 提取文件名
+                    thumbnail_filename = get_thumbnail_path(filename)
+                    if "/" in thumbnail_filename or "\\" in thumbnail_filename:
+                        thumbnail_filename = os.path.basename(
+                            thumbnail_filename.replace("\\", "/")
+                        )
+                    hd_folder = app_instance.config.get("HD_FOLDER", "hd_images")
+                    final_folder = app_instance.config.get("FINAL_FOLDER", "final_works")
+                    if not os.path.isabs(hd_folder):
+                        hd_folder = os.path.join(app_instance.root_path, hd_folder)
+                    if not os.path.isabs(final_folder):
+                        final_folder = os.path.join(app_instance.root_path, final_folder)
+                    thumbnail_exists = os.path.exists(os.path.join(hd_folder, thumbnail_filename)) or os.path.exists(os.path.join(final_folder, thumbnail_filename))
+                    if thumbnail_exists:
+                        image_url = f"/public/hd/{quote(thumbnail_filename, safe='')}"
                     else:
-                        # 如果是相对路径（如 final_works/xxx.png），提取文件名
-                        if "/" in output_path or "\\" in output_path:
-                            # 提取文件名（处理Windows和Unix路径）
-                            filename = os.path.basename(output_path.replace("\\", "/"))
-                        else:
-                            filename = output_path
-
-                        # 构建图片URL（使用缩略图进行预览）
-                        from app.utils.image_thumbnail import get_thumbnail_path
-
-                        # 检查缩略图是否存在
-                        thumbnail_filename = get_thumbnail_path(filename)
-                        # 提取缩略图文件名
-                        if "/" in thumbnail_filename or "\\" in thumbnail_filename:
-                            thumbnail_filename = os.path.basename(
-                                thumbnail_filename.replace("\\", "/")
-                            )
-
-                        # 检查缩略图文件是否存在
-                        hd_folder = app_instance.config.get("HD_FOLDER", "hd_images")
-                        final_folder = app_instance.config.get("FINAL_FOLDER", "final_works")
-                        if not os.path.isabs(hd_folder):
-                            hd_folder = os.path.join(app_instance.root_path, hd_folder)
-                        if not os.path.isabs(final_folder):
-                            final_folder = os.path.join(app_instance.root_path, final_folder)
-
-                        thumbnail_exists = False
-                        if os.path.exists(os.path.join(hd_folder, thumbnail_filename)):
-                            thumbnail_exists = True
-                        elif os.path.exists(os.path.join(final_folder, thumbnail_filename)):
-                            thumbnail_exists = True
-
-                        # 如果缩略图存在，使用缩略图；否则使用原图
-                        if thumbnail_exists:
-                            encoded_filename = quote(thumbnail_filename, safe="")
-                            image_url = f"/public/hd/{encoded_filename}"
-                        else:
-                            encoded_filename = quote(filename, safe="")
-                            image_url = f"/public/hd/{encoded_filename}"
-
+                        image_url = f"/public/hd/{quote(filename, safe='')}"
                     effect_images.append(
                         {
                             "id": task.id,
@@ -269,16 +257,12 @@ def admin_order_detail(order_id):
                             "created_at": task.completed_at or task.created_at,
                         }
                     )
-
             logger.info(
                 f"订单详情 - 订单ID: {order_id}, 从AITask查询到效果图数量: {len(effect_images)}"
             )
-            for img in effect_images:
-                logger.info(f"  效果图: {img['filename']}")
         except Exception as e:
-            logger.info(f"从AITask查询效果图失败: {e}")
+            logger.info(f"从AITask构建效果图列表失败: {e}")
             import traceback
-
             traceback.print_exc()
 
     # 如果AITask中没有效果图，尝试从文件系统读取（备选方案）

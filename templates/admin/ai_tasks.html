@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI任务管理 - {{ brand_name }}后台</title>
     <link href="/static/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="/static/css/font-awesome.min.css">
     <style>
         body {
             background: #000000;
@@ -546,16 +546,16 @@
                         // 统一路径格式（将反斜杠转为正斜杠）
                         let normalizedPath = task.input_image_path.replace(/\\/g, '/');
                         inputImageUrl = normalizedPath.startsWith('/') ? normalizedPath : '/' + normalizedPath;
-                        // 如果是uploads路径，转换为media路径
+                        // 如果是uploads路径，转换为media路径（编码文件名避免空格等导致404）
                         if (inputImageUrl.includes('/uploads/')) {
                             const filename = inputImageUrl.split('/').pop();
-                            inputImageUrl = `/media/original/${filename}`;
+                            inputImageUrl = `/media/original/${encodeURIComponent(filename)}`;
                         }
                     } else {
                         // 处理Windows路径（反斜杠）
                         const normalizedPath = task.input_image_path.replace(/\\/g, '/');
                         const filename = normalizedPath.split('/').pop();
-                        inputImageUrl = `/media/original/${filename}`;
+                        inputImageUrl = `/media/original/${encodeURIComponent(filename)}`;
                     }
                 }
                 const inputImage = inputImageUrl ? 
@@ -573,16 +573,16 @@
                         // 统一路径格式（将反斜杠转为正斜杠）
                         let normalizedPath = task.output_image_path.replace(/\\/g, '/');
                         outputImageUrl = normalizedPath.startsWith('/') ? normalizedPath : '/' + normalizedPath;
-                        // 如果是final_works路径，转换为media/final路径
+                        // 如果是final_works路径，转换为media/final路径（编码文件名避免空格等导致404）
                         if (outputImageUrl.includes('/final_works/') || outputImageUrl.includes('\\final_works\\')) {
                             const filename = outputImageUrl.split('/').pop();
-                            outputImageUrl = `/media/final/${filename}`;
+                            outputImageUrl = `/media/final/${encodeURIComponent(filename)}`;
                         }
                     } else {
                         // 处理Windows路径（反斜杠）和final_works路径
                         const normalizedPath = task.output_image_path.replace(/\\/g, '/');
                         const filename = normalizedPath.split('/').pop();
-                        outputImageUrl = `/media/final/${filename}`;
+                        outputImageUrl = `/media/final/${encodeURIComponent(filename)}`;
                     }
                 }
                 const outputImage = outputImageUrl ? 
@@ -877,13 +877,13 @@
                                 } else if (inputPath.startsWith('/')) {
                                     inputImageUrl = inputPath;
                                 } else if (inputPath.includes('uploads/')) {
-                                    // 从完整路径中提取文件名
+                                    // 从完整路径中提取文件名（编码避免404）
                                     const filename = inputPath.split('/').pop();
-                                    inputImageUrl = `/media/original/${filename}`;
+                                    inputImageUrl = `/media/original/${encodeURIComponent(filename)}`;
                                 } else {
                                     // 直接使用文件名
                                     const filename = inputPath.split('/').pop();
-                                    inputImageUrl = `/media/original/${filename}`;
+                                    inputImageUrl = `/media/original/${encodeURIComponent(filename)}`;
                                 }
                                 return `
                                     <div>
@@ -911,17 +911,14 @@
                                 } else if (outputPath.startsWith('/')) {
                                     outputImageUrl = outputPath;
                                 } else if (outputPath.includes('final_works/') || outputPath.includes('final works/') || outputPath.includes('final_works\\') || outputPath.includes('final works\\')) {
-                                    // 统一路径格式（将反斜杠转为正斜杠）
+                                    // 统一路径格式（将反斜杠转为正斜杠），编码文件名避免404
                                     const normalizedPath = outputPath.replace(/\\/g, '/');
-                                    // 从完整路径中提取文件名
                                     const filename = normalizedPath.split('/').pop();
-                                    outputImageUrl = `/media/final/${filename}`;
+                                    outputImageUrl = `/media/final/${encodeURIComponent(filename)}`;
                                 } else {
-                                    // 统一路径格式（将反斜杠转为正斜杠）
                                     const normalizedPath = outputPath.replace(/\\/g, '/');
-                                    // 直接使用文件名
                                     const filename = normalizedPath.split('/').pop();
-                                    outputImageUrl = `/media/final/${filename}`;
+                                    outputImageUrl = `/media/final/${encodeURIComponent(filename)}`;
                                 }
                                 return `
                                     <div>
