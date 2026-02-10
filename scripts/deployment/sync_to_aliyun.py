@@ -37,6 +37,8 @@ PEM_PATH = os.path.join(LOCAL_PROJECT_PATH, "aliyun-key", "aistudio.pem")
 KEY_PATH = PPK_PATH if os.path.exists(PPK_PATH) else PEM_PATH
 # 服务器上的项目根目录
 REMOTE_PROJECT_PATH = "/root/project_code"
+# 服务器上媒体文件目录（Nginx 的 /media/original、/media/final、/media/hd 指向此处，必须一致否则图片 404）
+REMOTE_MEDIA_BASE = "/root/project_data/user_images"
 
 # 同步工具选择：WinSCP（推荐，Windows下更稳定）
 USE_WINSCP = True
@@ -1235,8 +1237,11 @@ def main():
     # 逐个目录同步
     for dir_name in option['dirs']:
         local_dir = os.path.join(LOCAL_PROJECT_PATH, dir_name)
-        # 远程路径使用正斜杠（避免 Windows 的 os.path.join 产生反斜杠）
-        remote_dir = f"{REMOTE_PROJECT_PATH}/{dir_name}"
+        # 远程路径：媒体目录(uploads/final_works/hd_images) 同步到 Nginx 使用的路径，否则图片 404
+        if dir_name in ("uploads", "final_works", "hd_images"):
+            remote_dir = f"{REMOTE_MEDIA_BASE}/{dir_name}"
+        else:
+            remote_dir = f"{REMOTE_PROJECT_PATH}/{dir_name}"
         
         # 数据库目录：根据 DATABASE_URL 判断 PostgreSQL 或 SQLite
         if dir_name == "instance":
@@ -1283,6 +1288,13 @@ def main():
                 print(f"      远程文件数（重试后）: {remote_count_before}")
             else:
                 print(f"      远程文件数: 无法获取（请检查 SSH 连接）")
+        
+        # 媒体目录同步到 Nginx 路径前，确保服务器上目录存在
+        if dir_name in ("uploads", "final_works", "hd_images"):
+            key_file = PEM_PATH if os.path.exists(PEM_PATH) else KEY_PATH
+            ssh_key = f'-i "{key_file}"' if os.path.exists(key_file) and key_file.endswith(".pem") else ""
+            mkdir_cmd = f'ssh {ssh_key} -o StrictHostKeyChecking=no {REMOTE_USER}@{REMOTE_HOST} "mkdir -p {remote_dir}"'
+            subprocess.run(mkdir_cmd, shell=True, capture_output=True, timeout=10, cwd=LOCAL_PROJECT_PATH)
         
         # 根据可用工具选择同步方法
         if USE_WINSCP:
@@ -1432,6 +1444,8 @@ def main():
         print(f"\n📊 总计: 新增/更新 {total_uploaded} 个文件，跳过 {total_skipped} 个未修改文件")
     print(f"{'='*50}")
     print("💡 若后台数据与本地不一致，请：(1) 下面选 Y 重启服务器应用；(2) 确认服务器 .env 里 DATABASE_URL 与恢复的数据库一致。")
+    print("💡 若 /docs API 文档打不开，请在服务器上执行: (cd 项目目录 && source venv/bin/activate && pip install flasgger && systemctl restart aistudio)")
+    print("💡 图片 404：本脚本已将 uploads/final_works/hd_images 同步到 Nginx 配置的路径，请确认服务器 Nginx 中 media 指向 /root/project_data/user_images/。")
     print(f"{'='*50}\n")
     
     # 询问是否重启服务
